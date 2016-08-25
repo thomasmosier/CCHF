@@ -1,0 +1,119 @@
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+      subroutine solar_rad(Qsi,J_day,xlat,
+     &  cloud_frac,xxhour,slope_az,terrain_slope,
+     &  UTC_flag,xlon)
+
+      implicit none
+
+      integer J_day
+
+      real solar_const,days_yr,Trop_Can,solstice,pi,deg2rad,
+     &  Qsi_direct,Qsi_diffuse,cos_i,cos_Z,Qsi,xlat,sin_z,xxhour,
+     &  cloud_frac,slope_az,terrain_slope,sol_dec,hr_angl,
+     &  trans_direct,trans_diffuse,Qsi_trans_dir,Qsi_trans_dif,
+     &  sun_azimuth,slope_az_S0,xxxhour,UTC_flag,xlon
+
+c Required constants.
+      solar_const = 1370.
+      days_yr = 365.25
+      Trop_Can = 0.41
+      solstice = 173.
+      pi = 2.0 * acos(0.0)
+      deg2rad = pi / 180.0
+
+c COMPUTE THE BASIC SOLAR RADIATION PARAMETERS.
+
+c Compute the solar declination angle (radians).
+      sol_dec = Trop_Can *
+     &  cos(2.*pi * (real(J_day) - solstice)/days_yr)
+      
+c For the case of running UTC time and a latitudinal variation
+c   in solar radiation, adjust the time to correspond to the
+c   local time at this longitude position.
+      if (UTC_flag.ne.0.0) then
+        xxxhour = xxhour + xlon / 15.0
+        if (xxxhour.ge.24.0) xxxhour = xxxhour - 24.0
+        if (xxxhour.lt.0.0) xxxhour = xxxhour + 24.0
+      else
+        xxxhour = xxhour
+      endif
+
+c Compute the sun's hour angle (radians).
+      hr_angl = (xxxhour * 15.0 - 180.0) * deg2rad
+
+c Compute cos_Z.  Note that the sin of the solar elevation angle,
+c   sin_alfa, is equal to the cosine of the solar zenith angle,
+c   cos_Z.
+      cos_Z = sin(sol_dec) * sin(xlat * deg2rad) + 
+     &  cos(sol_dec) * cos(xlat * deg2rad) * cos(hr_angl)
+      cos_Z = max(0.0,cos_Z)
+
+c Account for clouds, water vapor, pollution, etc.
+      trans_direct = (0.6 + 0.2 * cos_Z) * (1.0 - cloud_frac)
+      trans_diffuse = (0.3 + 0.1 * cos_Z) * cloud_frac
+
+c Compute the solar radiation transmitted through the atmosphere.
+      Qsi_trans_dir = solar_const * trans_direct
+      Qsi_trans_dif = solar_const * trans_diffuse
+
+c COMPUTE THE CORRECTIONS TO ALLOW FOR TOPOGRAPHIC SLOPE AND ASPECT.
+
+c The sine of the solar zenith angle.
+      sin_Z = sqrt(1.0 - cos_Z*cos_Z)
+
+c Azimuth of the sun, with south having zero azimuth for the
+c   northern hemisphere.
+      sun_azimuth = 
+     &  asin(max(-1.0,min(1.0,cos(sol_dec)*sin(hr_angl)/sin_Z)))
+      if (xlat.lt.0.0) then
+        sun_azimuth = - sun_azimuth
+      endif
+
+c Make the corrections so that the angles below the local horizon
+c   are still measured from the normal to the slope.
+      if (hr_angl.lt.0.0) then
+        if (hr_angl.lt.sun_azimuth) sun_azimuth = - pi - sun_azimuth
+      elseif (hr_angl.gt.0.0) then
+        if (hr_angl.gt.sun_azimuth) sun_azimuth = pi - sun_azimuth
+      endif
+
+c Build, from the variable with north having zero azimuth, a 
+c   slope_azimuth value with south having zero azimuth.  Also
+c   make north have zero azimuth if in the southern hemsisphere.
+      if (xlat.ge.0.0) then
+        if (slope_az.ge.180.0) then
+          slope_az_S0 = slope_az - 180.0
+        else
+          slope_az_S0 = slope_az + 180.0
+        endif
+      else
+        slope_az_S0 = slope_az
+      endif
+
+c Compute the angle between the normal to the slope and the angle
+c   at which the direct solar radiation impinges on the sloping
+c   terrain (radians).
+      cos_i = cos(terrain_slope * deg2rad) * cos_Z + 
+     &  sin(terrain_slope * deg2rad) * sin_Z * 
+     &  cos(sun_azimuth - slope_az_S0 * deg2rad)
+
+c Adjust the topographic correction due to local slope so that
+c   the correction is zero if the sun is below the local horizon 
+c   (i.e., the slope is in the shade) or if the sun is below the
+c   global horizon.
+      if (cos_i.lt.0.0) cos_i = 0.0
+      if (cos_Z.le.0.0) cos_i = 0.0
+
+c Adjust the solar radiation for slope, etc.
+      Qsi_direct = cos_i * Qsi_trans_dir
+      Qsi_diffuse = cos_Z * Qsi_trans_dif
+	  
+c      print *,'   Qsi_direct', Qsi_direct
+c      print *,'   Qsi_diffuse', Qsi_diffuse
+c Combine the direct and diffuse solar components.
+      Qsi = Qsi_direct + Qsi_diffuse
+c      print *,'   Qsi', Qsi
+      return
+      end
