@@ -38,14 +38,14 @@ sCryo.hfnet = wattperdegS*squeeze(sAtm.tas(sAtm.indtas,:,:)); %units to Watts pe
 %Heat flux for ice
 if isfield(sCryo, 'icedbr') %If debris cover information available
     sCryo.hfneti = wattperdegDeb*squeeze(sAtm.tas(sAtm.indtas,:,:)); 
-
+    keyboard
     if ~isfield(sCryo, 'indicecln')
         debThresh = find_att(varargin{1}.global,'debris_threshold');
         sCryo.indicecln = find(sCryo.icedbr < debThresh);
     end
     
-    if ~isempty(sCryo.indicecln)
-        sCryo.hfneti(sCryo.indicecln) = sCryo.hfnet(sCryo.indicecln);
+    if ~isempty(indicecln)
+        sCryo.hfneti(indicecln) = sCryo.hfnet(indicecln);
     end
 else
     sCryo.hfneti = sCryo.hfnet;

@@ -19,6 +19,7 @@ output = ...
     'density_water', 1000; ... %(kg/m^3) 
     'density_ice', 917; ... %(kg/m^3) DeWalle and Rango, Principles of Snow Hydrology
     'density_ice_Bolch', 850; ... (kg/m^3) long-term density of combined snow and ice used by Tobias Bolch for geodetic measurement uncertainty
+    'debris_threshold', 0.04;... (m) Approx from Fig S5 in Kraaijenbrink, P. D. A., Bierkens, M. F. P., Lutz, A. F., & Immerzeel, W. W. (2017). Impact of a global temperature rise of 1.5 degrees Celsius on Asia?s glaciers. Nature, 549(7671), 257?260. https://doi.org/10.1038/nature23878
     'thermal_conduct_ice', 2.1; ... %(W/m/K; at 0 Deg C) Andy Aschwanden Glacier Thermodynamics notes
     'thermal_diffus_ice', 1.09*10^(-6); ... %(m^2/s; at 0 Deg C) Andy Aschwanden Glacier Thermodynamics notes
 %     'density_snow_new', 400; ... %(kg/m^3)

@@ -313,28 +313,6 @@ if isfield(sPath, 'ice') %&& ~regexpbl(sMeta.mode, 'parameter')
             sIceInit.iceSlope(sIceInit.iceDem == 0, :) = 0;
             sIceInit.iceSlope(:, sIceInit.iceDem == 0) = 0;
 
-        %If debris layer is used, load:
-        if isfield(sPath, 'debris')
-            sDebris = read_geodata(sPath.debris, sMeta, 'none','no_disp');
-                sDebris = squeeze(sDebris.data);
-            if ~isequal(size(sDebris.data), szIce)
-                error('CCHF_backbone:mismatchIceDebris', ...
-                    'The ice and debris cover grids are not the same size.');
-            end
-
-            %Check that coordinates line up with iceDEM:
-            if sum(ismember(sDebris.lon,sIceInit.iceLon)) < 0.9*numel(sDebris.lon) || sum(ismember(sDebris.lat,sIceInit.iceLat)) < 0.9*numel(sDebris.lat)
-               error('CCHF_backbone:misalignedIceDem','The ice DEM and ice presence grid do not appear to align. Maybe rounding error?');
-            end
-            sIceInit.icdbr = sparse(szIce(1),szIce(2));
-            sIceInit.icdbr(indIce) = sDebris.data(indIce);
-                clear('sDebris');
-
-            warning('ice_grid_init:debrisCover',['Check that debris cover '...
-                'is actually used in the ice processs representations '...
-                '(including heat calculation).'])
-        end
-
 
         %%Find correspondance between glacier grid and main grid
         %Check which of main grid cell the centroid of the glacier
@@ -395,6 +373,33 @@ else %In this case, ice grid same as main grid
     sIceInit.iceWE  = sparse(szDem(1),szDem(2));
     sIceInit.icdwe = sparse(szDem(1),szDem(2));
     sIceInit.icx = zeros(szDem,'single');
+end
+
+%If debris layer is used, load:
+if isfield(sPath, 'debris') && ~isfield(sIceInit, 'icdbr')
+    sDebris = read_geodata(sPath.debris, sMeta, 'none','no_disp');
+        sDebris.data = squeeze(sDebris.data);
+    if ~isequal(size(sDebris.data), size(sIceInit.iceDem))
+        resDebris = [mean(abs(diff(sDebris.lat))), mean(abs(diff(sDebris.lon)))];
+        resIceDem = [mean(abs(diff(sIceInit.iceLat))), mean(abs(diff(sIceInit.iceLon)))];
+        
+        prec = -order(min(resDebris))+1;
+        if isequal(round2(resDebris, prec), round2(resIceDem, prec)) || all(resDebris < resIceDem)
+            sDebris.data = geodata_area_wgt(sDebris.lon, sDebris.lat, sDebris.data, sIceInit.iceLon, sIceInit.iceLat, 'nansum');
+        else
+            error('CCHF_backbone:mismatchIceDebris', ...
+                'The ice and debris cover grids are not the same size.');
+        end
+    end
+
+    sIceInit.icedbr = sDebris.data;
+%     sIceInit.icdbr = sparse(szIce(1),szIce(2));
+%     sIceInit.icdbr(indIce) = sDebris.data(indIce);
+        clear('sDebris');
+
+    warning('ice_grid_init:debrisCover',['Check that debris cover '...
+        'is actually used in the ice processs representations '...
+        '(including heat calculation).'])
 end
 
 disp('finished ice grid initialization');

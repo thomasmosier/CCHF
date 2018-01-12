@@ -22,7 +22,6 @@
 function fileNm = file_nm(region,var,dateVec)
 
 
-
 if isnumeric(dateVec)
     nDates = numel(dateVec(:,1));
     nPrec = numel(dateVec(1,:));
@@ -64,5 +63,7 @@ else
     error('fileNm:unknownType', ['Input of class ' class(dateVec) ' has not been programmed for.']);
 end
 
-
+if numel(fileNm(:)) == 1
+    fileNm = char(fileNm);
+end
 
