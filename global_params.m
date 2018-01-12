@@ -2,6 +2,7 @@ function output = global_params
 %This function is a repository of all constants used throughout the script
 %(Not currently complete. Continue to gather constants from functions here.)
 
+%retrieve constants using function 'value = find_att(listAtts, strAtt)'
 output = ...
     {...
     'solar_constant', 1360; ... %(W/m^2) DeWalle and Rango, Principles of Snow Hydrology
@@ -17,6 +18,7 @@ output = ...
     'latent_water', 334000; ... %(J/kg) 
     'density_water', 1000; ... %(kg/m^3) 
     'density_ice', 917; ... %(kg/m^3) DeWalle and Rango, Principles of Snow Hydrology
+    'density_ice_Bolch', 850; ... (kg/m^3) long-term density of combined snow and ice used by Tobias Bolch for geodetic measurement uncertainty
     'thermal_conduct_ice', 2.1; ... %(W/m/K; at 0 Deg C) Andy Aschwanden Glacier Thermodynamics notes
     'thermal_diffus_ice', 1.09*10^(-6); ... %(m^2/s; at 0 Deg C) Andy Aschwanden Glacier Thermodynamics notes
 %     'density_snow_new', 400; ... %(kg/m^3)
@@ -36,4 +38,5 @@ output = ...
     'snow_ramp_sn_day', 0; ... %(deg C; temperature in ramp fun. partitioning of snow at which all precip is snow)
     'snow_ramp_rn_mon', 5.2; ... %(deg C; temperature in ramp fun. partitioning of snow at which all precip is rain)
     'snow_ramp_sn_mon', -7.9; ... %(deg C; temperature in ramp fun. partitioning of snow at which all precip is snow)
+    'SCA_SWE_opt_depth', 0.05; ... %(meters; depth of SWE for grid cell to be classified as snow covered)
     };
