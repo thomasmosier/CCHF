@@ -1099,8 +1099,8 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                     daysBndsOut = [dataAll{indCurrType{ll}(1),2}{1}(:), dataAll{indCurrType{ll}(1),2}{2}(:)];
                     
                     daysUse = nanmean(daysBndsOut, 2);
-                    dateOut = days_2_date(daysUse, dateRef, 'gregorian');
-                    dateWrtOut = [{days_2_date(daysBndsOut(:,1), dateRef, 'gregorian')}, {days_2_date(daysBndsOut(:,2), dateRef, 'gregorian')}];
+                    dateOut = days_2_date_v2(daysUse, dateRef, 'gregorian');
+                    dateWrtOut = [{days_2_date_v2(daysBndsOut(:,1), dateRef, 'gregorian')}, {days_2_date_v2(daysBndsOut(:,2), dateRef, 'gregorian')}];
                 elseif dateTyp == 1
                     daysOut = dataAll{indCurrType{ll}(1),2};
                     
@@ -1480,7 +1480,7 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                 %EDIT X-TICK LABELS:
                 xMin = max(xMin, 1);
                 %Create dates for x-axis:
-                strDates = date2str(unique(days_2_date((xMin:xMax),dataAll{indCurrType{ll}(indCurr),1}{2}(1,:),'gregorian'),'rows'),'m/d/y');
+                strDates = date2str(unique(days_2_date_v2((xMin:xMax),dataAll{indCurrType{ll}(indCurr),1}{2}(1,:),'gregorian'),'rows'),'m/d/y');
                 %Set labels
                 if ischar(strDates)
                     nXTicks = 1;

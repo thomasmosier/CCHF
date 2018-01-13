@@ -63,7 +63,7 @@ else
     error('fileNm:unknownType', ['Input of class ' class(dateVec) ' has not been programmed for.']);
 end
 
-if numel(fileNm(:)) == 1
-    fileNm = char(fileNm);
-end
+% if numel(fileNm(:)) == 1
+%     fileNm = char(fileNm);
+% end
 
