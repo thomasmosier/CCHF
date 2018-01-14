@@ -63,7 +63,7 @@ nGage = 1;
 
                     
 %REQUIRED MODULE CHOICES (ONE FROM EACH CATEGORY):
-%'heat': 'simple', 'Pelli' (Pellicciotti version of ETI), 'Hock', 'LST', or 
+%'heat': 'STI' (simple temperature index), 'Pelli' (Pellicciotti version of ETI), 'Hock', 'LST', or 
     %'SETI'
 %'mass': 'step', 'cc', 'enbal', 'Liston'
 %'icmlt': 'ratio' (ratio of heat on snow and equivalent ice surface 
@@ -91,7 +91,7 @@ nGage = 1;
 %'glaciermove': 'Shea' (model will allow glacier sliding and 
     %calculate changes in ice thickness) or 'static' (glaciers held constant)
 moduleSet = { ...
-    'heat',  'simple'; ... %surface heat flux module representation
+    'heat',  'STI'; ... %surface heat flux module representation
     'mass', 'cc'; ... %snow energy and mass module representation
     'icmlt', 'ratio'; ... %ice melt module
     'runoff', 'bucket'; ... %runoff module representation

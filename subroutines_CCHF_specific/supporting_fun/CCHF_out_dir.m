@@ -68,6 +68,10 @@ if regexpbl(strModules, 'heat-simple') || regexpbl(strModules, 'energy-simple')
 	end
 end
 
+%Only keep names of first four modules:
+indUnd = regexpi(strModules,'_');
+strModules = strModules(1:indUnd(min(4,numel(indUnd)))-1);
+
 %Name of output subdirectory:
 dirCCHF = [sMeta.runType '_' ...
     num2str(sMeta.dateStart(1)) 'thru' num2str(sMeta.dateEnd(1)) ...

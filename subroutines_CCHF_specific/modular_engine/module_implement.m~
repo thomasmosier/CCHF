@@ -166,7 +166,7 @@ end
 %CRYOSPHERE HEAT:
 heatMod = find_att(sMeta.module, 'heat');
 
-if regexpbl(heatMod, 'SDI')
+if regexpbl(heatMod, {'simple', 'SDI'})
     if regexpbl(sMeta.mode,'parameter')
         coef = cat(1,coef, heat_simple_degree());
     else
@@ -190,7 +190,7 @@ elseif regexpbl(heatMod, {'LSD', 'LST'})
     else
         heat_LST_Mosier(sMeta)
     end
-elseif regexpbl(heatMod, {'simple','debris'},'and')
+elseif regexpbl(heatMod, 'SDDI')
     if regexpbl(sMeta.mode,'parameter')
         coef = cat(1,coef, heat_simple_debris());
     else
