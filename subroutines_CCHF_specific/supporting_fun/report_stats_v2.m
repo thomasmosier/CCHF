@@ -27,7 +27,13 @@ strScoreOut = cell(numel(cellStats),1);
 strScoreDisp = cell(numel(cellStats),1);
 
 blDisp = 1;
-blWrt = 1;
+
+if isfield(sMeta, 'wrtGridEval')
+    blWrt = sMeta.wrtGridEval;
+else
+    blWrt = 1;
+end
+
 if ~isempty(varargin)
     for ii = 1 : numel(varargin)
         if regexpbl(varargin{ii}, {'no','disp'}, 'and')
