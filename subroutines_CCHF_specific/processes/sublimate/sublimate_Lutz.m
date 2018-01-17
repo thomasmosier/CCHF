@@ -31,11 +31,11 @@ global sCryo
 
 if isempty(varargin(:))
 	varargout{1} = cell(0,6);
-%     varargout{1} = cat(1,varargout{1}, {'tmp_melt_offset', 0,   4,    1, 'heat_melt_threshold','cryo'}); %Units of depth melt
+    varargout{1} = cat(1,varargout{1}, {'sublimate_scl', 0,   2,    1, 'sublimate_Lutz','cryo'}); %Units of depth melt
         
     return
 else
-%     tmpOffset = find_att(varargin{1}.coef,'tmp_melt_offset'); 
+    scl = find_att(varargin{1}.coef,'sublimate_scl'); 
     sMeta = varargin{1};
 end
 
@@ -51,7 +51,7 @@ constant = 0.0015*10^(-3); %units = m/day
 
 
 %Table 1 (Lutz et al., 2016) 
-sCryo.snsb = constant*(time2sec(1,sMeta.dt,sMeta.dateCurr)/86400)*elevSubMag;
+sCryo.snsb = scl*constant*(time2sec(1,sMeta.dt,sMeta.dateCurr)/86400)*elevSubMag;
 
 sCryo.snsb(sCryo.snsb < 0) = 0;
 
