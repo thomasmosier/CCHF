@@ -177,7 +177,6 @@ sHydro.dlFdr = single(full(reshape(sum(sHydro.fdr.*sHydro.dl, 2), szDem)));
 sHydro.dlFdr(sHydro.dlFdr == 0) = nan;
 
 
-
 %%CALCULATE ASPECT:
 sHydro.aspectFdr = nan(szDem,'single'); %-1 is value assigned to flat surfaces
 
@@ -211,6 +210,10 @@ for ii = 1 : numel(rFrom)
         sHydro.aspectFdr(rFrom(ii), cFrom(ii)) = 225; %Southwest
     end
 end
+
+%Set all other values to -1 (flat). This typically occurs for sinks
+sHydro.aspectFdr(isnan(sHydro.aspectFdr)) = -1;
+
 %     sHydro.aspectFdr(rFrom(ii) - rTo(ii) ==  0 & cTo(ii) - cFrom(ii) ==  0) =  -1; %Flat
 %     sHydro.aspectFdr(rFrom(ii) - rTo(ii) ==  1 & cTo(ii) - cFrom(ii) ==  0) =   0; %North
 %     sHydro.aspectFdr(rFrom(ii) - rTo(ii) == -1 & cTo(ii) - cFrom(ii) ==  0) = 180; %South
