@@ -535,7 +535,7 @@ for ss = indStgStrt : nStage
         %Calculate coefficients for current generation:
         if ii ~= 1 && ~regexpbl(sOpt.type, 'uniform') %Don't optimize if uniform sampling used because all parameter sets pre-determined.
             coefFamily(ii,:,stagePrmInd{ss}) ...
-                = CCHF_next_gen(coefFamily(:,:,stagePrmInd{ss}), coefFitness(:,:), ii-1, prmBnds(stagePrmInd{ss},:), sOpt);
+                = coef_next_gen(coefFamily(:,:,stagePrmInd{ss}), coefFitness(:,:), ii-1, prmBnds(stagePrmInd{ss},:), sOpt);
         end
         
         %Array of current parameters:

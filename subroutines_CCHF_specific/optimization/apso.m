@@ -18,20 +18,16 @@
 % along with the Downscaling Package.  If not, see 
 % <http://www.gnu.org/licenses/>.
 
-function coefN = opt_hybrid(coef, fitScore, prmBnds, iter)
+function coefN = apso(coef, fitScore, prmBnds, iter)
 
 %SEE DISCUSSION AT END OF SCRIPT REGARDING PSO OPTIMIZATION.
 
-%Define persistent variable to track which optimization method used for
-%each iteration
-persistent optMethod vel lrnRt state
+persistent vel lrnRt state
 if iter == 1
-   optMethod = cell(0,1); 
    vel = zeros(size(squeeze(coef(1,:,:))));
    lrnRt = [2; 2];
    state = 1;
 end
-
 
 
 %Determine number of Monte Carlo runs (based on number of parameters)
@@ -49,110 +45,11 @@ if iter == 1
 end
 
 
-%Keep only current and past generation from inputs:
-coef = coef(1:iter,:,:); %[iteration, population member, parameter]
-fitScore = fitScore(1:iter,:);
-
-valMostFit = round2(min(fitScore,[],2),2);
-%Determine how many iterations the fitness score has been at the current
-%value:
-[~, indGenFit] = min(valMostFit);
-
-
 %Generate next group of coefficients:
 if iter <= nItCarlo %For first couple generations, use Monte Carlo
-    disp('Monte Carlo Sampling used to explore global parameter space.')
     coefN = Monte_Carlo(prmBnds, numel(fitScore(1,:)));
-    
-    optMethod{end+1} = 'montecarlo';
-    
-elseif iter < indGenFit + 5 || iter < nItCarlo + 5 %APSO optimization:
-    disp('This iteration was optimized with APSO algorithm.')
-    
+else %Regular PSO optimization:
     [coefN, vel, lrnRt, state] = apso_update(coef(1:iter,:,:), fitScore(1:iter,:), prmBnds, lrnRt, state, vel);
-    
-    optMethod{end+1} = 'pso';
-
-elseif sum(strcmpi(optMethod(iter-5:iter-1), 'linearsensitivity')) < 4
-    disp('This iteration was optimized with linear-sensitivity to explore local parameter space.')
-    
-    nPop = numel(fitScore(1,:));
-    [~, pLBest] = min(fitScore(iter,:));
-    
-    cnExp = 0.15;
-    
-    %Initialize next generation:
-    coefN = Monte_Carlo(prmBnds,numel(fitScore(1,:)));
-
-    if nPop >= 2*nParam
-        nRnds = floor(nPop/(2*nParam));
-        cntr = 0;
-        for jj = 1 : nRnds
-            for ii = 1 : nParam
-                cntr = cntr + 1;
-                
-                fDiv = cnExp*rand;
-                
-                coefN(cntr,:) = squeeze(coef(iter, pLBest,:));
-                if mod(jj,2) == 0
-                    coefN(cntr,ii) = coefN(cntr,ii) + fDiv*(prmBnds(ii,2)-coefN(cntr,ii));
-                else
-                    coefN(cntr,ii) = coefN(cntr,ii) - fDiv*(coefN(cntr,ii)-prmBnds(ii,1));
-                end
-            end
-        end
-    elseif nPop >= nParam
-        for ii = 1 : nPop
-            
-            prmCurr = mod(ii, nPrm);
-            if prmCurr == 0
-               prmCurr = nPrm; 
-            end
-            
-            fDiv = cnExp*rand;
-
-            coefN(ii,:) = squeeze(coef(iter, pLBest,:));
-            if rand > 0.5
-                coefN(ii,prmCurr) = coefN(ii,prmCurr) + fDiv*(prmBnds(prmCurr,2)-prmBnds(prmCurr,1));
-            else
-                coefN(ii,prmCurr) = coefN(ii,prmCurr) - fDiv*(prmBnds(prmCurr,2)-prmBnds(prmCurr,1));
-            end
-        end
-    else
-        [~, ord] = sort(rand(nPrm, 1));
-        
-        for ii = 1 : nPop
-            prmCurr = ord(ii);
-            
-            fDiv = cnExp*rand;
-
-            coefN(ii,:) = squeeze(coef(iter, pLBest,:));
-            if rand > 0.5
-                coefN(ii,prmCurr) = coefN(ii,prmCurr) + fDiv*(prmBnds(prmCurr,2)-prmBnds(prmCurr,1));
-            else
-                coefN(ii,prmCurr) = coefN(ii,prmCurr) - fDiv*(prmBnds(prmCurr,2)-prmBnds(prmCurr,1));
-            end
-        end
-    end
-    
-    %Fittest evolves in PSO manner:
-    [~, memLBest] = min(fitScore(iter,:));
-    [coefN(memLBest,:), vel(memLBest,:)] = pso_update(coef(1:iter,memLBest,:), fitScore(1:iter,memLBest), prmBnds, lrnRt(1), vel(memLBest,:));
-    
-    optMethod{end+1} = 'linearsensitivity';
-    
-else
-%elseif std(fitScore(iter,:)) < 0.3 && iter > 5 + nItCarlo && indGenFit + 7 < iter && ~any(strcmpi(optMethod(iter-3:iter-1), 'montecarlo')) %If fitness scores converge too much, add random diversity
-    disp('This iteration was optimized with Monte Carlo sampling to add diversity.')
-    %All except for fittest updated with Monte Carlo
-    coefN = Monte_Carlo(prmBnds,numel(fitScore(1,:)));
-    
-    %Fittest evolves in PSO manner:
-    [~, memLBest] = min(fitScore(iter,:));
-    [coefN(memLBest,:), vel(memLBest,:)] = pso_update(coef(1:iter,memLBest,:), fitScore(1:iter,memLBest), prmBnds, lrnRt(1), vel(memLBest,:));
-    
-    optMethod{end+1} = 'montecarlo';
-    
 end
 
 

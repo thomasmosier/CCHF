@@ -19,7 +19,7 @@
 % <http://www.gnu.org/licenses/>.
 
 
-function coef = CCHF_next_gen(coef, fitScore, ii, prmBnds, sOpt)
+function coef = coef_next_gen(coef, fitScore, ii, prmBnds, sOpt)
 
 %Indices of coef are: [iteration, member, parameter]
 
@@ -67,8 +67,10 @@ elseif regexpbl(sOpt.type,{'GA','genetic','evolution'}) && regexpbl(sOpt.type,{'
     coef = chrom_bin2dec(chromosomes, prmBnds, paramLeng); 
 elseif regexpbl(sOpt.type,{'hybrid'})
     coef = opt_hybrid(coef, fitScore, prmBnds, ii);
-elseif regexpbl(sOpt.type,{'PSO','particle swarm'})
-    coef = PSO(coef, fitScore, prmBnds, ii);
+elseif strcmpi(sOpt.type, 'pso') || regexpbl(sOpt.type, 'particle swarm')
+    coef = pso(coef, fitScore, prmBnds, ii);
+elseif strcmpi(sOpt.type, 'apso')
+    coef = apso(coef, fitScore, prmBnds, ii);
 elseif regexpbl(sOpt.type,{'Uniform','sampling'},'and')
     %Do nothing because all parameter sets have already been defined
 elseif regexpbl(sOpt.type,{'Monte','Carlo'},'and')

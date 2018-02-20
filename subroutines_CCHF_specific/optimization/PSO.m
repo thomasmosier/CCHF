@@ -18,56 +18,46 @@
 % along with the Downscaling Package.  If not, see 
 % <http://www.gnu.org/licenses/>.
 
-function coefN = PSO(coef, fitScore, prmBnds, iter)
+function coefN = pso(coef, fitScore, prmBnds, iter)
 
 %SEE DISCUSSION AT END OF SCRIPT REGARDING PSO OPTIMIZATION.
 
-%First 4 iterations or until fitness score greater than 0.3 are Monte 
-%Carlo, then implement particle swarm optimization
-nCarlo = 7;
-scalar = 0.4; %According to source pasted below, common value for scalar is 2
-    
+persistent vel
+if iter == 1
+   vel = zeros(size(squeeze(coef(1,:,:))));
+end
 
-%Keep only current and past generation from inputs:
-coef = coef(1:iter,:,:);
-fitScore = fitScore(1:iter,:);
+%Set learning rate:
+lrnRt = 0.5; %According to source pasted below, common value for scalar is 2
+   
+
+%Determine number of Monte Carlo runs (based on number of parameters)
+nParam = numel(prmBnds(:,1));
+
+nRCarlo = n_monte_carlo(nParam);
+
+nPop = numel(fitScore(1,:));
+nItCarlo = round(nRCarlo/nPop);
+
+if iter == 1
+   disp([char(10) 'Based on the number of parameters being optimized (' ...
+       num2str(nParam) '), optimization will proceed with ' ...
+       num2str(nItCarlo) ' iterations of Monte Carlo simulation prior to PSO.' char(10)]); 
+end
 
 
 %Generate next group of coefficients:
-if iter <= nCarlo %For first couple generations, use Monte Carlo
-    coefN = Monte_Carlo_SETI(prmBnds,numel(fitScore(1,:)));
+if iter <= nItCarlo %For first couple generations, use Monte Carlo
+    coefN = Monte_Carlo(prmBnds, numel(fitScore(1,:)));
 else %Regular PSO optimization:
-    %Identify best parameter set:
-    [~, iPBest] = min(fitScore,[],1);
-    [~, pLBest] = min(fitScore(iter,:));
-
-    sz = [numel(coef(1,:,1)), numel(coef(1,1,:))];
-    cfPBest = nan(sz);
-    for ii = 1 : sz(1)
-        cfPBest(ii,:) = coef(iPBest(ii),ii,:);
-    end
-    
-    %Calculate velocity for each parameter sets:
-    pv = scalar*((cfPBest - squeeze(coef(iter,:,:))) ...
-        + (ones(numel(fitScore(1,:)),1)*squeeze(coef(iter,pLBest,:))' - squeeze(coef(iter,:,:))));
-%     v = scalar*((cfPBest - squeeze(coef(iter,:,:))) ...
-%         + (ones(numel(fitScore(1,:)),1)*squeeze(coef(iter,iGBest,:))' - squeeze(coef(iter,:,:))));
-%     pv = v./(ones(numel(fitScore(1,:)),1)*(prmBnds(:,2)-prmBnds(:,1))');
-%     pv(pv < -1) = -1;
-%     pv(pv > 1) = 1;
-
-    %Generate new parameter sets:
-    coefN = squeeze(coef(iter,:,:)) + pv;
-    for ii = 1 : sz(2)
-       indNeg = find(coefN(:,ii) < prmBnds(ii,1));
-       indPos = find(coefN(:,ii) > prmBnds(ii,2));
-       if ~isempty(indNeg)
-           coefN(indNeg,ii) = prmBnds(ii,1);
-       end
-       if ~isempty(indPos)
-           coefN(indPos,ii) = prmBnds(ii,2);
-       end
-    end
+    [coefN, vel] = pso_update(coef(1:iter,:,:), fitScore(1:iter,:), prmBnds, lrnRt, vel);
+   
+    %Scale velocity "inertia":
+    %Method from Y.ShiandR.C.Eberhart,?Amodifiedparticleswarmoptimizer,?inProc. IEEE World Congr. Comput. Intell., 1998, pp. 69?73
+    omMin = 0.4;
+ 	omMax = 0.9;
+    om = omMax - (omMax - omMin)*min(iter/numel(coef(:,1,1)), 1);
+    vel = om*vel;
 end
 
 
