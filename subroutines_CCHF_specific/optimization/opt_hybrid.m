@@ -53,10 +53,11 @@ end
 coef = coef(1:iter,:,:); %[iteration, population member, parameter]
 fitScore = fitScore(1:iter,:);
 
-valMostFit = round2(min(fitScore,[],2),2);
-%Determine how many iterations the fitness score has been at the current
-%value:
-[~, indGenFit] = min(valMostFit);
+% valMostFit = round2(min(fitScore,[],2),2);
+% %Determine how many iterations the fitness score has been at the current
+% %value:
+% [~, indGenFit] = min(valMostFit);
+[~, indGenFit, ~] = min2d(fitScore);
 
 
 %Generate next group of coefficients:
@@ -66,12 +67,12 @@ if iter <= nItCarlo %For first couple generations, use Monte Carlo
     
     optMethod{end+1} = 'montecarlo';
     
-elseif iter < indGenFit + 5 || iter < nItCarlo + 5 %APSO optimization:
+elseif iter < indGenFit + 5 || iter < 2*nItCarlo %APSO optimization:
     disp('This iteration was optimized with APSO algorithm.')
     
     [coefN, vel, lrnRt, state] = apso_update(coef(1:iter,:,:), fitScore(1:iter,:), prmBnds, lrnRt, state, vel);
     
-    optMethod{end+1} = 'pso';
+    optMethod{end+1} = 'apso';
 
 elseif sum(strcmpi(optMethod(iter-5:iter-1), 'linearsensitivity')) < 4
     disp('This iteration was optimized with linear-sensitivity to explore local parameter space.')
@@ -137,7 +138,7 @@ elseif sum(strcmpi(optMethod(iter-5:iter-1), 'linearsensitivity')) < 4
     
     %Fittest evolves in PSO manner:
     [~, memLBest] = min(fitScore(iter,:));
-    [coefN(memLBest,:), vel(memLBest,:)] = pso_update(coef(1:iter,memLBest,:), fitScore(1:iter,memLBest), prmBnds, lrnRt(1), vel(memLBest,:));
+    [coefN(memLBest,:), vel(memLBest,:)] = pso_update(coef(1:iter,memLBest,:), fitScore(1:iter,memLBest), prmBnds, 1, vel(memLBest,:));
     
     optMethod{end+1} = 'linearsensitivity';
     
@@ -149,7 +150,7 @@ else
     
     %Fittest evolves in PSO manner:
     [~, memLBest] = min(fitScore(iter,:));
-    [coefN(memLBest,:), vel(memLBest,:)] = pso_update(coef(1:iter,memLBest,:), fitScore(1:iter,memLBest), prmBnds, lrnRt(1), vel(memLBest,:));
+    [coefN(memLBest,:), vel(memLBest,:)] = pso_update(coef(1:iter,memLBest,:), fitScore(1:iter,memLBest), prmBnds, 1, vel(memLBest,:));
     
     optMethod{end+1} = 'montecarlo';
     
