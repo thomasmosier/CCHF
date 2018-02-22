@@ -46,5 +46,8 @@ end
 %Solar Constant (W/m^2):
 I0 =  find_att(varargin{1}.global, 'solar_constant'); 
 
-sAtm.rsdt = raad_daily_Dewalle(latGrid, sHydro.aspectFdr, sHydro.slopeFdrA, 'slope', date, sMeta.dt, 'solar_constant', I0);
-sAtm.datersdt = date;
+[~, indUse, ~] = unique(date(:,2:end), 'rows');
+dateUse = date(indUse,:);
+
+sAtm.rsdt = solar_daily_Dewalle(sHydro.latGrid, sHydro.aspectFdr, sHydro.slopeFdrA, 'slope', dateUse, sMeta.dt, 'solar_constant', I0);
+sAtm.datersdt = dateUse;

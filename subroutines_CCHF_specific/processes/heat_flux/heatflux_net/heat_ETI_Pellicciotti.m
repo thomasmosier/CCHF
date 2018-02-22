@@ -52,17 +52,6 @@ if isempty(indRSDT)
 end
     
 
-
-%Shortwave melt energy:
-% if isfield(sLand,'rsdf') %Direct and diffuse shortwave:
-%     sCryo.hfrs  = (1-sCryo.snalb).*((1-sAtm.rstran).*squeeze(sLand.rsdf(indRSDT,:,:)) + ...
-%         sAtm.rstran.*squeeze(sAtm.rsdt(indRSDT,:,:)));
-%     sCryo.hfrsi = (1-sCryo.icalb).*((1-sAtm.rstran).*squeeze(sLand.rsdf(indRSDT,:,:)) + ...
-%         sAtm.rstran.*squeeze(sAtm.rsdt(indRSDT,:,:)));
-% else %Direct radiation only
-%     sCryo.hfrs  = (1-sCryo.snalb).*sAtm.rstran.*squeeze(sAtm.rsdt(indRSDT,:,:));
-%     sCryo.hfrsi = (1-sCryo.icalb).*sAtm.rstran.*squeeze(sAtm.rsdt(indRSDT,:,:));
-% end
 sCryo.hfrs  = 10^(srf)*(1-sCryo.snalb).*sAtm.rstran.*squeeze(sAtm.rsdt(indRSDT,:,:));
 sCryo.hfrsi = 10^(srf)*(1-sCryo.icalb).*sAtm.rstran.*squeeze(sAtm.rsdt(indRSDT,:,:));
 

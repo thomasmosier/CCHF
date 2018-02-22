@@ -41,8 +41,8 @@ cLate = densW*find_att(sMeta.global,'latent_water');  %Density water * Latent he
 %Initialize release field:
 sCryo.lhsnme = zeros(size(sCryo.snw),'single');
 % sCryo.lhicme  = zeros(size(sCryo.snw),'single');
-if ~isfield(sCryo, 'lwsnl')
-    sCryo.lwsnl = zeros(size(sCryo.snw),'single');
+if ~isfield(sCryo, 'snlw')
+    sCryo.snlw = zeros(size(sCryo.snw),'single');
 end
 
 
@@ -67,7 +67,7 @@ if ~isempty(indMelt)
     sCryo.lhpme(indMelt) = sCryo.lhpme(indMelt) - sCryo.lhsnme(indMelt);
     
     %Add melted snow to 'liquid' field and remove from 'solid':
-    sCryo.lwsnl(indMelt) = sCryo.lwsnl(indMelt) + sCryo.lhsnme(indMelt);
+    sCryo.snlw(indMelt) = sCryo.snlw(indMelt) + sCryo.lhsnme(indMelt);
     sCryo.snw(indMelt) = sCryo.snw(indMelt) - sCryo.lhsnme(indMelt);
 end
 
@@ -75,4 +75,4 @@ end
 %Set netagive solid snow values to 0:
 sCryo.snw(sCryo.snw < 0 ) = 0;
 %Set negative snow liquid values to 0:
-sCryo.lwsnl(sCryo.lwsnl < 0 ) = 0;
+sCryo.snlw(sCryo.snlw < 0 ) = 0;

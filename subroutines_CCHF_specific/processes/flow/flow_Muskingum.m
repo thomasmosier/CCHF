@@ -97,10 +97,10 @@ for ii = 1 : numel(sLand.mrro)
     
     if sum(sLand.totFdrF(:,indOrd(ii))) == 0
         %inflow = runoff at current cell:
-       inflow = sLand.mrro(indOrd(ii))/dt;
+       inflow = sLand.mrro(indOrd(ii)).sHydro.area(indOrd(ii))/dt;
     else
         %inflow = runoff @ current cell + outflow from upstream cell
-        inflow = sLand.mrro(indOrd(ii))/dt ...
+        inflow = sLand.mrro(indOrd(ii)).sHydro.area(indOrd(ii))/dt ...
             + sum(sLand.flow(sHydro.fdr(:,indOrd(ii)) == 1));
     end
     

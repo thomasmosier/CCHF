@@ -18,7 +18,7 @@
 % along with the Downscaling Package.  If not, see 
 % <http://www.gnu.org/licenses/>.
 
-function varargout = runoff_direct(sHydro, varargin)
+function varargout = runoff_direct(varargin)
 
 global sCryo sLand
 
@@ -62,5 +62,5 @@ end
 
 %Calculate total input water as snowmelt plus rain (will account for ET and direct runoff later):
 %**Rain added to sCryo.release in snow melt functions
-sLand.mrro = rf*sHydro.area.*(sLand.rnrf + sCryo.snlr + sCryo.iclr - sLand.et);
+sLand.mrro = rf*(sLand.rnrf + sCryo.snlr + sCryo.iclr - sLand.et);
     sLand.mrro(sLand.mrro < 0 ) = 0;

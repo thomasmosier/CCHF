@@ -51,8 +51,8 @@ cLate = densW*find_att(sMeta.global,'latent_water');  %Density water * Latent he
 %Initialize release field:
 sCryo.lhsnme = zeros(size(sCryo.snw),'single');
 
-if ~isfield(sCryo, 'lwsnl')
-    sCryo.lwsnl = zeros(size(sCryo.snw),'single');
+if ~isfield(sCryo, 'snlw')
+    sCryo.snlw = zeros(size(sCryo.snw),'single');
 end
 if ~isfield(sCryo, 'sncc')
     sCryo.sncc = zeros(size(sCryo.snw),'single');
@@ -105,13 +105,13 @@ sCryo.sncc(sCryo.sncc ~= 0 & sCryo.snw == 0) = 0;
 %
 %Refreeze liquid in snow; if snow contains liquid and there is
 %rain, release rain, otherwise hold in snowpack
-indLiqFrz = find(sCryo.sncc > 0 & sCryo.lwsnl > 0 & sCryo.snw > 0); %Indices where there is positive cold content and there is liquid water in snow
+indLiqFrz = find(sCryo.sncc > 0 & sCryo.snlw > 0 & sCryo.snw > 0); %Indices where there is positive cold content and there is liquid water in snow
 if ~isempty(indLiqFrz)
     %Indices where there's more liquid water than energy to freeze
-    indFrzMax = find(sCryo.lwsnl(indLiqFrz) > sCryo.sncc(indLiqFrz) );
+    indFrzMax = find(sCryo.snlw(indLiqFrz) > sCryo.sncc(indLiqFrz) );
     if ~isempty(indFrzMax)
         sCryo.snw(indLiqFrz(indFrzMax)) = sCryo.snw(indLiqFrz(indFrzMax)) + sCryo.sncc(indLiqFrz(indFrzMax));
-        sCryo.lwsnl(indLiqFrz(indFrzMax)) = sCryo.lwsnl(indLiqFrz(indFrzMax)) - sCryo.sncc(indLiqFrz(indFrzMax));
+        sCryo.snlw(indLiqFrz(indFrzMax)) = sCryo.snlw(indLiqFrz(indFrzMax)) - sCryo.sncc(indLiqFrz(indFrzMax));
         sCryo.sncc(indLiqFrz(indFrzMax)) = 0;
     end
     
@@ -122,9 +122,9 @@ if ~isempty(indLiqFrz)
         indFrzNMax = setdiff(indLiqFrz, indLiqFrz(indFrzMax));
     end
     if ~isempty(indFrzNMax)
-        sCryo.snw(indFrzNMax) = sCryo.snw(indFrzNMax) + sCryo.lwsnl(indFrzNMax);
-        sCryo.sncc(indFrzNMax) = sCryo.sncc(indFrzNMax) - sCryo.lwsnl(indFrzNMax);
-        sCryo.lwsnl(indFrzNMax) = 0;
+        sCryo.snw(indFrzNMax) = sCryo.snw(indFrzNMax) + sCryo.snlw(indFrzNMax);
+        sCryo.sncc(indFrzNMax) = sCryo.sncc(indFrzNMax) - sCryo.snlw(indFrzNMax);
+        sCryo.snlw(indFrzNMax) = 0;
     end
 end
 
@@ -166,7 +166,7 @@ if ~isempty(indMelt)
     sCryo.lhpme(indMelt) = sCryo.lhpme(indMelt) - sCryo.lhsnme(indMelt);
     
     %Add melted snow to 'release' field and remove from 'solid':
-    sCryo.lwsnl(indMelt) = sCryo.lwsnl(indMelt) + sCryo.lhsnme(indMelt);
+    sCryo.snlw(indMelt) = sCryo.snlw(indMelt) + sCryo.lhsnme(indMelt);
     sCryo.snw(indMelt) = sCryo.snw(indMelt) - sCryo.lhsnme(indMelt);
 end
 
@@ -177,7 +177,7 @@ sCryo.sncc(sCryo.sncc < 0) = 0;
 %Set netagive solid snow values to 0:
 sCryo.snw(sCryo.snw < 0 ) = 0;
 %Set negative snow liquid values to 0:
-sCryo.lwsnl(sCryo.lwsnl < 0 ) = 0;
+sCryo.snlw(sCryo.snlw < 0 ) = 0;
 
 
 %ADJUST SNOW TEMPERATURE BASED ON COLD-CONTENT
@@ -192,7 +192,7 @@ if isfield(sCryo,'tsn')
     %From def. of cold-content, T = (cc*rho_w*L)/(rho_s*c*SWE)
     sCryo.tsn(indSnow) = -10^(tsnPwr)...
         *(cLate*sCryo.sncc(indSnow)...
-        ./(cSensI*sCryo.snw(indSnow) + cSensW*sCryo.lwsnl(indSnow)));
+        ./(cSensI*sCryo.snw(indSnow) + cSensW*sCryo.snlw(indSnow)));
         %In the above, there shouldn't actually be any liquid water at
         %locations where cc is positive
 
@@ -234,11 +234,11 @@ if isfield(sCryo,'tsn')
     %Set netagive solid snow values to 0:
     sCryo.snw(sCryo.snw < 0 ) = 0;
     %Set negative snow liquid values to 0:
-    sCryo.lwsnl(sCryo.lwsnl < 0 ) = 0;
+    sCryo.snlw(sCryo.snlw < 0 ) = 0;
 
     sCryo.tsn(sCryo.tsn > 0) = 0;
     sCryo.tsn(sCryo.tsn < minTemp) = minTemp; 
-    sCryo.tsn(sCryo.lwsnl > 0.005*sCryo.snw) = 0;
+    sCryo.tsn(sCryo.snlw > 0.005*sCryo.snw) = 0;
     sCryo.tsn(sCryo.snw == 0) = nan; 
     
     %Set surface skin temperature equal to average internal temperature (i.e. isothermal assumption):

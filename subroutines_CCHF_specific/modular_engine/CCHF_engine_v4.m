@@ -441,7 +441,9 @@ for mm = 1 : nSites
                 coef = coefTemp;
             end
         else
-            module_implement(sHydro{mm}, sMeta);
+            CCHF_modules(sHydro{mm}, sMeta);
+            %Check conservation of energy and mass:
+%             CCHF_conservation(sMeta);
         end
 
 

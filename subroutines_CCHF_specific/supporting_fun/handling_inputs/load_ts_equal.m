@@ -85,7 +85,7 @@ if ~isempty(dateCurr) && ~all(isnan(dateCurr))
                             error('load_ts_equal:noPrePresent',['Precip ' ...
                                 varCurr ' alternative names have not been programmed for. Add in statement above.']);
                         end
-                    elseif regexpbl(varCurr, 'pr')
+                    elseif strcmpi(varCurr, 'pr')
                         if any(strcmpi(varInFile, 'pre'))
                             varRead = 'pre';
                         else
@@ -99,11 +99,33 @@ if ~isempty(dateCurr) && ~all(isnan(dateCurr))
                             error('load_ts_equal:noPrePresent',['Precip ' ...
                                 varCurr ' alternative names have not been programmed for. Add in statement above.']);
                         end
-                    elseif regexpbl(varCurr, 'tas')
+                    elseif strcmpi(varCurr, 'tas')
                         if any(strcmpi(varInFile, 'tmean'))
                             varRead = 'tmean';
                         elseif any(strcmpi(varInFile, 'tmp'))
                             varRead = 'tmp';
+                        else
+                            error('load_ts_equal:noPrePresent',['Temperature ' ...
+                                varCurr ' alternative names have not been programmed for. Add in statement above.']);
+                        end
+                    elseif strcmpi(varCurr, 'tasmax')
+                        if any(strcmpi(varInFile, 'tasmax'))
+                            varRead = 'tasmax';
+                        elseif any(strcmpi(varInFile, 'tmax'))
+                            varRead = 'tmax';
+                        elseif any(strcmpi(varInFile, 'tmx'))
+                            varRead = 'tmx';
+                        else
+                            error('load_ts_equal:noPrePresent',['Temperature ' ...
+                                varCurr ' alternative names have not been programmed for. Add in statement above.']);
+                        end
+                    elseif strcmpi(varCurr, 'tasmin')
+                        if any(strcmpi(varInFile, 'tasin'))
+                            varRead = 'tasmin';
+                        elseif any(strcmpi(varInFile, 'tmin'))
+                            varRead = 'tmin';
+                        elseif any(strcmpi(varInFile, 'tmn'))
+                            varRead = 'tmn';
                         else
                             error('load_ts_equal:noPrePresent',['Temperature ' ...
                                 varCurr ' alternative names have not been programmed for. Add in statement above.']);

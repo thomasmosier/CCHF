@@ -120,9 +120,9 @@ sLand.mrro(isnan(sLand.mrro)) = 0;
 
 if sMeta.indCurr == 1
     %Add runoff to flow for current time step:
-    sLand.flow(:) = (speye(size(sLand.totFdrR)) + sLand.totFdrR)'*double(reshape(sLand.mrro,[],1))/dt;
+    sLand.flow(:) = (speye(size(sLand.totFdrR)) + sLand.totFdrR)'*double(reshape(sLand.mrro.*sHydro.area,[],1))/dt;
 else
-    sLand.flow(:) = (speye(size(sLand.totFdrR)) + sLand.totFdrR)'*double(reshape(sLand.mrro,[],1))/dt ...
+    sLand.flow(:) = (speye(size(sLand.totFdrR)) + sLand.totFdrR)'*double(reshape(sLand.mrro.*sHydro.area,[],1))/dt ...
         + sLand.totFdrF'*double(sLand.flow(:));
 end
 %In FDR: row is cell of origin and col is downstream cell

@@ -32,10 +32,7 @@ function flow_Liston(sHydro, varargin)
 
 global sLand
 
-%!!!!
-%THIS FUNCTION IS CURRENTLY NOT WORKING (DOES NOT CONTAIN REFERENCE TO
-%sLand.mrro)!!!
-%!!!!
+disp('The flow_Liston function has not been checked to ensure it is working properly.');
 
 %If not variable input argument, return parameters and do not proceed.
 %Clark time lag:
@@ -69,7 +66,7 @@ end
 
 
 sLand.runSlow = exp(-dt./diag(sHydro.fdr*sLand.tlags,0)).*sLand.runSlowP(:) ...
-    + (1-exp(-dt./diag(sHydro.fdr*sLand.tlags,0))).*sLand.mrro(:); %Units of meters
+    + (1-exp(-dt./diag(sHydro.fdr*sLand.tlags,0))).*(sLand.mrro(:).*sHydro.area(:)); %Units of meters
 % ii = 1;
 % while ii*dtDays < 7 %exp(-4) = 0.00091
 %     sLand.runSlow = sLand.runSlow + exp(-ii*dtDays)*sLand.runSlowP;

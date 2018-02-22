@@ -18,7 +18,7 @@
 % along with the Downscaling Package.  If not, see 
 % <http://www.gnu.org/licenses/>.
 
-function [varargout] = module_implement(sHydro, sMeta)
+function [varargout] = CCHF_modules(sHydro, sMeta)
 global sLand sAtm
 
 
@@ -416,15 +416,15 @@ runoffMod = find_att(sMeta.module, 'runoff');
 
 if regexpbl(runoffMod, 'bucket') %Calculate groundwater holding and release (using bucket model)
     if regexpbl(sMeta.mode, 'parameter')
-        coef = cat(1,coef, runoff_bucket(sHydro));
+        coef = cat(1,coef, runoff_bucket());
     else
-        runoff_bucket(sHydro,sMeta);
+        runoff_bucket(sMeta);
     end
 elseif regexpbl(runoffMod, 'direct') %All water (precip and snowpack release) runs off immediately
     if regexpbl(sMeta.mode, 'parameter')
-        coef = cat(1,coef, runoff_direct(sHydro));
+        coef = cat(1,coef, runoff_direct());
     else
-        runoff_direct(sHydro,sMeta);
+        runoff_direct(sMeta);
     end
 else
     error('module_implement:runoff','No runoff process representation selected.');

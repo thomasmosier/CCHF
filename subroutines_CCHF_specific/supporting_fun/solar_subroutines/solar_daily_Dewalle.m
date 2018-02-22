@@ -1,4 +1,4 @@
-function raad = raad_daily_Dewalle(latGrid, aspect, slope, typeTopo, date, tRes, varargin)
+function raad = solar_daily_Dewalle(latGrid, aspect, slope, typeTopo, date, tRes, varargin)
 
 
 % %Example from pg. 401 of DeWalle and Rango:

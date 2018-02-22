@@ -27,7 +27,8 @@ global sAtm
 if isempty(varargin(:))
 	argout = cell(0,6);
 %     argout{1} = cat(1,argout{1}, {'lw_pwr', -2, 2, 0, 'heat_long_simple', 'cryo'});
-    argout = cat(1,argout, ['tsn',cell(1,5)]);
+
+    argout = cat(1,argout, ['tsn',cell(1,5)]); %This is a marker that snow temperature needs to be modelled. This is not a fitting parameter.
     return
 % else
 %     scaleOut = find_att(varargin{1}.coef,'lw_pwr_tsn'); 

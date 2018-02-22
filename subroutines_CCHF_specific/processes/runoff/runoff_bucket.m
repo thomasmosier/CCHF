@@ -18,7 +18,7 @@
 % along with the Downscaling Package.  If not, see 
 % <http://www.gnu.org/licenses/>.
 
-function varargout = runoff_bucket(sHydro, varargin)
+function varargout = runoff_bucket(varargin)
 
 
 %The processes of seperating between ground water, direct runoff, etc. are 
@@ -87,7 +87,9 @@ end
 
 
 %Calculate additions to soil moisture (rain, snowmelt, and icemelt):
-sLand.sm = sLand.sm + sLand.rnrf + sCryo.snlr + sCryo.iclr;
+sLand.smin = sLand.rnrf + sCryo.snlr + sCryo.iclr;
+
+sLand.sm = sLand.sm + sLand.smin;
 
 
 %%Account for evapotranspiration losses from soil moisture 
@@ -118,11 +120,12 @@ sLand.sm = sLand.sm - sLand.et;
 %First add excess runoff
 indExcess = find(sLand.sm > sLand.smc);
 if ~isempty(indExcess)
-   sLand.mrro(indExcess) = sHydro.area(indExcess).*(sLand.sm(indExcess) - sLand.smc(indExcess));
+   sLand.mrro(indExcess) = sLand.sm(indExcess) - sLand.smc(indExcess);
    sLand.sm(indExcess) = sLand.smc(indExcess);
 end
 
 %Second, add runoff from drain rate
-sLand.mrro = sLand.mrro + drain*sHydro.area.*sLand.sm;
+sLand.smout = drain*sLand.sm;
+sLand.mrro = sLand.mrro + sLand.smout;
     sLand.mrro(sLand.mrro < 0 ) = 0;
 sLand.sm = (1 - drain)*sLand.sm;
