@@ -14,7 +14,8 @@ global sCryo sAtm
 
 if isempty(varargin(:))
     varargout{1} = cell(0,6);
-    varargout{1} = cat(1,varargout{1}, {    'watt_per_deg',   0, 60, 42.35, 'heat_simple_degree','cryo'});
+    varargout{1} = cat(1,varargout{1}, {'watt_per_deg',  0,  60, 42.35, 'heat_simple_degree','cryo'});
+    varargout{1} = cat(1,varargout{1}, {  'tas_offset',  0,   4,     1, 'heat_simple_degree','cryo'}); %Units of depth melt
     
     if isfield(sCryo, 'icedbr')
         varargout{1} = cat(1,varargout{1}, {    'watt_per_deg_debris',   0, 60, 20, 'heat_simple_degree','cryo'});
@@ -22,7 +23,7 @@ if isempty(varargin(:))
     return
 else
     wattperdegS = find_att(varargin{1}.coef,'watt_per_deg'); 
-    
+    tasOffset = find_att(varargin{1}.coef, 'tas_offset');
     if isfield(sCryo, 'icedbr')
         wattperdegDeb = find_att(varargin{1}.coef,'watt_per_deg_debris'); 
     end
@@ -33,11 +34,11 @@ end
 % %Units of J-hr-m^{-2}-s^{-1}
 
 %Calculate equivalent of 'heatflux' using simple degree index model
-sCryo.hfnet = wattperdegS*squeeze(sAtm.tas(sAtm.indtas,:,:)); %units to Watts per m^2
+sCryo.hfnet = wattperdegS*(squeeze(sAtm.tas(sAtm.indtas,:,:)) - tasOffset); %units to Watts per m^2
 
 %Heat flux for ice
 if isfield(sCryo, 'icedbr') %If debris cover information available
-    sCryo.hfneti = wattperdegDeb*squeeze(sAtm.tas(sAtm.indtas,:,:)); 
+    sCryo.hfneti = wattperdegDeb*(squeeze(sAtm.tas(sAtm.indtas,:,:)) - tasOffset); 
 
     if ~isfield(sCryo, 'indicecln')
         debThresh = find_att(varargin{1}.global,'debris_threshold');

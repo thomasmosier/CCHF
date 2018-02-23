@@ -21,15 +21,15 @@
 function varargout = mass_step_tas(varargin)
 
     
-global sCryo sAtm
+global sCryo
 
 if isempty(varargin(:))
 	varargout{1} = cell(0,6);
-    varargout{1} = cat(1,varargout{1}, {'tmp_melt_offset', 0,   4,    1, 'heat_melt_threshold','cryo'}); %Units of depth melt
+%     varargout{1} = cat(1,varargout{1}, {'tmp_melt_offset', 0,   4,    1, 'heat_melt_threshold','cryo'}); %Units of depth melt
         
     return
 else
-    tmpOffset = find_att(varargin{1}.coef,'tmp_melt_offset'); 
+%     tmpOffset = find_att(varargin{1}.coef,'tmp_melt_offset'); 
     sMeta = varargin{1};
 end
 
@@ -50,8 +50,6 @@ end
 %Calculate melt potential using simple degree indec formulation (units of m): 
 sCryo.lhpme = time2sec(1,sMeta.dt,sMeta.dateCurr)*sCryo.hfnet/cLate;
 % %Set melt potential to zero at cells where temperature less than threshold:
-% sCryo.lhpme(squeeze(sAtm.tas(sAtm.indtas,:,:)) <= tMelt ) = 0;
-sCryo.lhpme(squeeze(sAtm.tas(sAtm.indtas,:,:)) <= tmpOffset ) = 0;
 sCryo.lhpme(sCryo.lhpme < 0 ) = 0;
 
 
