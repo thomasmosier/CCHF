@@ -52,9 +52,9 @@ fitTest = sOpt.fitTest; %Needed for parfor.
 stagePrmNm = cell(nStage,1);
 stageBestPrm = cell(nStage,1); %Values of calibrated parameters from each stage
 stagePrmInd = cell(nStage,1);
-stageDInd = cell(nStage,1);
-stageNInd = cell(nStage,1);
-stagePInd = cell(nStage,1);
+stageDInd = cell(nStage,1); %Indices of all parameters to be calibrated in future stages
+stageNInd = cell(nStage,1); %Indices of all parameters not used during current calibration stage
+stagePInd = cell(nStage,1); %Indices of all parameters calibrated in previous stage (cumulative)
 stageObsStruc = cell(nStage,1);
 
 disp(['Calibration is initiating using the ' char(39) sOpt.type ...
@@ -226,6 +226,33 @@ else %Calibration conducted in multiple stages
 end
 
 
+%Edit parameter options if any parameters are constant
+indCfConst = [];
+valCfConst = [];
+for ii = 1 : numel(sMeta.coef(:,1))
+    if sMeta.coef{ii,2} == sMeta.coef{ii,3} && sMeta.coef{ii,2} == sMeta.coef{ii,4}
+        indCfConst(end+1) = ii;
+        valCfConst(end+1) = sMeta.coef{ii,2};
+    end
+end
+
+%Format constant parameters for use in stage-indice format (and remove from
+%arrays of indices to be calibrated)
+stageCInd = cell(nStage, 1);
+valCInd   = cell(nStage, 1);
+if ~isempty(indCfConst)
+    for ii = 1 : nStage
+        stageCInd{ii} = indCfConst;
+        valCInd{ii}   = valCfConst;
+        
+        stagePrmInd{ii} = setdiff(stagePrmInd{ii}, stageCInd{ii}); 
+        stageDInd{ii}   = setdiff(  stageDInd{ii}, stageCInd{ii}); %Indices of all parameters to be calibrated in future stages
+        stageNInd{ii}   = union(    stageNInd{ii}, stageCInd{ii}); %Indices of all parameters not used during current calibration stage
+        stagePInd{ii}   = setdiff(  stagePInd{ii}, stageCInd{ii}); %Indices of all parameters calibrated in previous stage (cumulative)
+    end
+end
+
+
 
 %%ALLOW OPTION TO RESUME PREVIOUSLY INTERUPPTED CALIBRATION
 %Requires loading previously tested parameter sets from files
@@ -366,7 +393,7 @@ for ss = 1 : nStage
    checkInd = checkInd + numel(stagePrmInd{ss});
 end
 clear ss
-if checkInd < numel(sMeta.coef(:,1))
+if checkInd + numel(indCfConst) ~= numel(sMeta.coef(:,1))
    error('CCHF_calibrate:nIndWrong',[num2str(numel(sMeta.coef(:,1))) ...
        ' variables are present but only ' num2str(checkInd) ...
        ' have been located in the multi-stage calibration algorithm.']); 
@@ -490,7 +517,7 @@ for ss = indStgStrt : nStage
     end
     
     if ~regexpbl(sOpt.type, 'uniform') && (blFresh == 1 || (blFresh == 0 && ss == indStgStrt) )
-        %Set parameters not being calibrated this stage or previous stages to default values:
+        %Set parameters being calibrated in future stages to default values:
         if ~isempty(stageDInd{ss})
             for ll = 1 : nGen
                 for mm = 1 : nPop
@@ -511,6 +538,17 @@ for ss = indStgStrt : nStage
             end
             clear ll
         end
+        
+        %Set parameters that are assigned constant values:
+        if ~isempty(stageCInd{ss})
+            for ll = 1 : nGen
+                for mm = 1 : nPop
+                    coefFamily(ll, mm, stageCInd{ss}) = valCInd{ss};
+                end
+                clear mm
+            end
+            clear ll
+        end
     end
     
     %Determine iterations after which early stagnation will be allowed:
@@ -525,9 +563,8 @@ for ss = indStgStrt : nStage
         genMinStag = round(800/nPop + 3);
     end
     
-    
-    
-    %Loop over generations
+
+    %LOOP OVER GENERATIONS OF CALIBRATION
     valMostFit = nan(nGen,1);
     maxGen = 0;
     

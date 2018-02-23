@@ -30,9 +30,25 @@ rEarth =  6371000;
 
 numDEM = numel(sHydro.dem);
 
+if isfield(sHydro, 'lon')
+    varLon = 'lon';
+elseif isfield(sHydro, 'longitude')
+    varLon = 'longitude';
+else
+    error('watershed:uknownlongvariable','longitude variable not found.');
+end
 
+if isfield(sHydro, 'lat')
+    varLat = 'lat';
+elseif isfield(sHydro, 'latitude')
+    varLat = 'latitude';
+else
+    error('watershed:uknownlongvariable','longitude variable not found.');
+end
+    
+    
 %%FIND ACCUMULATED UPSTREAM AREA, FLOW-DIRECTION, AND SLOPE:
-[X, Y] = meshgrid(sHydro.lon,sHydro.lat);
+[X, Y] = meshgrid(sHydro.(varLon), sHydro.(varLat));
 %Change NaN values in DEM temporarily to very high values:
 % nanVal = 9999999;
 % sHydro.dem(isnan(sHydro.dem)) = nanVal;
@@ -169,7 +185,7 @@ end
 %and sHydro.slope:
 
 %A few functions use a grid of latitudes:
-[X, sHydro.latGrid] = meshgrid(sHydro.lon,sHydro.lat);
+[X, sHydro.latGrid] = meshgrid(sHydro.(varLon),sHydro.(varLat));
 sHydro.dl = haversine_neighbors(X,sHydro.latGrid, rEarth,'sparse');
 
 %Make field that is distance along flowpath:
@@ -241,4 +257,4 @@ sHydro.aspectFdr(isnan(sHydro.aspectFdr)) = -1;
 
 
 %%CALCULATE AREA:
-sHydro.area = area_geodata(sHydro.lon,sHydro.lat);
+sHydro.area = area_geodata(sHydro.(varLon),sHydro.(varLat));

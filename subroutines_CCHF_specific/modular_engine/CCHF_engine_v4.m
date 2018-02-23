@@ -427,14 +427,14 @@ for mm = 1 : nSites
 
     %%IMPLEMENT MODULES:
         if regexpbl(sMeta.mode,'parameter')
-            coefTemp = cat(1,coef, module_implement(sHydro{mm}, sMeta));
+            coefTemp = cat(1,coef, CCHF_modules(sHydro{mm}, sMeta));
             %In case there are coefficients with dependencies, need to
             %iterate coefficient search.
             %Currently the only case of this is snowpack temperature, which is
             %dealt with here: 
             if regexpbl(coefTemp(:,1), 'tsn')
                 sCryo.tsn = nan(size(sHydro{mm}.dem)); %This line is necessary to access some snow temperature dependent fitting parameters
-                coef = cat(1,coef, module_implement(sHydro{mm}, sMeta));
+                coef = cat(1,coef, CCHF_modules(sHydro{mm}, sMeta));
                 indRem = strcmpi(coef(:,1),'tsn');
                 coef(indRem,:) = []; 
             else
