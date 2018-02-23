@@ -18,7 +18,7 @@
 % along with the Downscaling Package.  If not, see 
 % <http://www.gnu.org/licenses/>.
 
-function varargout = mass_step_tas(varargin)
+function varargout = mass_step(varargin)
 
     
 global sCryo
