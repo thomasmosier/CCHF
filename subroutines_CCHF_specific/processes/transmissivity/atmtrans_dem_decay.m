@@ -18,7 +18,7 @@
 % along with the Downscaling Package.  If not, see 
 % <http://www.gnu.org/licenses/>.
 
-function varargout = atm_transmit_dem_exp_decay(sHydro,varargin)
+function varargout = atmtrans_dem_decay(sHydro,varargin)
 
 %This is a simple exponential decay function with a similar, but simplified
 %form relative to Coops et al. (2000).
@@ -34,14 +34,16 @@ global sAtm
 %VERSION WITHOUT FITTING PARAMETERS:
 if isempty(varargin(:))
 	varargout{1} = cell(0,6);
-    varargout{1} = cat(1,varargout{1}, {'trans_dem',   0, 4, 1, 'atm_tansmit_exp_decay','cryo'});
-    varargout{1} = cat(1,varargout{1}, {'trans_scl',   0, 2, 1, 'atm_tansmit_exp_decay','cryo'});
-    varargout{1} = cat(1,varargout{1}, {'trans_pwr',   0, 4, 1.5, 'atm_tansmit_exp_decay','cryo'});
+    varargout{1} = cat(1,varargout{1}, {'trans_clear_intercept',   0, 1, 0.71, 'atm_tansmit_dem_decay','cryo'});
+    varargout{1} = cat(1,varargout{1}, {'trans_clear_dem',   0, 0.08, 0.023, 'atm_tansmit_dem_decay','cryo'});
+    varargout{1} = cat(1,varargout{1}, {'trans_decay_rate',   1, 7, 3.4, 'atm_tansmit_dem_decay','cryo'});
+    varargout{1} = cat(1,varargout{1}, {'trans_decay_power',   1, 4, 1.6, 'atm_tansmit_dem_decay','cryo'});
     return
 else
-    demFact = find_att(varargin{1}.coef,'trans_dem'); 
-    scl = find_att(varargin{1}.coef,'trans_scl'); 
-    pwr = find_att(varargin{1}.coef,'trans_pwr'); 
+    a = find_att(varargin{1}.coef,'trans_clear_intercept'); 
+    b = find_att(varargin{1}.coef,'trans_clear_dem'); 
+    c = find_att(varargin{1}.coef,'trans_decay_rate'); 
+    d = find_att(varargin{1}.coef,'trans_decay_power'); 
 end
 
 
@@ -52,10 +54,5 @@ else
     error('atm_transmit_Coops:tasMaxMin','tasmax and tasmin are not present, but are needed for present function.');
 end
 
-tClear = (0.65+0.001*demFact*sHydro.dem);
-% tClear(tClear > 1) = 1;
-
-sAtm.rstran = tClear.*( 1 - exp(-scl*sAtm.tasrng.^pwr) );
-
-sAtm.rstran(sAtm.rstran > 1) = 1;
+sAtm.rstran = transmissivity_dem_decay(sAtm.tasrng, sHydro.dem, a, b, c, d);
 

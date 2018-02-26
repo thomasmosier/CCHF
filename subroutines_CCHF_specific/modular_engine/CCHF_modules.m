@@ -130,31 +130,31 @@ end
 
 %TRANSMISSIVITY (not used in simple degree index):
 if ~regexpbl(find_att(sMeta.module,'heat', 'no_warning'), {'simple', 'SDI'})
-    transMod = find_att(sMeta.module,'toa');
+    transMod = find_att(sMeta.module,'atmtrans');
     
     if regexpbl(transMod, 'DeWalle')
         if regexpbl(sMeta.mode,'parameter')
-            coef = cat(1,coef, atm_transmit_DeWalle());
+            coef = cat(1,coef, atmtrans_DeWalle());
         else
-            atm_transmit_DeWalle(sMeta);
+            atmtrans_DeWalle(sMeta);
         end
     elseif regexpbl(transMod, 'Coops')
         if regexpbl(sMeta.mode,'parameter')
-            coef = cat(1,coef, atm_transmit_Coops(sHydro));
+            coef = cat(1,coef, atmtrans_Coops(sHydro));
         else
-            atm_transmit_Coops(sHydro,sMeta);
+            atmtrans_Coops(sHydro,sMeta);
         end
     elseif regexpbl(transMod, 'dem_exp_decay')
         if regexpbl(sMeta.mode,'parameter')
-            coef = cat(1,coef, atm_transmit_dem_exp_decay(sHydro));
+            coef = cat(1,coef, atmtrans_dem_decay(sHydro));
         else
-            atm_transmit_dem_exp_decay(sHydro,sMeta);
+            atmtrans_dem_decay(sHydro,sMeta);
         end
         elseif regexpbl(transMod, 'Gauss')
             if regexpbl(sMeta.mode,'parameter')
-                coef = cat(1,coef, atm_transmit_Gauss(sHydro));
+                coef = cat(1,coef, atmtrans_Gauss(sHydro));
             else
-                atm_transmit_Gauss(sHydro,sMeta);
+                atmtrans_Gauss(sHydro,sMeta);
             end
     else
         error('module_implement:transmissivity','No atmospheric transmissivitity process representation was selected.');

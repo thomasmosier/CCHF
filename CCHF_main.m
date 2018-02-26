@@ -92,18 +92,18 @@ nGage = 1;
     %calculate changes in ice thickness) or 'static' (glaciers held constant)
 moduleSet = { ...
     'heat',  'STI'; ... %surface heat flux module representation
-    'snowpack', 'cc'; ... %snow energy and mass module representation
+    'snmass', 'cc'; ... %snow energy and mass module representation
     'icmlt', 'ratio'; ... %ice melt module
     'runoff', 'bucket'; ... %runoff module representation
     'toa', 'DeWalle'; ... %top-of-atmosphere radiation module representation
-    'trans', 'dem_exp_decay'; ... %atmospheric transmissivity module representation
+    'atmtrans', 'dem_exp_decay'; ... %atmospheric transmissivity module representation
     'albedo', 'Pelli'; ... %albedo module representation
     'glacier0', 'Shea'; ... %glacier water equivalent at time 0
     'pet', 'Hammon'; ... %potential evapotranspiration module representation
     'timelag', 'Johnstone'; ... %timelag (of flow through each grid cell) module representation
     'flow', 'lumped'; ... %flow routing module
     'density', 'Liston'; ... %densification of snow (does not participate in firn to ice processes)
-    'snlq', 'percent'; ... %snow holding capacity
+    'sndrain', 'percent'; ... %snow holding capacity
     'sca', 'max'; ...
     'sublimate', 'Lutz'; ...
     'firn', 'static'; ... %firn compaction
