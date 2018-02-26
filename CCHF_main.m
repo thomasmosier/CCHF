@@ -92,7 +92,7 @@ nGage = 1;
     %calculate changes in ice thickness) or 'static' (glaciers held constant)
 moduleSet = { ...
     'heat',  'STI'; ... %surface heat flux module representation
-    'mass', 'cc'; ... %snow energy and mass module representation
+    'snowpack', 'cc'; ... %snow energy and mass module representation
     'icmlt', 'ratio'; ... %ice melt module
     'runoff', 'bucket'; ... %runoff module representation
     'toa', 'DeWalle'; ... %top-of-atmosphere radiation module representation
@@ -115,13 +115,14 @@ moduleSet = { ...
 blDynamicGlaciers = 0; %0 = static glaciers, 1 = dynamic (use firn/glacier processes selected in module set) 
 
 %These settings only used in calibration (can to left alone for validation)
-optType = 'hybrid';  %optimization method: 
+optType = 'apso';  %optimization method: 
                         %'GA_binary' (Genetic Algorithm using binary chromosomes), 
                         %'GA_real' (genetic algorithm using real numbers), 
                         %'monte_carlo', 
                         %'uniform_sampling', 
                         %'PSO' (Particle Swarm optimization), or 
                         %'hybrid' (combination of PSO, Monte Carlo, and linear sensitivity)
+                        %'apso' (Adaptive PSO)
 fitType = 'kge_Parajka_mbe'; %fitness score options: 
                     %'KGE' (Kling-Gupta Efficiency), 
                     %'NSE' (Nash-Sutcliffe Efficiency), 

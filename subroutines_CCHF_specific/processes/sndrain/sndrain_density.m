@@ -18,7 +18,7 @@
 % along with the Downscaling Package.  If not, see 
 % <http://www.gnu.org/licenses/>.
 
-function varargout = snlq_percent(varargin)
+function varargout = sndrain_density(varargin)
 
 %holdCap = decimal between 0 and 1
 
@@ -28,29 +28,35 @@ global sCryo
 %WITHOUT HOLDING CAPACITY
 if isempty(varargin(:))
 	varargout{1} = cell(0,6);
-    varargout{1} = cat(1,varargout{1}, {'sn_hold', 0,   .1,    0.077, 'snlq_percent','cryo'}); %Units of depth melt
+    varargout{1} = cat(1,varargout{1}, {'sn_hold_density', 0,   900,    550, 'sndrain_density','cryo'}); %Units of depth melt
     return
 else
-    holdCap = find_att(varargin{1}.coef,'sn_hold','no_warning'); 
-%     if isempty(holdCap)
-%        holdCap = 0; 
-%     end
-%     a = 0.03;  
+    holdRho = find_att(varargin{1}.coef,'sn_hold_density','no_warning'); 
 end
 
+if ~isfield(sCryo,'rhosn')
+   error('snlq_density:noRhoField',['This snow liquid holding '...
+       'cpacity function requires the field ' char(39) 'sCryo.rhosn' ...
+       char(39) ', which is created in the densification module.']); 
+end
 
 %Initialize melt release array:
-sCryo.snlr = zeros(size(sCryo.snw),'single');
+if ~isfield(sCryo,'snlr')
+    sCryo.snlr = zeros(size(sCryo.snw), 'single');
+else
+    sCryo.snlr(:) = 0; 
+end
 
 %%Release liquid in excess of snow holding capacity:
 %Find holding capacity (percentage of solid snow):
-sCryo.snlh = holdCap*sCryo.snw;
-%Find indices where it's exceeded:
-indRelease = find(sCryo.lwsnl > sCryo.snlh);
+indRelease = find(sCryo.rhosn > holdRho);
+
 if ~isempty(indRelease)
+    %Fraction of water to drain (based on density):
+    frac = 
     %Amount of release equals exceedance of liquid water holding capacity:
-    sCryo.snlr(indRelease) = sCryo.snlw(indRelease) - sCryo.snlh(indRelease);
+    sCryo.snlr(indRelease) = frac.*sCryo.lwsnl(indRelease);
     sCryo.sndwe(indRelease) = sCryo.sndwe(indRelease) - sCryo.snlr(indRelease);
     %Remove drained water from snowpack liquid water content:
-    sCryo.lwsnl(indRelease) = sCryo.snlh(indRelease);
+    sCryo.lwsnl(indRelease) = (1 - frac).*sCryo.lwsnl(indRelease);
 end

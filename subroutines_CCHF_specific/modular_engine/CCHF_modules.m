@@ -247,31 +247,31 @@ end
 
 
 %SNOW ACCUMULATION AND MELT:
-massMod = find_att(sMeta.module,'mass');
+massMod = find_att(sMeta.module, 'snmass');
 
 if regexpbl(massMod, 'step') %Calculate snow and glacier melt using heat threshold
     if regexpbl(sMeta.mode,'parameter')
-        coef = cat(1,coef, mass_step_tas());
+        coef = cat(1,coef, snmass_step());
     else
-        mass_step_tas(sMeta);
+        snmass_step(sMeta);
     end
 elseif regexpbl(massMod, 'cc')
     if regexpbl(sMeta.mode,'parameter') %Calculate snow and melt using CC
-        coef = cat(1,coef, mass_cc_v2());
+        coef = cat(1,coef, snmass_cc_v2());
     else
-        mass_cc_v2(sMeta);
+        snmass_cc_v2(sMeta);
     end
 elseif regexpbl(massMod, {'enbal', 'energy'}) %Conduction raises and lowers snow temperature
     if regexpbl(sMeta.mode,'parameter')
-        coef = cat(1,coef, mass_enbal());
+        coef = cat(1,coef, snmass_enbal());
     else
-        mass_enbal(sMeta);
+        snmass_enbal(sMeta);
     end
 elseif regexpbl(massMod, 'Liston') %Conduction raises and lowers snow temperature (no fitting parameters)
     if regexpbl(sMeta.mode,'parameter')
-        coef = cat(1,coef, mass_Liston());
+        coef = cat(1,coef, snmass_Liston());
     else
-        mass_Liston(sMeta);
+        snmass_Liston(sMeta);
     end
 else
     error('module_implement:cryo','No cryosphere energy and mass process representation selected.');
@@ -299,25 +299,25 @@ end
 
 
 %SNOW LIQUID WATER HOLDING CAPACITY:
-liqMod = find_att(sMeta.module,'snlq', 'no_warning');
+liqMod = find_att(sMeta.module,'sndrain', 'no_warning');
 
 if regexpbl(liqMod, 'percent') %Release melt water greater than percent holding capacity:
     if regexpbl(sMeta.mode,'parameter')
-        coef = cat(1,coef, snlq_percent());
+        coef = cat(1,coef, sndrain_percent());
     else
-        snlq_percent(sMeta);
+        sndrain_percent(sMeta);
     end
 elseif regexpbl(liqMod, 'density') %Release melt water greater than density threshold:
     if regexpbl(sMeta.mode,'parameter')
-        coef = cat(1,coef, snlq_density());
+        coef = cat(1,coef, sndrain_density());
     else
-        snlq_density(sMeta);
+        sndrain_density(sMeta);
     end
 elseif isempty(liqMod) || regexpbl(liqMod, 'zero') %Release all melt water:
     if regexpbl(sMeta.mode,'parameter')
-        coef = cat(1,coef, snlq_zero());
+        coef = cat(1,coef, sndrain_zero());
     else
-        snlq_zero(sMeta);
+        sndrain_zero(sMeta);
     end
 else
     error('module_implement:unknwownLiqFun',['The liquid holding capacity option is ' char(39) ...

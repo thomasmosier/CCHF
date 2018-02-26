@@ -18,7 +18,7 @@
 % along with the Downscaling Package.  If not, see 
 % <http://www.gnu.org/licenses/>.
 
-function varargout = mass_Liston(varargin)
+function varargout = snmass_enbal(varargin)
 
     
 global sCryo
@@ -26,25 +26,23 @@ global sCryo
 
 if isempty(varargin(:))
 	varargout{1} = cell(0,6);
-%     varargout{1} = cat(1,varargout{1}, {'gen_melt_pwr' , -2, 2, 0, 'mass_Liston','cryo'});
-%     varargout{1} = cat(1,varargout{1}, {'ice_melt_pwr' , -2, 2, -0.2, 'mass_Liston','cryo'});  %Units of mm/hr/Deg C
-%     varargout{1} = cat(1,varargout{1}, {'tsn_pwr', -2,   2,    0, 'mass_Liston','cryo'});
+    varargout{1} = cat(1,varargout{1}, {'gen_melt_pwr', -2, 2, 0, 'snmass_enbal','cryo'});  %Units of mm/hr/Deg C
+%     varargout{1} = cat(1,varargout{1}, {'tsn_pwr', -2,   2,    0, 'melt_enbal','cryo'});
     
-%     if isfield(sCryo,'icdbr')
-%         varargout{1} = cat(1,varargout{1}, {'debris_scalar' , 0, 2, 1, 'mass_Liston','cryo'});  %Unitless
-%     end
+    if isfield(sCryo,'icdbr')
+        varargout{1} = cat(1,varargout{1}, {'debris_scalar', 0, 2, 1, 'snmass_enbal','cryo'});  %Unitless
+    end
     
     return
 else
-%     dgi = find_att(varargin{1}.coef,'gen_melt_pwr');  %Units of mm/hr/Deg C
-%     dii = find_att(varargin{1}.coef,'ice_melt_pwr');  %Units of mm/hr/Deg C
+    dgi = find_att(varargin{1}.coef,'gen_melt_pwr');  %Units of mm/hr/Deg C
+    
+    if isfield(sCryo,'icdbr')
+        cDbr = find_att(varargin{1}.coef, 'debris_scalar');  %Unitless
+    end
     
 %     if isfield(sCryo,'tsn')
 %         tsnPwr = find_att(varargin{1}.coef,'tsn_pwr');
-%     end
-    
-%     if isfield(sCryo,'icdbr')
-%         debScl = find_att(varargin{1}.coef,'debris_scalar');  %Unitless
 %     end
     
     sMeta = varargin{1};
@@ -71,24 +69,69 @@ end
 % end
 
 %Calculate melt potential using simple degree indec formulation (units of m): 
-sCryo.lhpme = time2sec(1,sMeta.dt,sMeta.dateCurr)*sCryo.hfnet/cLate;
-sCryo.lhpme(sCryo.lhpme < 0) = 0;
+sCryo.lhpme = 10^(dgi)*time2sec(1,sMeta.dt,sMeta.dateCurr)*sCryo.hfnet/cLate;
 
-sCryo.lhsnme = sCryo.lhpme;
-sCryo.lhsnme = min(sCryo.lhsnme, sCryo.snw);
 
-%Add melted snow to 'release' field and remove from 'solid':
-sCryo.snlw = sCryo.snlw + sCryo.lhsnme;
-sCryo.snw = sCryo.snw - sCryo.lhsnme;
-sCryo.lhpme = sCryo.lhpme - sCryo.lhsnme;
+%Update snow temperature based on conduction:
+% dTemp = 10^(tsnPwr)*sCryo.hfnetSC./(cSens*sCryo.snw);
+% dTemp(isnan(dTemp)) = 0;
+% sCryo.tsn = sCryo.tsn + dTemp;
+
+
+
+   
+%Melt potential all goes into melting snow but is limited by amount of snow
+%available
+indMelt = find( sCryo.lhpme > 0);
+if ~isempty(indMelt)
+    sCryo.lhsnme(indMelt) = sCryo.lhpme(indMelt);
+    indMaxSnow = find(sCryo.lhsnme(indMelt) > sCryo.snw(indMelt));
+    sCryo.lhsnme(indMelt(indMaxSnow)) = sCryo.snw(indMelt(indMaxSnow));
+    sCryo.lhpme(indMelt) = sCryo.lhpme(indMelt) - sCryo.lhsnme(indMelt);
+    
+    %Add melted snow to 'release' field and remove from 'solid':
+    sCryo.snlw(indMelt) = sCryo.snlw(indMelt) + sCryo.lhsnme(indMelt);
+    sCryo.snw(indMelt) = sCryo.snw(indMelt) - sCryo.lhsnme(indMelt);
+end
 
 
 %Modify snowpack temperature:
 if isfield(sCryo,'hfsnc')
-    %Negative means that heat is conducted from inner area to surface
+    %Negative means that heat is conducted from inner layer to surface
     sCryo.tsn = sCryo.tsn - sCryo.hfsnc./(cSens*sCryo.snw);
+elseif isfield(sCryo,'tsn')
+    %Negative means that heat is conducted from inner layer to surface
+    sCryo.tsn = sCryo.tsn - sCryo.hfnet./(cSens*sCryo.snw);
 else
    error('mass_enbal:noConduct','The enbal conservation of energy and mass formulation requires a heat conduction term.'); 
+end
+
+
+%Refreeze liquid in snow if internal temperature < 0
+%Don't freeze rain, because that water is already in snow liquid content
+%field
+indLiqFrz = find(sCryo.tsn < 0 & sCryo.snlw > 0 & sCryo.snw > 0); %Indices where there is positive cold content and there is liquid water in snow
+if ~isempty(indLiqFrz)
+    %Indices where there's more liquid water than energy to freeze
+    indFrzMax = find(sCryo.snlw(indLiqFrz) > -(cSens/cLate)*sCryo.snw(indLiqFrz).*sCryo.tsn(indLiqFrz) );
+    if ~isempty(indFrzMax)
+        frzMax = -(cSens/cLate)*sCryo.snw(indLiqFrz(indFrzMax)).*sCryo.tsn(indLiqFrz(indFrzMax));
+        sCryo.snw(indLiqFrz(indFrzMax))   = sCryo.snw(indLiqFrz(indFrzMax)) + frzMax;
+        sCryo.snlw(indLiqFrz(indFrzMax)) = sCryo.snlw(indLiqFrz(indFrzMax)) - frzMax;
+        sCryo.tsn(indLiqFrz(indFrzMax))   = 0;
+    end
+    
+    %Indices where there's sufficient energy to freeze all liquid:
+    if isempty(indFrzMax)
+        indFrzNMax = indLiqFrz;
+    else
+        indFrzNMax = setdiff(indLiqFrz, indLiqFrz(indFrzMax));
+    end
+    if ~isempty(indFrzNMax)
+        sCryo.snw(indFrzNMax) = sCryo.snw(indFrzNMax) + sCryo.snlw(indFrzNMax);
+        sCryo.tsn(indFrzNMax) = sCryo.tsn(indFrzNMax) + (cLate/cSens)*sCryo.snlw(indFrzNMax)./sCryo.snw(indFrzNMax);
+        sCryo.snlw(indFrzNMax) = 0;
+    end
 end
 
 
@@ -102,36 +145,6 @@ sCryo.tsn(sCryo.tsn > 0) = 0;
 sCryo.tsn(sCryo.tsn < minTemp) = minTemp; 
 sCryo.tsn(sCryo.snlw > 0.005*sCryo.snw) = 0;
 sCryo.tsn(sCryo.snw == 0) = nan; 
-
-% %Refreeze liquid in snow if internal temperature < 0
-% %Don't freeze rain, because that water is already in snow liquid content
-% %field
-% indLiqFrz = find(sCryo.tsn < 0 & sCryo.snlw > 0 & sCryo.snw > 0); %Indices where there is positive cold content and there is liquid water in snow
-% if ~isempty(indLiqFrz)
-%     %Indices where there's more liquid water than energy to freeze
-%     indFrzMax = find(sCryo.snlw(indLiqFrz) > -(cSens/cLate)*sCryo.snw(indLiqFrz).*sCryo.tsn(indLiqFrz) );
-%     if ~isempty(indFrzMax)
-%         frzMax = -(cSens/cLate)*sCryo.snw(indLiqFrz(indFrzMax)).*sCryo.tsn(indLiqFrz(indFrzMax));
-%         sCryo.snw(indLiqFrz(indFrzMax)) = sCryo.snw(indLiqFrz(indFrzMax)) + frzMax;
-%         sCryo.snlw(indLiqFrz(indFrzMax)) = sCryo.snlw(indLiqFrz(indFrzMax)) - frzMax;
-%         sCryo.tsn(indLiqFrz(indFrzMax)) = 0;
-%     end
-%     
-%     %Indices where there's sufficient energy to freeze all liquid:
-%     if isempty(indFrzMax)
-%         indFrzNMax = indLiqFrz;
-%     else
-%         indFrzNMax = setdiff(indLiqFrz, indLiqFrz(indFrzMax));
-%     end
-%     if ~isempty(indFrzNMax)
-%         sCryo.snw(indFrzNMax) = sCryo.snw(indFrzNMax) + sCryo.snlw(indFrzNMax);
-%         sCryo.tsn(indFrzNMax) = sCryo.tsn(indFrzNMax) + (cLate/cSens)*sCryo.snlw(indFrzNMax)./sCryo.snw(indFrzNMax);
-%         sCryo.snlw(indFrzNMax) = 0;
-%     end
-% end
-
-
-
 
 
 % %%MELT ICE:

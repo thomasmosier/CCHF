@@ -18,7 +18,7 @@
 % along with the Downscaling Package.  If not, see 
 % <http://www.gnu.org/licenses/>.
 
-function varargout = mass_step(varargin)
+function varargout = snmass_step(varargin)
 
     
 global sCryo
@@ -70,7 +70,7 @@ if ~isempty(indMelt)
 end
 
 
-%Set netagive solid snow values to 0:
+%Set negative solid snow values to 0:
 sCryo.snw(sCryo.snw < 0 ) = 0;
 %Set negative snow liquid values to 0:
 sCryo.snlw(sCryo.snlw < 0 ) = 0;

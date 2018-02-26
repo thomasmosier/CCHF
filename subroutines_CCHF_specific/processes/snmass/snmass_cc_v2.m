@@ -18,18 +18,18 @@
 % along with the Downscaling Package.  If not, see 
 % <http://www.gnu.org/licenses/>.
 
-function varargout = mass_cc_v2(varargin)
+function varargout = snmass_cc_v2(varargin)
 
     
 global sCryo
 
 if isempty(varargin(:))
 	varargout{1} = cell(0,6);
-    varargout{1} = cat(1,varargout{1}, {'cc_pwr', -3,   2,    -1, 'mass_cc','cryo'}); %Unitless; impacts accumulation of cold-content (negative energy)
+    varargout{1} = cat(1,varargout{1}, {'cc_pwr', -3,   2,    -1, 'snmass_cc_v2','cryo'}); %Unitless; impacts accumulation of cold-content (negative energy)
     
     %Snow temperature only impacts heat flux (e.g. longwave out)
     if isfield(sCryo,'tsn')
-        varargout{1} = cat(1,varargout{1}, {'tsn_pwr', -3,   2,    -1, 'mass_cc','cryo'});
+        varargout{1} = cat(1,varargout{1}, {'tsn_pwr', -3,   2,    -1, 'snmass_cc_v2','cryo'});
     end
     
     return

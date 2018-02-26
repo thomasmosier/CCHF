@@ -1,4 +1,4 @@
-function varargout = snlq_zero(varargin)
+function varargout = sndrain_zero(varargin)
 
 %holdCap = decimal between 0 and 1
 
