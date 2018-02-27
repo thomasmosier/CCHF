@@ -18,7 +18,7 @@
 % along with the Downscaling Package.  If not, see 
 % <http://www.gnu.org/licenses/>.
 
-function argout = flux_long_Hock(varargin)
+function argout = flux_long_Deacon(sHydro,varargin)
 %R_long from atm is parameterized using Deacon (1970)
 
 global sCryo sAtm
@@ -26,19 +26,25 @@ global sCryo sAtm
 %VERSION WITH ONLY ONE FITTING PARAMETER
 if isempty(varargin(:))
 	argout = cell(0,6);
-    argout = cat(1,argout, {'lw_pwr_tsn', -2, 2, 0, 'flux_long_Hock', 'cryo'});
-    argout = cat(1,argout, ['tsn',cell(1,5)]);
+    argout = cat(1,argout, ['tsn',cell(1,5)]); %This line signals that snow temperature is needed in process representation.
+%     varargout(1,:) = {'longwave_scalar', 0, 100, 10, 'heat_long_Deacon'};
     return
 else
-    scaleOut = find_att(varargin{1}.coef,'lw_pwr'); 
+%     scaleOut = find_att(varargin{1}.coef,'longwave_scalar'); 
 end
 
-eSky = 0.7; %Emmissivity of sky
+
 % stefan = 5.67*10^(-8);
 
-%Primary reference is:
-%Hock, R. (2005). Glacier melt: a review of processes and their modelling. 
-%Progress in Physical Geography, 29(3), 362–391.
+%First line is Swinbank's empiricial formula for longwave input radiation
+%(factor of 10 greater than Eq. 1 in Deacon to convert units)
+    %FOR CLEAR SKIES!
+%Second line is elevation correction for incoming longwave (factor of 10 greater than Eq. 8 in Deacon to convert units)
+%Third line is longwave radiation outwards from snow
 
-argout = (10^scaleOut)*5.67*10^(-8)*(eSky*(squeeze(sAtm.tas(sAtm.indCurr,:,:)) + 273.15).^4 ...
-    - (sCryo.tsn + 273.15).^4);
+argout = 5.31*10^(-13)*(squeeze(sAtm.tas(sAtm.indCurr,:,:)) + 273.15).^6 ...
+    - 0.035*(sHydro.dem/1000).*5.67*10^(-8).*(squeeze(sAtm.tas(sAtm.indCurr,:,:)) + 273.15).^4 ...
+    - 5.67*10^(-8)*(sCryo.tsn + 273.15).^4;
+
+
+

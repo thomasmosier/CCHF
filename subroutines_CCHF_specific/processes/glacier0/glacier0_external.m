@@ -18,7 +18,7 @@
 % along with the Downscaling Package.  If not, see 
 % <http://www.gnu.org/licenses/>.
 
-function glacier0_Chen(sHydro, sMeta)
+function glacier0_external(sHydro, sMeta)
 %output is ice thickness (in terms of water equivalent), assuming glacier-
 %climate equilibrium.
 global sCryo
@@ -30,25 +30,12 @@ global sCryo
 rhoI = find_att(sMeta.global,'density_ice'); 
 rhoW = find_att(sMeta.global,'density_water');
 
-if isfield(sCryo, 'icx')
-    %%BRUCKL's formula:
-%     %Use empirical coefficients from paper:
-%     a = 5.2;
-%     b = 15.4;
-%     c = 0.5;
-%     %Estimate ice thickness:
-%     gThick = a + b*sCryo.iceArea.^c; 
-
-    %%CHEN AND OHMURA:
-    %Use empirical coefficients from paper:
-    a = 28.5;
-    b = 0.357;
-    %Estimate ice thickness:
-    gThick = a*(sCryo.icx.*sHydro.area).^b; 
+if isfield(sCryo, 'icwe')
+    sCryo.icbsdem = sHydro.dem - full(sCryo.icwe)*(rhoW/rhoI);
+elseif isfield(sCryo, 'icdepth')
+    sCryo.icwe = (rhoI/rhoW)*full(sCryo.icdepth);
     
-    sCryo.icwe = (rhoI/rhoW)*gThick;
-
-    sCryo.icbsdem = sHydro.dem - gThick;
+    sCryo.icbsdem = sHydro.dem - full(sCryo.icdepth);
 else
-    error('glacier0Chen:noArea','Ice thickness cannot be estimated because there is no area approximation.');
+    error('glacier0External:noArea','Ice thickness cannot be estimated because there is no area approximation.');
 end

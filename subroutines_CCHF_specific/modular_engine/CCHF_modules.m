@@ -19,10 +19,15 @@
 % <http://www.gnu.org/licenses/>.
 
 function [varargout] = CCHF_modules(sHydro, sMeta)
-global sLand sAtm
+global sLand sAtm sCryo
 
 
-%If parameter mode, create output array
+%List of models that do not use top-of-atmosphere radiation, transmissivity, etc.
+lsSimpleMod = {'simple','hock', 'SDI', 'kraaijenbrink'};
+blSimpleMod = regexpbl(find_att(sMeta.module, 'heat', 'no_warning'), lsSimpleMod);
+
+
+%If parameter mode, initialize output array
 if regexpbl(sMeta.mode,'parameter')
    coef = cell(0,6); 
 end
@@ -35,62 +40,81 @@ if ~regexpbl(sMeta.mode,'parameter') && sMeta.indCurr == 1
     if regexpbl(iceWEMod, 'Shea')
         %Estimate thickness (force balance based on equilibrium
         %assumption from Shea et al. 2015)
-        glacier0_Shea(sHydro, sMeta);
+        glacier0_Shea(sMeta);
     elseif regexpbl(iceWEMod, 'Chen')
         %Estimate thickness (empirical surface area scaling based on Chen and Ohmura, 1990)
         glacier0_Chen(sHydro, sMeta);
+    elseif regexpbl(iceWEMod, 'external')
+        %Set ice thickness using data from file
+        glacier0_external(sHydro, sMeta);
     else
-        error('module_implement:iceWE','No ice water equivalent process representation selected.');
+        error('module_implement:iceWE', ['The ice water equivalent initialization ' iceWEMod ' is not recognized.']);
     end 
 end
 
-%%IMPLEMENT FOR ALL MODULE COMBINATIONS:
+
 %PARTITION RAIN AND SNOWFALL:
-%No Choices
-if regexpbl(sMeta.mode,'parameter')
-    coef = cat(1,coef,part_snow());
-else
-    part_snow(sMeta); %Partitions precipitation to snowfall and rain.
-    snow_accum; %Adds snowfall to snowpack and rain to liquid snow content
-end
+partMod = find_att(sMeta.module, 'partition');
 
-  
-
-
-
-%ALBEDO:
-if ~regexpbl(find_att(sMeta.module, 'heat', 'no_warning'), {'simple','hock', 'SDI'}) %Albedo not used in simple degree-index model
-    albMod = find_att(sMeta.module, 'albedo');
-    
-    if regexpbl(albMod, 'Pelli')
-        if regexpbl(sMeta.mode,'parameter')
-            coef = cat(1,coef, albedo_Pellicciotti());
-        else
-            albedo_Pellicciotti(sMeta);
-        end
-    elseif regexpbl(albMod, 'Brock')
-        if regexpbl(sMeta.mode,'parameter')
-            coef = cat(1,coef, albedo_Brock());
-        else
-            albedo_Brock(sMeta);
-        end
-    else
-        error('module_implement:albedo','No albedo process representation selected.');
-    end
-
-
-    %If debris grid included, set albedo to 0.15 at debris covered ice locations:
+if regexpbl(partMod, 'ramp') 
     if regexpbl(sMeta.mode,'parameter')
-        coef = cat(1,coef, albedo_debris());
+        coef = cat(1,coef,partition_ramp());
     else
-        albedo_debris(sMeta);
+        partition_ramp(sMeta); %Partitions precipitation to snowfall and rain.
+    end
+else
+    error('module_implement:partition', ['The precipitation partitioning representation ' partMod ' is not recognized.']);
+end
+
+
+%SNOWPACK ACCUMULATION (ADD SNOWFALL AND RAIN ON SNOW)
+%Adds snowfall to snowpack and rain to liquid snow content
+if ~regexpbl(sMeta.mode,'parameter')
+    snow_accum;
+end
+
+
+%SNOW ALBEDO:
+if ~blSimpleMod %Albedo not used in simple degree-index model
+    snalbMod = find_att(sMeta.module, 'snalbedo');
+    
+    if regexpbl(snalbMod, 'Pelli')
+        if regexpbl(sMeta.mode,'parameter')
+            coef = cat(1,coef, snalbedo_Pellicciotti());
+        else
+            snalbedo_Pellicciotti(sMeta);
+        end
+    elseif regexpbl(snalbMod, 'Brock')
+        if regexpbl(sMeta.mode,'parameter')
+            coef = cat(1,coef, snalbedo_Brock());
+        else
+            snalbedo_Brock(sMeta);
+        end
+    else
+        error('module_implement:snalbedo',['Ice albedo representation ' snalbMod ' not recognized.']);
     end
 end
 
+
+%ICE ALBEDO
+if ~strcmpi(sMeta.iceGrid, 'none') && ~blSimpleMod
+    icalbMod = find_att(sMeta.module, 'icalbedo');
+    
+    if regexpbl(icalbMod, 'constant')
+        %If debris grid included, set albedo to 0.15 at debris covered ice locations:
+        if regexpbl(sMeta.mode,'parameter')
+            coef = cat(1,coef, icalbedo_constant());
+        else
+            icalbedo_constant(sMeta);
+        end
+    else
+        error('module_implement:icalbedo', ['The ice albedo representation ' icalbMod ' is not recognized.']);
+    end
+end
 
 
 %TOP OF ATMOSPHERE SOLAR RADIATION (not used in simple degree index):
-if ~regexpbl(find_att(sMeta.module,'heat', 'no_warning'), {'simple', 'SDI'})
+if ~blSimpleMod
     toaMod = find_att(sMeta.module,'toa');
     
     if regexpbl(toaMod, 'DeWalle')
@@ -122,14 +146,14 @@ if ~regexpbl(find_att(sMeta.module,'heat', 'no_warning'), {'simple', 'SDI'})
 %             end
 %         end
     else
-        error('module_implement:toa_raad','No top of atmosphere radiation process representation was selected.');
+        error('module_implement:toa_raad', ['Top-of-Atmosphere radiation representation ' toaMod ' not recognized.']);
     end
 end
 
 
 
 %TRANSMISSIVITY (not used in simple degree index):
-if ~regexpbl(find_att(sMeta.module,'heat', 'no_warning'), {'simple', 'SDI'})
+if ~blSimpleMod
     transMod = find_att(sMeta.module,'atmtrans');
     
     if regexpbl(transMod, 'DeWalle')
@@ -157,7 +181,7 @@ if ~regexpbl(find_att(sMeta.module,'heat', 'no_warning'), {'simple', 'SDI'})
                 atmtrans_Gauss(sHydro,sMeta);
             end
     else
-        error('module_implement:transmissivity','No atmospheric transmissivitity process representation was selected.');
+        error('module_implement:transmissivity',['Atmospheric transmissivity representation ' transMod ' not recognized.']);
     end
 end
 
@@ -166,7 +190,7 @@ end
 %CRYOSPHERE HEAT:
 heatMod = find_att(sMeta.module, 'heat');
 
-if regexpbl(heatMod, 'SDI')
+if strcmpi(heatMod, 'SDI') || strcmpi(heatMod, 'STI')
     if regexpbl(sMeta.mode,'parameter')
         coef = cat(1,coef, heat_simple_degree());
     else
@@ -190,11 +214,11 @@ elseif regexpbl(heatMod, {'LSD', 'LST'})
     else
         heat_LST_Mosier(sMeta)
     end
-elseif regexpbl(heatMod, {'simple','debris'},'and')
+elseif regexpbl(heatMod, {'TI','Kraaijenbrink'},'and')
     if regexpbl(sMeta.mode,'parameter')
-        coef = cat(1,coef, heat_simple_debris());
+        coef = cat(1,coef, heat_TI_Kraaijenbrink());
     else
-        heat_simple_debris(sMeta)
+        heat_TI_Kraaijenbrink(sMeta)
     end
 elseif regexpbl(heatMod,'Mosier')
 %         if regexpbl(sMeta.mode,'parameter')
@@ -217,14 +241,14 @@ elseif regexpbl(heatMod, 'SETI')
         heat_SETI_Mosier(sMeta);
     end
 else
-    error('module_implement:cryo','No cryosphere heat process reprepresentation selected.');
+    error('module_implement:cryo',['Cryosphere heat representation ' heatMod ' not recognized.']);
 end
 
 
 
 %SNOWPACK DENSITY:
 %Comes after heat flux because depends on cryosphere surface temperature
-if regexpbl(find_att(sMeta.module, 'heat', 'no_warning'), 'SETI') || regexpbl(find_att(sMeta.module, 'snlq', 'no_warning'), 'Liston')%Albedo not used in simple degree-index model
+if regexpbl(find_att(sMeta.module, 'heat', 'no_warning'), 'SETI') || regexpbl(find_att(sMeta.module, 'sndrain', 'no_warning'), 'Liston')%Albedo not used in simple degree-index model
     dnsMod = find_att(sMeta.module, 'density');
     
     if regexpbl(dnsMod, 'Liston')
@@ -240,7 +264,7 @@ if regexpbl(find_att(sMeta.module, 'heat', 'no_warning'), 'SETI') || regexpbl(fi
             density_Cosima(sMeta);
         end
     else
-        error('module_implement:albedo','No density process representation selected.');
+        error('module_implement:albedo',['Snow density representation ' dnsMod ' not recognized.']);
     end
 end
 
@@ -274,16 +298,12 @@ elseif regexpbl(massMod, 'Liston') %Conduction raises and lowers snow temperatur
         snmass_Liston(sMeta);
     end
 else
-    error('module_implement:cryo','No cryosphere energy and mass process representation selected.');
+    error('module_implement:cryo', ['Snow mass flux representation ' massMod ' not recognized.']);
 end
 
 
 %SNOW SUBLIMATION:
-if sMeta.indCurr == 1
-    sublimateMod = find_att(sMeta.module,'sublimate');
-else
-    sublimateMod = find_att(sMeta.module,'sublimate', 'no_warning');
-end
+sublimateMod = find_att(sMeta.module,'sublimate');
 
 if regexpbl(sublimateMod, 'Lutz')
     if regexpbl(sMeta.mode,'parameter')
@@ -291,9 +311,8 @@ if regexpbl(sublimateMod, 'Lutz')
     else
         sublimate_Lutz(sHydro, sMeta);
     end
-elseif ~isempty(sublimateMod)
-    error('module_implement:unknownSublimate', [sublimateMod ' is an ' ...
-        'unknown sublimation module that has not been programmed for.']);
+elseif ~regexpbl(sublimateMod, 'none')
+    error('module_implement:unknownSublimate', ['Sublimation representation ' sublimateMod ' not recognized.']);
 end
 
 
@@ -320,48 +339,46 @@ elseif isempty(liqMod) || regexpbl(liqMod, 'zero') %Release all melt water:
         sndrain_zero(sMeta);
     end
 else
-    error('module_implement:unknwownLiqFun',['The liquid holding capacity option is ' char(39) ...
-        liqMod char(39) ', which is an unknown choice.']);
+    error('module_implement:unknwownSnowLiqFun', ['The snow liquid holding representation ' liqMod ' not recognized.']);
 end
 
 
 
 %ICE MELT AND LIQUID RELEASE:
-icMelt = find_att(sMeta.module,'icmlt', 'no_warning');
+icMeltMod = find_att(sMeta.module,'icmlt', 'no_warning');
 
-if regexpbl(icMelt,'ratio') %Remainder of energy from snow melt goes into melting ice
+if regexpbl(icMeltMod,'ratio') %Remainder of energy from snow melt goes into melting ice
     if regexpbl(sMeta.mode,'parameter')
         coef = cat(1,coef, icmlt_ratio());
     else
         icmlt_ratio(sMeta);
     end
-elseif regexpbl(icMelt,'Liston') %Ice melt only occurs during time steps when no snow present
+elseif regexpbl(icMeltMod,'Liston') %Ice melt only occurs during time steps when no snow present
     if regexpbl(sMeta.mode,'parameter')
         coef = cat(1,coef, icmlt_Liston());
     else
         icmlt_Liston(sMeta);
     end
-elseif regexpbl(icMelt,'Neumann') %Ice melt only occurs during time steps when no snow present
+elseif regexpbl(icMeltMod,'Neumann') %Ice melt only occurs during time steps when no snow present
     if regexpbl(sMeta.mode,'parameter')
         coef = cat(1,coef, icmlt_Neumann_bc());
     else
         icmlt_Neumann_bc(sMeta);
     end
-elseif regexpbl(icMelt,'time') %Ice melt only occurs during time steps when no snow present
+elseif regexpbl(icMeltMod,'time') %Ice melt only occurs during time steps when no snow present
     if regexpbl(sMeta.mode,'parameter')
         coef = cat(1,coef, icmlt_time());
     else
         icmlt_time(sMeta);
     end
-elseif regexpbl(massMod, 'gradient') %Conduction raises and lowers snow temperature (no fitting parameters)
+elseif regexpbl(icMeltMod, 'gradient') %Conduction raises and lowers snow temperature (no fitting parameters)
     if regexpbl(sMeta.mode,'parameter')
         coef = cat(1,coef, icmlt_ablation_grad(sHydro));
     else
         icmlt_ablation_grad(sHydro, sMeta);
     end
 else
-    error('module_implement:unknwownIceMltFun',['The ice melt option is ' ...
-        char(39) icMelt char(39) ', which is an unknown choice.']);
+    error('module_implement:unknwownIceMltFun', ['The ice melt and release representation ' icMeltMod ' not recognized.']);
 end
 
 
@@ -376,8 +393,7 @@ if ~isempty(scaMod) && regexpbl(scaMod, 'max') %Assume snow uniformly distribute
         scx_max(sMeta);
     end
 else
-    error('module_implement:unknwownSicaFun',['The snow/ice covered area option is ' char(39) ...
-        scaMod char(39) ', which is an unknown choice.']);
+    error('module_implement:unknwownSicaFun', ['The snow covered area representation ' scaMod ' not recognized.']);
 end   
 
 
@@ -406,7 +422,7 @@ elseif regexpbl(petMod, 'Makkink') %Use Makkink formulation
         PET_Makkink(sMeta.dateCurr, sHydro, sMeta);
     end
 else
-    warning('module_implement:PET','No potential evapotranspiration process representation selected.');
+    warning('module_implement:PET', ['The PET representation ' petMod ' not recognized.']);
 end
 
 
@@ -427,7 +443,7 @@ elseif regexpbl(runoffMod, 'direct') %All water (precip and snowpack release) ru
         runoff_direct(sMeta);
     end
 else
-    error('module_implement:runoff','No runoff process representation selected.');
+    error('module_implement:runoff', ['The runoff generation representation ' runoffMod ' not recognized.']);
 end
 
 
@@ -450,7 +466,7 @@ elseif regexpbl(timeMod, 'Liston')
         tLag_Liston(sHydro, sMeta);
     end
 else
-    error('module_implement:tLag','No surface water time-lag process representation selected.');
+    error('module_implement:tLag', ['The flow travel time representation ' timeMod ' not recognized.']);
 end
 
 
@@ -466,28 +482,28 @@ if ~regexpbl(sMeta.mode,'parameter') %Use numerical Muskingum method (allows dis
     elseif regexpbl(flowMod, 'Liston') %Fast and slow flow
         flow_Liston(sHydro, sMeta);
     else
-        error('module_implement:routing','No flow routing process representation selected.');
+        error('module_implement:routing', ['The flow routing representation ' flowMod ' not recognized.']);
     end
 end
 
 
 %GLACIER PROCESSES (INCLUDES GLACIER DYNAMICS OPTIONS): 
 %FUNCTIONS TO ONLY BE IMPLEMENTED IF GLACIER OUTLINES PRESENT
-if isfield(sHydro,'icbl') && any2d(sHydro.icbl) && sMeta.glacierDynamics == 1
+if isfield(sCryo,'icx') && any2d(sCryo.icx > 0) && sMeta.glacierDynamics == 1
     if sMeta.indCurr == 1 && ~regexpbl(sMeta.mode, 'calib')
-        disp('Calculating glacier dynamics')
+        disp('Calculating glacier dynamics');
     end
-    glacMove = find_att(sMeta.module,'glaciermove', 'no_warning');
+    glacMoveMod = find_att(sMeta.module,'glaciermove', 'no_warning');
     
-    firn = find_att(sMeta.module,'firn', 'no_warning');
+    firnMod = find_att(sMeta.module,'firn', 'no_warning');
             
-    if ~regexpbl(sMeta.mode,'parameter') && regexpbl(firn, 'simple')
+    if ~regexpbl(sMeta.mode,'parameter') && regexpbl(firnMod, 'simple')
         %Model firn compaction (i.e. metamorphism from snow to ice) using
         %simple threshold
         %This must come before 'ice_link'
         firn_compact_simple();
-    elseif ~regexpbl(sMeta.mode,'parameter') && ~regexpbl(firn, 'static')
-        error('module_implement:glacierDepth','Unknown glacier depth module selected.');
+    elseif ~regexpbl(sMeta.mode,'parameter') && ~regexpbl(firnMod, 'static')
+        error('module_implement:firnCompaction', ['The firn compaction representation ' firnMod ' not recognized.']);
     end
     
     %Translates changes calculated over main grid to changes calculated
@@ -502,15 +518,14 @@ if isfield(sHydro,'icbl') && any2d(sHydro.icbl) && sMeta.glacierDynamics == 1
     end
 
     %Glacier ice velocity
-    if ~isempty(glacMove) && regexpbl(glacMove, 'Shea')
+    if ~isempty(glacMoveMod) && regexpbl(glacMoveMod, 'Shea')
         %Model ice velocity:
         glacier_velocity(sMeta);
 
         %Translate velocity into redistribution of ice between cells
         glacier_slide(sMeta);
-    elseif ~isempty(glacMove) && ~regexpbl(glacMove, 'static')
-        error('module_implement:unknwownGlacierSlide',['The optional glacier process module is ' ...
-            glacMove ', which is an unknown choice.']);
+    elseif ~isempty(glacMoveMod) && ~regexpbl(glacMoveMod, 'static')
+        error('module_implement:unknwownGlacierSlide', ['The glacier movement representation ' glacMoveMod ' not recognized.']);
     end
 end
     

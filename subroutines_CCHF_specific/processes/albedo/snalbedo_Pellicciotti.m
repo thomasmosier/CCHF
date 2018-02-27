@@ -18,7 +18,7 @@
 % along with the Downscaling Package.  If not, see 
 % <http://www.gnu.org/licenses/>.
 
-function varargout = albedo_Pellicciotti(varargin)
+function varargout = snalbedo_Pellicciotti(varargin)
 
 %See albedo discussion in:
 %Pellicciotti, F., Brock, B., Strasser, U., Burlando, P., Funk, M., & 
@@ -42,7 +42,6 @@ else
 %     aIce = find_att(varargin{1}.coef,'albedo_ice');
 end
 
-aIce = find_att(varargin{1}.global,'albedo_ice');
 
 aFresh = find_att(varargin{1}.global,'albedo_snow_fresh'); %Albedo of fresh snow
 aOld   = find_att(varargin{1}.global,'albedo_snow_old');  %Albedo of old/melting snow
@@ -64,5 +63,3 @@ sCryo.snalb = real(aFresh - aOld*log10(sAtm.tasmaxc));
 sCryo.snalb(sCryo.snalb > 1) = aFresh;
 sCryo.snalb( isnan(sCryo.snalb) | sCryo.snalb < aIce) = aIce; 
     %This value shouldn't actually matter, because seperate albedo used for ice
-    
-sCryo.icalb = aIce*ones(size(sCryo.snalb));

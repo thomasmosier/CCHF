@@ -18,7 +18,7 @@
 % along with the Downscaling Package.  If not, see 
 % <http://www.gnu.org/licenses/>.
 
-function glacier0_Shea(sHydro, sMeta)
+function glacier0_Shea(sMeta)
 %output is ice thickness (in terms of water equivalent), assuming glacier-
 %climate equilibrium.
 global sCryo
@@ -36,24 +36,24 @@ g = find_att(sMeta.global,'grav_accel');
 
 %Set minimal angle to 1.5 degrees (sind(1.5) = 0.0262) (From Shea et al.)
 
-sCryo.iceSlopeFdr(sCryo.iceSlopeFdr > -0.0262 & sCryo.iceSlopeFdr < 0) = -0.0262; 
-sCryo.iceSlopeFdr(sCryo.iceSlopeFdr >= 0 & sCryo.iceSlopeFdr <= 0.0262) = 0.0262;
+sCryo.icegrdslopefdr(sCryo.icegrdslopefdr > -0.0262 & sCryo.icegrdslopefdr < 0) = -0.0262; 
+sCryo.icegrdslopefdr(sCryo.icegrdslopefdr >= 0 & sCryo.icegrdslopefdr <= 0.0262) = 0.0262;
 
-gThick = abs(tauNaught./(-rhoI*g*sCryo.iceSlopeFdr));
+gThick = abs(tauNaught./(-rhoI*g*sCryo.icegrdslopefdr));
 gThick(gThick < 0) = 0;
-gThick(isnan(sCryo.iceWE)) = nan;
-gThick(sCryo.iceWE == 0) = 0;
+% gThick(isnan(sCryo.icwe)) = nan;
+% gThick(sCryo.icwe == 0) = 0;
 
-if issparse(sCryo.iceWE)
+if issparse(sCryo.icwe)
     gThick = sparse(double(gThick));
 else
     gThick = single(gThick);
 end
 
-sCryo.iceWE = (rhoI/rhoW)*gThick;
+sCryo.icgrdwe = (rhoI/rhoW)*gThick;
 
-if issparse(sCryo.iceWE)
-    sCryo.iceBase = sHydro.dem - full(gThick);
+if issparse(sCryo.icwe)
+    sCryo.icgrdbsdem = sCryo.icgrddem - full(gThick);
 else
-    sCryo.iceBase = sHydro.dem - gThick;
+    sCryo.icgrdbsdem = sCryo.icgrddem - gThick;
 end

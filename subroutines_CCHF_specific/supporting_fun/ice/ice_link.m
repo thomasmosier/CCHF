@@ -27,19 +27,20 @@ global sCryo
 %Translate change in ice water equivalent modelled in mass and energy 
 %function (using main grid) to ice grid:
 if isequal(sHydro.lat, sCryo.iceLat) && isequal(sHydro.lon, sCryo.iceLon) %Ice and main grids are same
-    sCryo.iceDWE = sCryo.icdwe;
-    sCryo.iceWE = sCryo.iceWE + sparse(double(sCryo.iceDWE));
+    sCryo.icdwe = sCryo.icdwe;
+    sCryo.icwe = sCryo.icwe + sparse(double(sCryo.icdwe));
 else %Ice and main grids are different
-    sCryo.iceDWE = zeros(size(sCryo.iceDem));
+    sCryo.icgrddwe = zeros(size(sCryo.icgrddem));
     
 %     %Calculate areas of ice grid cells
 %     if ~isfield(sCryo,'iceArea')
 %         sCryo.iceArea = area_geodata(sCryo.iceLon, sCryo.iceLat);
 %     end
     
+    warning('ice_link:needToEdit','This needs to be edited');
     %Loop over all grid cells in the main grid to distribute changes
     for ii = 1 : numel(sHydro.dem)
-        indIce = find(sCryo.iceWE(sCryo.main2ice{ii}) > 0);
+        indIce = find(sCryo.icgrdwe(sCryo.main2ice{ii}) > 0);
                 
 %         %Calculate area ratio between sHydro.area.*sCryo.icx and
 %         %sum(sCryo.iceArea)
@@ -51,9 +52,9 @@ else %Ice and main grids are different
 %             / sum(sCryo.iceArea(sCryo.main2ice{ii}(indIce)));
         
         %Distribute ice change from main grid to ice grid:
-        sCryo.iceDWE(indIce) = sCryo.icdwe(ii); %This grid is depth 
+        sCryo.icgrddwe(indIce) = sCryo.icgrddwe(ii); %This grid is depth 
         %equivalent (regardless of fractional glacier coverage)
-        sCryo.iceWE(indIce) = sCryo.iceWE(indIce) + sCryo.iceDWE(indIce);
+        sCryo.icgrdwe(indIce) = sCryo.icgrdwe(indIce) + sCryo.icgrddwe(indIce);
     end
 end
     

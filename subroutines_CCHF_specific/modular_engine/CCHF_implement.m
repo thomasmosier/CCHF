@@ -172,16 +172,48 @@ if sMeta.useprevrun == 0
 
         %Load debris cover grid (if single value, assumed uniform thickness):
         if sMeta.blDebris && ~regexpbl(sMeta.iceGrid, 'none')
-            %Flow direction selection and display:
             uiwait(msgbox(sprintf(['Select the debris cover grid for ' ...
                 sMeta.region{ii} '.\n']), '(Click OK to Proceed)','modal'));
             [fileDeb, foldDeb] = uigetfile({'*.asc';'*.txt'},['Select the debris cover grid for ' ...
                 sMeta.region{ii}], startPath);
-            sPath{ii}.debris = fullfile(foldDeb, fileDeb);
-            disp([char(39) sPath{ii}.debris char(39) ' has been chosen as the debris cover grid.']);
+            sPath{ii}.icdbr = fullfile(foldDeb, fileDeb);
+            disp([char(39) sPath{ii}.icdbr char(39) ' has been chosen as the debris thickness grid.']);
 
             if isempty(fileDeb) || isequal(fileDeb, 0)
                error('CCHF_main:noDebris',['No glacier surface debris grid '...
+                   'has been selected, even though the option was chosen.' ...
+                   ' Therefore, the program is aborting.']); 
+            end
+        end
+        
+        %UI to locate ice thickness grid (if specified)
+        iceWEMod = find_att(sMeta.module, 'glacier0');
+        if strcmpi(iceWEMod, 'external') && ~regexpbl(sMeta.iceGrid, 'none')
+            uiwait(msgbox(sprintf(['Select the ice thickness grid (expressed as water equivalent) for ' ...
+                sMeta.region{ii} '.\n']), '(Click OK to Proceed)','modal'));
+            [fileIcWe, foldIcWe] = uigetfile({'*.asc';'*.txt'},['Select the ice thickness grid (water equivalent) for ' ...
+                sMeta.region{ii}], startPath);
+            sPath{ii}.icwe = fullfile(foldIcWe, fileIcWe);
+            disp([char(39) sPath{ii}.icwe char(39) ' has been chosen as the ice thickness grid (expressed as water equivalent).']);
+
+            if isempty(fileIcWe) || isequal(fileIcWe, 0)
+               error('CCHF_main:noIceWaterEq',['No glacier thickness grid '...
+                   'has been selected, even though the option was chosen.' ...
+                   ' Therefore, the program is aborting.']); 
+            end
+        end
+        
+        %Load ice lake fraction
+        if sMeta.blIcePond == 1  && ~regexpbl(sMeta.iceGrid, 'none')
+            uiwait(msgbox(sprintf(['Select the glacier lake fraction grid (range = 0 to 1) for ' ...
+                sMeta.region{ii} '.\n']), '(Click OK to Proceed)','modal'));
+            [fileIcePnd, foldIcePnd] = uigetfile({'*.asc';'*.txt'},['Select the glacier lake fraction grid for ' ...
+                sMeta.region{ii}], startPath);
+            sPath{ii}.icpndx = fullfile(foldIcePnd, fileIcePnd);
+            disp([char(39) sPath{ii}.icpndx char(39) ' has been chosen as the glacier pond fraction grid.']);
+
+            if isempty(fileIcePnd) || isequal(fileIcePnd, 0)
+               error('CCHF_main:noIceLake',['No glacier pond fraction grid '...
                    'has been selected, even though the option was chosen.' ...
                    ' Therefore, the program is aborting.']); 
             end

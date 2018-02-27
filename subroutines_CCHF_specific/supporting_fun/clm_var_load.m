@@ -22,7 +22,7 @@ function [varLd, varDisp] = clm_var_load(modules)
 
 
 %Remove tasmin and tasmax if 'simple' version of cryosphere model being run.    
-if regexpbl(find_att(modules,'heat'), {'simple','SDI'})
+if regexpbl(find_att(modules,'heat'), {'simple','SDI','Kraaijenbrink'})
     varLd = {'pr','tas'};
     varDisp = {'precipitation', 'near-surface air temperature'};
 elseif regexpbl(find_att(modules,'heat'), {'Pelli', 'Hock', 'ETI', 'LST', 'SETI'})
@@ -43,7 +43,7 @@ elseif regexpbl(find_att(modules,'heat'), {'Pritchard'})
 else
     error('clm_var_ld:unknownRepresentation',...
         ['The heat process representation ' find_att(modules,'heat') ...
-        ' has not been programmed for.']);
+        ' has not been programmed for. Add it to the dictionary in this function']);
 end
 
 %Some variable abbreviation that may be of interest:

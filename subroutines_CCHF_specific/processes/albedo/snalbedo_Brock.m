@@ -18,7 +18,7 @@
 % along with the Downscaling Package.  If not, see 
 % <http://www.gnu.org/licenses/>.
 
-function varargout = albedo_Brock(varargin)
+function varargout = snalbedo_Brock(varargin)
 
 %Primary reference:
 %Brock, B. W., Willis, I. C., & Sharp, M. J. (2000). Measurement and 
@@ -43,7 +43,6 @@ end
 
 %NO FITTING PARAMETERS
 aUnder = find_att(varargin{1}.global,'albedo_ground'); %Underlying or debris albedo (Unitless)
-aIce = find_att(varargin{1}.global,'albedo_ice');
 
 aFresh = find_att(varargin{1}.global,'albedo_snow_fresh'); %Albedo of fresh snow
 aOld   = find_att(varargin{1}.global,'albedo_snow_old');  %Albedo of old/melting snow
@@ -67,6 +66,3 @@ sAtm.tasmaxc( sAtm.prsn > 0 ) = 0;
 sAtm.tasmaxc(sAtm.tasmaxc < 0) = 0;
 
 snow_albedo_Brock(aUnder, aFresh, aOld, varargin{1});
-
-%For now, set constant albedo of ice:
-sCryo.icalb = aIce*ones(size(sCryo.snalb));

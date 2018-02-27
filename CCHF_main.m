@@ -91,23 +91,25 @@ nGage = 1;
 %'glaciermove': 'Shea' (model will allow glacier sliding and 
     %calculate changes in ice thickness) or 'static' (glaciers held constant)
 moduleSet = { ...
-    'heat',  'STI'; ... %surface heat flux module representation
-    'snmass', 'cc'; ... %snow energy and mass module representation
-    'icmlt', 'ratio'; ... %ice melt module
-    'runoff', 'bucket'; ... %runoff module representation
-    'toa', 'DeWalle'; ... %top-of-atmosphere radiation module representation
-    'atmtrans', 'dem_exp_decay'; ... %atmospheric transmissivity module representation
-    'albedo', 'Pelli'; ... %albedo module representation
-    'glacier0', 'Shea'; ... %glacier water equivalent at time 0
-    'pet', 'Hammon'; ... %potential evapotranspiration module representation
-    'timelag', 'Johnstone'; ... %timelag (of flow through each grid cell) module representation
-    'flow', 'lumped'; ... %flow routing module
+    'heat',  'TI_Kraaijenbrink'; ... %surface heat flux module representation
+    'snmass', 'cc'; ... %snow energy and mass representation
+    'icmlt', 'ratio'; ... %ice melt representation
+    'runoff', 'bucket'; ... %runoff representation
+    'toa', 'DeWalle'; ... %top-of-atmosphere radiation representation
+    'atmtrans', 'dem_exp_decay'; ... %atmospheric transmissivity representation
+    'snalbedo', 'Pelli'; ... %snow albedo representation
+    'icalbedo', 'constant'; ... %ice albedo representation
+    'glacier0', 'external'; ... %glacier water equivalent at time 0
+    'partition', 'ramp'; ... %Partitioning precip into snow and rain
+    'pet', 'Hammon'; ... %potential evapotranspiration representation
+    'timelag', 'Johnstone'; ... %timelag (of flow through each grid cell) representation
+    'flow', 'lumped'; ... %flow routing representation
     'density', 'Liston'; ... %densification of snow (does not participate in firn to ice processes)
-    'sndrain', 'percent'; ... %snow holding capacity
-    'sca', 'max'; ...
-    'sublimate', 'Lutz'; ...
-    'firn', 'static'; ... %firn compaction
-	'glaciermove', 'static'; ... %glacier movement
+    'sndrain', 'percent'; ... %snow holding capacity representation
+    'sca', 'max'; ... %Snow covered area representation
+    'sublimate', 'Lutz'; ... %Sublimation representation
+    'firn', 'static'; ... %firn compaction representation
+	'glaciermove', 'static'; ... %glacier movement representation
     };
 
 %Boolean value to toggle on all glacier processes. If off, glaciers can
@@ -178,18 +180,13 @@ rateCross = 0.8;
 %End of genetic algorithm parameters
          
 %POINTS WHERE OUTPUT DESIRED:
-%Eklutna:  
-%testPts = {[-148.971, 61.296]; [-148.955, 61.147]} ;  
 %Wolverine:
-% testPts = {[-148.921, 60.4197]; [-148.915, 60.3769]; [-148.907, 60.4042]};
-% reportPt = {'avg'; testPts{:}};
-% FallsCreek:
-% outlet = [-122.349343, 44.379419];
+testPts = {[-148.921, 60.4197]; [-148.915, 60.3769]; [-148.907, 60.4042]};
 
 reportPt = {'avg'};
 
 output = {...
-    'flow', reportPt; ... %{'all'; reportPt{:}}; ... %surface flowrate through cell
+    'flow', {'avg'; testPts{:}}; ... %surface flowrate through cell
     'mrro', reportPt; ... %surface runoff from cell
     'pr', reportPt; ... %precipitation
     'rain', reportPt; ... %rain
@@ -225,39 +222,7 @@ output = {...
     'iclr', reportPt; ... %Liquid water released from ice
     'sndt', reportPt; ... %Change in snow temperature
     };
-% output = {...
-%     'flow', {'all'; reportPt{:}}; ...
-%     'mrro', {'all'; reportPt{:}}; ...
-%     'pr', reportPt; ... %precipitation
-%     'rain', {'all'; reportPt{:}}; ...
-%     'prsn', reportPt; ... %snowfall
-%     'tas', reportPt; ... %2-m air temperature
-%     'pet', reportPt; ... %Potential evapotranspiration
-%     'et', reportPt; ... %Actual evapotranspiration
-%     'snw', {'all'; reportPt{:}}; ... %Water equivalent of snowpack
-%     'casi', reportPt; ... %Water equivalent of snowpack
-%     'tsn', reportPt; ... %Snow internal temperature
-%     'tss', reportPt; ... %Snow surface temperature
-%     'sncc', reportPt; ... %Snow cold-content
-%     'albedo', reportPt; ...
-%     'sm', reportPt; ... %Soil moisture
-%     'lhpme', reportPt; ... %Latent heat melt equivalent of snow.
-%     'hfnet', reportPt; ... %Net heat flux
-%     'hfrs', reportPt; ... %Shortwave radiation
-%     'heatT', reportPt; ... %degree-index heat flux
-%     'hfrl', reportPt; ... %Longwave radiation heat flux
-%     'hft', reportPt; ... %sensible convective heat flux
-%     'hfcp', reportPt; ... %latent precipitation heat flux
-%     'hfgc', reportPt; ... %ground/glacier conductive heat flux
-%     'icdwe', {'all'; reportPt{:}}; ... %change in ice (water equivalent)
-%     'sndwe', {'all'; reportPt{:}}; ... %change in snow (water equivalent)
-%     'rnrf', {'all'; reportPt{:}}; ... %Rain that is added to runoff immediately (i.e. no snow beneath)
-%     'lwsnl', reportPt; ... %Liquid water content of snow
-%     'snlh', reportPt; ... %Liquid water holding capacity of snow
-%     'snlr', {'all'; reportPt{:}}; ... %Liquid water released from snowpack
-%     'iclr', {'all'; reportPt{:}}; ... %Liquid water released from ice
-%     'sndt', reportPt; ... %Change in snow temperature
-%     };
+
    
 %Any values assigned here will overwrite existing values from other sources 
 %(and will not be calibrated)
@@ -279,6 +244,8 @@ iceGrid = 'same'; %Choices are:
 useDebris = 0;  %Set to 1 to load debris cover array. If 0, all ice presumed 
                 %to be clean ice.                         
                             
+useIcePond = 0; %Set to 1 to load glacier lake cover array. If 0, presumed there are no glacier lakes
+
 %Clip to non-rectangular region of interest using reference file:
 blClip = 0;     %(1 = yes or 0 = no).  If 1, user prompted to 
                 %locate reference file in ESRI ACII format.  All downscaled 
@@ -327,6 +294,7 @@ sMeta = struct;
     sMeta.('glacierDynamics') = blDynamicGlaciers;
     sMeta.varLd        = {'pr','tas','tasmin','tasmax'};
     sMeta.('blDebris') = useDebris;
+    sMeta.('blIcePond') = useIcePond;
     sMeta.('blDispOut') = blDispOutput;
     sMeta.('fixedPrm') = knownCfValues;
     sMeta.('addoutput') = output;

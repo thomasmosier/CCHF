@@ -18,7 +18,7 @@
 % along with the Downscaling Package.  If not, see 
 % <http://www.gnu.org/licenses/>.
 
-function varargout = part_snow(varargin)
+function varargout = partition_ramp(varargin)
 %GETSNOWFALL partitions precip into snow based on the temperature using a
 %linear threshold ramp function.
 %   INPUTS:
@@ -36,27 +36,29 @@ global sAtm
 
 if isempty(varargin(:))
     varargout{1} = cell(0,6);
+%     varargout{1} = cat(1,varargout{1}, {'albedo_fresh', 0.5, 1, 0.71, 'albedo_Pellicciotti','cryo'});
+%     varargout{1} = cat(1,varargout{1}, {'albedo_decay', 0.0, 0.5, 0.11, 'albedo_Pellicciotti','cryo'});
+%     varargout{1} = cat(1,varargout{1}, {  'albedo_ice', 0.2, 0.7, 0.45, 'albedo_Pellicciotti','cryo'});
+    
     return
 else
+%     aFresh = find_att(varargin{1}.coef,'albedo_fresh'); %Albedo of fresh, deep snow
+%     aDecay = find_att(varargin{1}.coef,'albedo_decay');  
+%     aIce = find_att(varargin{1}.coef,'albedo_ice');
     sMeta = varargin{1};
 end
 
-% if isempty(varargin(:))
-% 	argout = cell(2,5);
-%     argout(1,:) = {'tSnow', -5, 0, -2, 'part_snow'};
-%     argout(2,:) = {'tRain', 0, 5, 3, 'part_snow'};
-%     return
-% else
-%     ts = find_att(varargin{1}.coef,'tSnow'); 
-%     tr = find_att(varargin{1}.coef,'tRain');
-% end
-
 if regexpbl(sMeta.dt,'month')
-   ts = find_att(sMeta.global,'snow_ramp_sn_mon'); %-7.9;
-   tr = find_att(sMeta.global,'snow_ramp_rn_mon'); %5.2;
+    %Values from comparison to global climate model snow fields
+   ts = -7.9;
+   tr = 5.2;
 elseif regexpbl(sMeta.dt,{'day','daily','hour'})
-   ts = find_att(sMeta.global,'snow_ramp_sn_day'); %-3
-   tr = find_att(sMeta.global,'snow_ramp_rn_day'); %1;
+    %Values from visual inspection of figures in
+    %Dai, A. (2008). Temperature and pressure dependence of the rain-snow 
+    %phase transition over land and ocean. Geophysical Research Letters, 
+    %35(12), n/a-n/a. https://doi.org/10.1029/2008GL033295
+   ts = -1; %-1
+   tr = 3; %3;
 end
 
 %Initialize/reset snow field:

@@ -10,6 +10,7 @@ output = ...
     'albedo_ground', 0.15; ... %(unitless)
     'albedo_ice', 0.35; ... %From Hock's energy balance notes (unitless) %Liston uses ice albedo = 0.4
     'albedo_debris', 0.15; ... %(unitless)
+    'albedo_water', 0.05; ... %(unitless)
     'albedo_snow_fresh', 0.9; ... %From Hock's energy balance notes (unitless)
     'albedo_snow_old', 0.55; ... %From Hock's energy balance notes (unitless)
     'heat_cap_water', 4180; ... %(J/kg/K)

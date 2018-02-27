@@ -50,7 +50,7 @@ if isfield(sPath, 'ice') %&& ~regexpbl(sMeta.mode, 'parameter')
 
         %Use edg to crop ice dem:
         if regexpbl(sMeta.iceGrid, 'fine')
-            sIceDem = read_geodata(sPath.iceDem, sMeta, 'no_disp');
+            sIceDem = read_geodata_v2(sPath.iceDem, 'data', nan(1,2), nan(1,2), nan(1,2), 0, 'out', 'none','no_disp');
                 sIceDem.data = squeeze(sIceDem.data);
 
             %FORCE EDGES OF FINE GRID TO ALIGN WITH EDGES OF MAIN GRID:
@@ -154,7 +154,7 @@ if isfield(sPath, 'ice') %&& ~regexpbl(sMeta.mode, 'parameter')
             indIce = find(~isnan(iceExist));
 %             disp('finished first ice shp interp')
         else
-            sIceInput = read_geodata(sPath.ice, sMeta, 'no_disp');
+            sIceInput = read_geodata_v2(sPath.ice, 'data', nan(1,2), nan(1,2), nan(1,2), 0, 'out', 'none','no_disp');
                 sIceInput.data = squeeze(sIceInput.data);
             %Check that coordinates are same as iceDEM:
             lonRes = log10(round(1/nanmean(abs(diff(sIceInput.lon)))))+1;
@@ -191,18 +191,20 @@ if isfield(sPath, 'ice') %&& ~regexpbl(sMeta.mode, 'parameter')
 
         %Populate ice presence grid:
         szIce = size(sIceDem.data);
-        %Initialize ice array as sparse:
-        sIceInit.iceWE = sparse(szIce(1), szIce(2));
+        %Initialize ice array 
+        sIceInit = struct;
+        %Initialize water equivalent as sparse:
+        sIceInit.icwe = sparse(szIce(1), szIce(2));
 
         if regexpbl(sPath.ice,'.shp')
-            sIceInit.iceWE(indIce) = 1;
+            sIceInit.icwe(indIce) = 1;
         else
-            sIceInit.iceWE(indIce) = sIceInput.data(indIce);
+            sIceInit.icwe(indIce) = sIceInput.data(indIce);
         end
         
         %Record ice area (if loaded)
         if regexpbl(sPath.ice,'.shp') && regexpbl(strIceLd, 'Area')
-            sIceInit.iceArea = iceArea;
+            sIceInit.icgrdarea = iceArea;
         end
 
 
@@ -245,8 +247,8 @@ if isfield(sPath, 'ice') %&& ~regexpbl(sMeta.mode, 'parameter')
                 'should not be a problem if the glacier grid is '...
                 'significantly finer resolution than the main grid.']);
 
-            tempIceBl = zeros(size(sIceInit.iceWE),'single');
-            tempIceBl(full(sIceInit.iceWE ~= 0) & full(~isnan(sIceInit.iceWE))) = 1;
+            tempIceBl = zeros(size(sIceInit.icwe),'single');
+            tempIceBl(full(sIceInit.icwe ~= 0) & full(~isnan(sIceInit.icwe))) = 1;
             [lonMesh,latMesh] = meshgrid(sIceDem.lon, sIceDem.lat);
             [lonSubMesh,latSubMesh] = meshgrid(lonSub, latSub);
             iceSubExist = interp2(lonMesh,latMesh, tempIceBl, lonSubMesh,latSubMesh,'nearest');
@@ -293,25 +295,25 @@ if isfield(sPath, 'ice') %&& ~regexpbl(sMeta.mode, 'parameter')
 
         indIceFr = find(indDimIce == 0);
 
-        sIceInit.iceDem =  sparse(szIce(1), szIce(2));
-        sIceInit.iceDem(indIceFr) = sIceDem.data(indIceFr);
-        sIceInit.iceLat = sIceDem.lat;
-        sIceInit.iceLon = sIceDem.lon;
+        sIceInit.icgrddem =  sparse(szIce(1), szIce(2));
+        sIceInit.icgrddem(indIceFr) = sIceDem.data(indIceFr);
+        sIceInit.icgrdlat = sIceDem.lat;
+        sIceInit.icgrdlon = sIceDem.lon;
             clear('sIceInput','sGlaciers');
             clear('sIceDem');
 
 
         %Calculate ice surface slope and flow direction (based on surface elevation)
-        [~, sIceInit.iceFdr, iceSurfSlope] = ...
-            wflowacc(sIceInit.iceLon, sIceInit.iceLat, sIceInit.iceDem,'type','single','edges','open','coord','geographic');
+        [~, sIceInit.icgrdfdr, iceSurfSlope] = ...
+            wflowacc(sIceInit.icgrdlon, sIceInit.icgrdlat, sIceInit.icgrddem,'type','single','edges','open','coord','geographic');
 
         %Calculate slope in the flow direction:
-        sIceInit.iceSlopeFdr = -sparse(reshape(sum(sIceInit.iceFdr.*iceSurfSlope, 2), szIce));
-            sIceInit.iceSlopeFdr(sIceInit.iceDem == 0) = 0;
+        sIceInit.icgrdslopefdr = -sparse(reshape(sum(sIceInit.icgrdfdr.*iceSurfSlope, 2), szIce));
+            sIceInit.icgrdslopefdr(sIceInit.icgrddem == 0) = 0;
         %Calculate slope in all directions:
-        sIceInit.iceSlope = sparse(iceSurfSlope);
-            sIceInit.iceSlope(sIceInit.iceDem == 0, :) = 0;
-            sIceInit.iceSlope(:, sIceInit.iceDem == 0) = 0;
+        sIceInit.icgrdslope = sparse(iceSurfSlope);
+            sIceInit.icgrdslope(sIceInit.icgrddem == 0, :) = 0;
+            sIceInit.icgrdslope(:, sIceInit.icgrddem == 0) = 0;
 
 
         %%Find correspondance between glacier grid and main grid
@@ -332,8 +334,8 @@ if isfield(sPath, 'ice') %&& ~regexpbl(sMeta.mode, 'parameter')
         for ll = 1 : numel(sHydro.dem)
             [rC, cC] = ind2sub(szDem, ll);
 
-            rMatch = find(sIceInit.iceLat < edgeLat(rC) & sIceInit.iceLat > edgeLat(rC+1));
-            cMatch = find(sIceInit.iceLon > edgeLon(cC) & sIceInit.iceLon < edgeLon(cC+1));
+            rMatch = find(sIceInit.icgrdlat < edgeLat(rC) & sIceInit.icgrdlat > edgeLat(rC+1));
+            cMatch = find(sIceInit.icgrdlon > edgeLon(cC) & sIceInit.icgrdlon < edgeLon(cC+1));
 
             %Only proceed is glacier grid cells possibly exist
             %within current main grid cell
@@ -346,7 +348,7 @@ if isfield(sPath, 'ice') %&& ~regexpbl(sMeta.mode, 'parameter')
 
                %glacier dem is sparse array. Therefore, find all
                %non-zero grid cells (assumes no ice at sea-level)
-               indCurr = indCurr(sIceInit.iceDem(indCurr) ~= 0);
+               indCurr = indCurr(sIceInit.icgrddem(indCurr) ~= 0);
 
                %If glaciers (or frame around glaciers) exist in
                %current grid cell, record indices
@@ -370,36 +372,91 @@ if isfield(sPath, 'ice') %&& ~regexpbl(sMeta.mode, 'parameter')
         save(pathIceStruct, 'sIceInit', 'icBlMain');
     end
 else %In this case, ice grid same as main grid
-    sIceInit.iceWE  = sparse(szDem(1),szDem(2));
+    sIceInit.icwe  = sparse(szDem(1),szDem(2));
     sIceInit.icdwe = sparse(szDem(1),szDem(2));
     sIceInit.icx = zeros(szDem,'single');
 end
 
-%If debris layer is used, load:
-if isfield(sPath, 'debris') && ~isfield(sIceInit, 'icdbr')
-    sDebris = read_geodata(sPath.debris, sMeta, 'none','no_disp');
+
+varLat = 'latitude';
+varLon = 'longitude';
+%Load debris thickness grid (if present):
+if isfield(sPath, 'icdbr')
+    sDebris = read_geodata_v2(sPath.icdbr, 'data', nan(1,2), nan(1,2), nan(1,2), 0, 'out', 'none','no_disp');
         sDebris.data = squeeze(sDebris.data);
-    if ~isequal(size(sDebris.data), size(sIceInit.iceDem))
-        resDebris = [mean(abs(diff(sDebris.lat))), mean(abs(diff(sDebris.lon)))];
-        resIceDem = [mean(abs(diff(sIceInit.iceLat))), mean(abs(diff(sIceInit.iceLon)))];
+    if ~isequal(size(sDebris.data), size(sIceInit.icgrddem))
+        resDebris = [mean(abs(diff(sDebris.(varLat)))), mean(abs(diff(sDebris.(varLon))))];
+        resIceDem = [mean(abs(diff(sIceInit.icgrdlat))), mean(abs(diff(sIceInit.icgrdlon)))];
         
         prec = -order(min(resDebris))+1;
         if isequal(round2(resDebris, prec), round2(resIceDem, prec)) || all(resDebris < resIceDem)
-            sDebris.data = geodata_area_wgt(sDebris.lon, sDebris.lat, sDebris.data, sIceInit.iceLon, sIceInit.iceLat, 'nansum');
+            sDebris.data = geodata_area_wgt(sDebris.(varLon), sDebris.(varLat), sDebris.data, sIceInit.icgrdlon, sIceInit.icgrdlat, 'nansum');
         else
             error('CCHF_backbone:mismatchIceDebris', ...
                 'The ice and debris cover grids are not the same size.');
         end
     end
 
-    sIceInit.icedbr = sDebris.data;
+    sIceInit.icdbr = sDebris.data;
 %     sIceInit.icdbr = sparse(szIce(1),szIce(2));
 %     sIceInit.icdbr(indIce) = sDebris.data(indIce);
-        clear('sDebris');
 
-    warning('ice_grid_init:debrisCover',['Check that debris cover '...
+    warning('ice_grid_init:debrisCover',['Debris cover thickness grid loaded. Ensure this '...
+        'is used in the ice processs representations '...
+        '(including heat calculation).'])
+end
+
+%Load glacier lake fraction grid (if present)
+if isfield(sPath, 'icpndx')
+    sPond = read_geodata_v2(sPath.icpndx, 'data', nan(1,2), nan(1,2), nan(1,2), 0, 'out', 'none','no_disp');
+        sPond.data = squeeze(sPond.data);
+    if ~isequal(size(sPond.data), size(sIceInit.icgrddem))
+        resDebris = [mean(abs(diff(sPond.(varLat)))), mean(abs(diff(sPond.(varLon))))];
+        resIceDem = [mean(abs(diff(sIceInit.icgrdlat))), mean(abs(diff(sIceInit.icgrdlon)))];
+        
+        prec = -order(min(resDebris))+1;
+        if isequal(round2(resDebris, prec), round2(resIceDem, prec)) || all(resDebris < resIceDem)
+            sPond.data = geodata_area_wgt(sPond.(varLon), sPond.(varLat), sPond.data, sIceInit.icgrdlon, sIceInit.icgrdlat, 'nansum');
+        else
+            error('CCHF_backbone:mismatchIcePond', ...
+                'The ice and pond fraction grids are not the same size.');
+        end
+    end
+
+    sIceInit.icpndx = sPond.data;
+    sIceInit.icpndx(isnan(sIceInit.icpndx)) = 0;
+%     sIceInit.icdbr = sparse(szIce(1),szIce(2));
+%     sIceInit.icdbr(indIce) = sDebris.data(indIce);
+
+    warning('ice_grid_init:icPond',['Ice pond fraction loaded. Ensure this '...
         'is actually used in the ice processs representations '...
         '(including heat calculation).'])
 end
 
-disp('finished ice grid initialization');
+%Load ice thickness (water equivalent) grid (if present)
+if isfield(sPath, 'icwe')
+    sIceWe = read_geodata_v2(sPath.icwe, 'data', nan(1,2), nan(1,2), nan(1,2), 0, 'out', 'none','no_disp');
+        sIceWe.data = squeeze(sIceWe.data);
+    if ~isequal(size(sIceWe.data), size(sIceInit.icgrddem))
+        resIceWe = [mean(abs(diff(sIceWe.(varLat)))), mean(abs(diff(sIceWe.(varLon))))];
+        resIceDem = [mean(abs(diff(sIceInit.icgrdlat))), mean(abs(diff(sIceInit.icgrdlon)))];
+        
+        prec = -order(min(resIceWe))+1;
+        if isequal(round2(resIceWe, prec), round2(resIceDem, prec)) || all(resIceWe < resIceDem)
+            sIceWe.data = geodata_area_wgt(sIceWe.(varLon), sIceWe.(varLat), sIceWe.data, sIceInit.icgrdlon, sIceInit.icgrdlat, 'nansum');
+        else
+            error('CCHF_backbone:mismatchIceWe', ...
+                'The ice and ice WE grids are not the same size.');
+        end
+    end
+
+    sIceInit.icwe = sIceWe.data;
+%     sIceInit.icdbr = sparse(szIce(1),szIce(2));
+%     sIceInit.icdbr(indIce) = sDebris.data(indIce);
+
+    warning('ice_grid_init:icWe',['Ice water equivalent loaded. Ensure this '...
+        'is actually used in the ice processs representations '...
+        '(including heat calculation).'])
+end
+
+disp('Finished ice grid initialization');

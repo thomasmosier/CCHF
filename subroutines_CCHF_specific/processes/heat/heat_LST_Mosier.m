@@ -54,7 +54,7 @@ end
 %Find top of the atmosphere radiation:
 indRSDT = find(ismember(sAtm.datersdt(:,2:end),sMeta.dateCurr(2:end), 'rows') == 1);
 if isempty(indRSDT)
-    error('groundwater_bucket:noPETcurr','No PET grid was calculated for the current time-step');
+    error('head_LST_Mosier:noToaRaadcurr','No top-of-atmosphere solar radiaiton present for the current time-step');
 end
     
 

@@ -11,7 +11,8 @@ if numel(knownCoef(:)) > 0
                 disp(['The parameter ' knownCoef{ii,2} ' in function ' knownCoef{ii,1} ' has been set to ' num2str(coefAll{indCurr, 2}) '.']);
             else
                warning('CCHfsetPrm:missingParamter', ['The parameter ' knownCoef{ii,2} ...
-                   ' in function ' knownCoef{ii,1} ' appears to not be present in the prescribed module set.']); 
+                   ' used in ' knownCoef{ii,1} ' is being assigned a ' ...
+                   'constant value but not not appear to be used in the prescribed module set.']); 
             end
         end
     else
