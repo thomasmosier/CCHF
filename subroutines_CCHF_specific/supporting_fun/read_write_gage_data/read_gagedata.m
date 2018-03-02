@@ -18,7 +18,7 @@
 % along with the Downscaling Package.  If not, see 
 % <http://www.gnu.org/licenses/>.
 
-function sObs = read_gagedata(path, lon, lat, varargin)
+function [sObs, varargout] = read_gagedata(path, lon, lat, varargin)
 
 %Can handle cell array of paths.  Will load each as substructure of output
 %and then combine based on location.
@@ -357,6 +357,14 @@ if flagWrt == 1
         'be used in place of all of the current gage files.']), ...
         '(Click OK to Proceed)','modal'));
     write_CCHF_gagedata(pathOut, sObs);
+end
+
+if nargout > 1
+    if flagWrt == 1
+        varargout{1} = pathOut;
+    else
+        varargout{1} = '';
+    end
 end
 
 

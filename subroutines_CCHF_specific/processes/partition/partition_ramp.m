@@ -36,30 +36,33 @@ global sAtm
 
 if isempty(varargin(:))
     varargout{1} = cell(0,6);
-%     varargout{1} = cat(1,varargout{1}, {'albedo_fresh', 0.5, 1, 0.71, 'albedo_Pellicciotti','cryo'});
-%     varargout{1} = cat(1,varargout{1}, {'albedo_decay', 0.0, 0.5, 0.11, 'albedo_Pellicciotti','cryo'});
-%     varargout{1} = cat(1,varargout{1}, {  'albedo_ice', 0.2, 0.7, 0.45, 'albedo_Pellicciotti','cryo'});
-    
-    return
-else
-%     aFresh = find_att(varargin{1}.coef,'albedo_fresh'); %Albedo of fresh, deep snow
-%     aDecay = find_att(varargin{1}.coef,'albedo_decay');  
-%     aIce = find_att(varargin{1}.coef,'albedo_ice');
-    sMeta = varargin{1};
-end
-
-if regexpbl(sMeta.dt,'month')
-    %Values from comparison to global climate model snow fields
-   ts = -7.9;
-   tr = 5.2;
-elseif regexpbl(sMeta.dt,{'day','daily','hour'})
-    %Values from visual inspection of figures in
+    varargout{1} = cat(1,varargout{1}, {'tmp_snow', -4, 0, -1, 'partition_ramp', 'cryo'});
+    varargout{1} = cat(1,varargout{1}, {'tmp_rain',  0, 4,  3, 'partition_ramp', 'cryo'});
+    %Default values from visual inspection of figures in
     %Dai, A. (2008). Temperature and pressure dependence of the rain-snow 
     %phase transition over land and ocean. Geophysical Research Letters, 
     %35(12), n/a-n/a. https://doi.org/10.1029/2008GL033295
-   ts = -1; %-1
-   tr = 3; %3;
+    
+    return
+else
+    sMeta = varargin{1};
+    
+    ts = find_att(sMeta.coef,'tmp_snow');
+    tr = find_att(sMeta.coef,'tmp_rain');  
 end
+
+% if regexpbl(sMeta.dt,'month')
+%     %Values from comparison to global climate model snow fields
+%    ts = -7.9;
+%    tr = 5.2;
+% elseif regexpbl(sMeta.dt,{'day','daily','hour'})
+%     %Values from visual inspection of figures in
+%     %Dai, A. (2008). Temperature and pressure dependence of the rain-snow 
+%     %phase transition over land and ocean. Geophysical Research Letters, 
+%     %35(12), n/a-n/a. https://doi.org/10.1029/2008GL033295
+%    ts = -1; %-1
+%    tr = 3; %3;
+% end
 
 %Initialize/reset snow field:
 sAtm.prsn = zeros(size(squeeze(sAtm.pr(sAtm.indpr,:,:))));

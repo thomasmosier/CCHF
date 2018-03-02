@@ -168,7 +168,7 @@ if ~blSimpleMod
         else
             atmtrans_Coops(sHydro,sMeta);
         end
-    elseif regexpbl(transMod, 'dem_exp_decay')
+    elseif regexpbl(transMod, 'dem_decay')
         if regexpbl(sMeta.mode,'parameter')
             coef = cat(1,coef, atmtrans_dem_decay(sHydro));
         else
@@ -219,6 +219,12 @@ elseif regexpbl(heatMod, {'TI','Kraaijenbrink'},'and')
         coef = cat(1,coef, heat_TI_Kraaijenbrink());
     else
         heat_TI_Kraaijenbrink(sMeta)
+    end
+elseif regexpbl(heatMod, {'ETI','debris'},'and')
+    if regexpbl(sMeta.mode,'parameter')
+        coef = cat(1,coef, heat_ETI_debris());
+    else
+        heat_ETI_debris(sMeta)
     end
 elseif regexpbl(heatMod,'Mosier')
 %         if regexpbl(sMeta.mode,'parameter')
@@ -331,12 +337,6 @@ elseif regexpbl(liqMod, 'density') %Release melt water greater than density thre
         coef = cat(1,coef, sndrain_density());
     else
         sndrain_density(sMeta);
-    end
-elseif isempty(liqMod) || regexpbl(liqMod, 'zero') %Release all melt water:
-    if regexpbl(sMeta.mode,'parameter')
-        coef = cat(1,coef, sndrain_zero());
-    else
-        sndrain_zero(sMeta);
     end
 else
     error('module_implement:unknwownSnowLiqFun', ['The snow liquid holding representation ' liqMod ' not recognized.']);

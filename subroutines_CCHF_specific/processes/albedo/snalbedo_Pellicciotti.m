@@ -59,7 +59,6 @@ sAtm.tasmaxc(sAtm.tasmaxc < 0) = 0;
 %Albedo calculation:
 sCryo.snalb = real(aFresh - aOld*log10(sAtm.tasmaxc));
 
-%Set Maximum albedo to that of fresh snow
+%Set min and max snow albedo
 sCryo.snalb(sCryo.snalb > 1) = aFresh;
-sCryo.snalb( isnan(sCryo.snalb) | sCryo.snalb < aIce) = aIce; 
-    %This value shouldn't actually matter, because seperate albedo used for ice
+sCryo.snalb( isnan(sCryo.snalb) | sCryo.snalb < aOld) = aOld; 

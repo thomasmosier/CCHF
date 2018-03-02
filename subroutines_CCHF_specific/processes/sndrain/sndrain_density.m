@@ -55,8 +55,8 @@ if ~isempty(indRelease)
     %Fraction of water to drain (based on density):
     frac = 
     %Amount of release equals exceedance of liquid water holding capacity:
-    sCryo.snlr(indRelease) = frac.*sCryo.lwsnl(indRelease);
+    sCryo.snlr(indRelease) = frac.*sCryo.snlw(indRelease);
     sCryo.sndwe(indRelease) = sCryo.sndwe(indRelease) - sCryo.snlr(indRelease);
     %Remove drained water from snowpack liquid water content:
-    sCryo.lwsnl(indRelease) = (1 - frac).*sCryo.lwsnl(indRelease);
+    sCryo.snlw(indRelease) = (1 - frac).*sCryo.snlw(indRelease);
 end

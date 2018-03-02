@@ -1,4 +1,4 @@
-function CCHF_implement(sMeta, sOpt)
+function varargout = CCHF_implement(sMeta, sOpt)
 
 if iscell(sMeta.region)
     nSites = numel(sMeta.region(:));
@@ -12,8 +12,7 @@ end
 
 sMeta.('rtDir')    = cell(nSites, 1);
 sMeta.('output')   = cell(nSites, 1);
-pathGage = cell(nSites, 1);
-sPath = cell(nSites, 1);
+
 sObs = cell(nSites, 1);
 
 sHydro = cell(nSites, 1);
@@ -21,6 +20,7 @@ sHydro = cell(nSites, 1);
 % if nSites ~= numel(regions(:))
 %    error('CCHF_main:diffNumRegions',['The model is set to evaluate for ']) 
 % end
+
 
 varLat = 'latitude';
 varLon = 'longitude';
@@ -45,6 +45,15 @@ valRt = 'output_';
 %'sMeta.useprevrun' provides option to load output from previous run (not normal
 %condition)
 if sMeta.useprevrun == 0
+    
+    %Either load path inputs or initialize arrays for assignment
+    if ~isempty(sMeta.pathinputs)
+        load(sMeta.pathinputs)
+    else
+        sPath = cell(nSites, 1);
+        pathGage = cell(nSites, 1);
+    end
+
     %Create time vector to loop over based on start date and time-step
     %If this field populated here, it wont be populated inside each model call,
     %which saves time
@@ -59,188 +68,191 @@ if sMeta.useprevrun == 0
     startPath = pwd;
     %Loop over sites:
     for ii = 1 : nSites
-        %Initialize structure for current site
-        sPath{ii} = struct;
-            sPath{ii}.('dem')    = blanks(0);
-            sPath{ii}.('pr')     = blanks(0);
-            sPath{ii}.('tas')    = blanks(0);
-            sPath{ii}.('tasmin') = blanks(0);
-            sPath{ii}.('tasmax') = blanks(0);
-            sPath{ii}.('regclip')= blanks(0);
-            sPath{ii}.('output') = blanks(0);
-            sPath{ii}.('coef')   = blanks(0);
-        sHydro{ii} = struct;
+        %Only open UI if inputs paths not already known
+        if isempty(sMeta.pathinputs)
+            %Initialize structure for current site
+            sPath{ii} = struct;
+                sPath{ii}.('dem')    = blanks(0);
+                sPath{ii}.('pr')     = blanks(0);
+                sPath{ii}.('tas')    = blanks(0);
+                sPath{ii}.('tasmin') = blanks(0);
+                sPath{ii}.('tasmax') = blanks(0);
+                sPath{ii}.('regclip')= blanks(0);
+                sPath{ii}.('output') = blanks(0);
+                sPath{ii}.('coef')   = blanks(0);
+            sHydro{ii} = struct;
 
-        %Ask to load information from directory of calibration run that was
-        %interrupted
-        if ii == 1 && regexpbl(sMeta.runType,{'calib','resume'},'and')
-            uiwait(msgbox(sprintf(['Select the folder containing containing '...
-                'the unfinished calibration for ' sMeta.region{ii} '.\n']), ...
-                '(Click OK to Proceed)','modal'));
-            sPath{ii}.resume = uigetdir(startPath,['Select the folder containing '...
-                'the unfinished calibration for ' sMeta.region{ii}]);
-        end
+            %Ask to load information from directory of calibration run that was
+            %interrupted
+            if ii == 1 && regexpbl(sMeta.runType,{'calib','resume'},'and')
+                uiwait(msgbox(sprintf(['Select the folder containing containing '...
+                    'the unfinished calibration for ' sMeta.region{ii} '.\n']), ...
+                    '(Click OK to Proceed)','modal'));
+                sPath{ii}.resume = uigetdir(startPath,['Select the folder containing '...
+                    'the unfinished calibration for ' sMeta.region{ii}]);
+            end
 
-        %Digital Elevation Model (DEM) selection and display:
-        uiwait(msgbox(sprintf(['Select the Digital Elevation Model (DEM) for ' ...
-            sMeta.region{ii} '.\n']), '(Click OK to Proceed)','modal'));
-        [fileDem, foldDem] = uigetfile({'*.asc';'*.txt'},['Select the Digital Elevation Model '...
-            '(DEM) for ' sMeta.region{ii}], startPath);
-        sPath{ii}.dem = fullfile(foldDem, fileDem);
-        disp([char(39) sPath{ii}.dem char(39) ' has been chosen as the DEM.']);
-
-        %Update search path:
-        [startPath, ~, ~] = fileparts(sPath{ii}.dem);
-
-        if isempty(fileDem) || isequal(fileDem, 0)
-           error('CCHF_main:noDEM','A DEM has not been selected. Therefore, the program is aborting.'); 
-        end
-
-        %Load manual flow direction grid (ESRI ASCII Format):
-        if sMeta.ldFdr == 1
-            %Flow direction selection and display:
-            uiwait(msgbox(sprintf(['Select the flow direction grid (typically created using ArcGIS) for ' ...
+            %Digital Elevation Model (DEM) selection and display:
+            uiwait(msgbox(sprintf(['Select the Digital Elevation Model (DEM) for ' ...
                 sMeta.region{ii} '.\n']), '(Click OK to Proceed)','modal'));
-            [fileFdr, foldFdr] = uigetfile({'*.asc';'*.txt'},['Select the flow direction grid for ' ...
-                sMeta.region{ii}], startPath);
-            sPath{ii}.fdr = fullfile(foldFdr, fileFdr);
-            disp([char(39) sPath{ii}.fdr char(39) ' has been chosen as the flow direction grid.']);
+            [fileDem, foldDem] = uigetfile({'*.asc';'*.txt'},['Select the Digital Elevation Model '...
+                '(DEM) for ' sMeta.region{ii}], startPath);
+            sPath{ii}.dem = fullfile(foldDem, fileDem);
+            disp([char(39) sPath{ii}.dem char(39) ' has been chosen as the DEM.']);
 
-            if isempty(fileFdr) || isequal(fileFdr, 0)
-               error('CCHF_main:noFDR',['No flow direction grid '...
-                   'has been selected, even though the option was chosen.' ...
-                   ' Therefore, the program is aborting.']); 
-            end
-        end
+            %Update search path:
+            [startPath, ~, ~] = fileparts(sPath{ii}.dem);
 
-
-        %FIND GLACIER DATA PATH:
-        if regexpbl(sMeta.iceGrid, 'fine') && isempty(find_att(sMeta.module, 'glacier','no_warning'))
-            warning('CCHF_main:fineDemNoGlacier',['The glacier grid resolution '...
-                'is being set to be the same as the main grid because no '...
-                'glacier dynamics module has been selected.']);
-            sMeta.iceGrid = 'same';
-        end
-
-        if regexpbl(sMeta.iceGrid, 'same')
-            uiwait(msgbox(sprintf(['Select the glacier presence '...
-                'geo-referenced grid or shapefile for ' ...
-                sMeta.region{ii} '.\n']), '(Click OK to Proceed)','modal'));
-            [fileGlac, foldGlac] = uigetfile({'*.*'},['Select the binary glacier presence grid for ' ...
-                sMeta.region{ii}], startPath);
-            sPath{ii}.ice = fullfile(foldGlac, fileGlac);
-            disp([char(39) sPath{ii}.ice char(39) ' has been chosen as the binary glacier presence grid.']);
-
-            if isempty(fileGlac) || isequal(fileGlac, 0)
-               error('CCHF_main:noGlacier',['No glacier presence grid '...
-                   'has been selected, even though the option was chosen.' ...
-                   ' Therefore, the program is aborting.']); 
-            end
-        elseif regexpbl(sMeta.iceGrid, 'fine')
-            iceAuxDisp = ['on a finer grid that will determine the ' ...
-                'spatial scale of glacier process evaluation'];
-
-            uiwait(msgbox(sprintf(['Select the glacier presence geo-referenced grid or shapefile for ' ...
-                sMeta.region{ii} iceAuxDisp '.\n']), '(Click OK to Proceed)','modal'));
-            [fileGlac, foldGlac] = uigetfile({'*.*'},['Select the glacier presence geo-referenced grid or shapefile for ' ...
-                sMeta.region{ii} iceAuxDisp '.\n'], startPath);
-            sPath{ii}.ice = fullfile(foldGlac, fileGlac);
-            disp([char(39) sPath{ii}.ice char(39) ' has been chosen as the glacier presence grid.']);
-
-            if isempty(fileGlac) || isequal(fileGlac, 0)
-               error('CCHF_main:noGlacier',['No glacier presence grid '...
-                   'has been selected, even though the option was chosen.' ...
-                   ' Therefore, the program is aborting.']); 
+            if isempty(fileDem) || isequal(fileDem, 0)
+               error('CCHF_main:noDEM','A DEM has not been selected. Therefore, the program is aborting.'); 
             end
 
-            uiwait(msgbox(sprintf(['Select the glacier surface DEM for ' ...
-                sMeta.region{ii} iceAuxDisp '.\n']), '(Click OK to Proceed)','modal'));
-            [fileGlacDem, foldGlacDem] = uigetfile({'*.*'},['Select the glacier surface DEM for ' ...
-                sMeta.region{ii} iceAuxDisp '.\n'], startPath);
-            sPath{ii}.iceDem = fullfile(foldGlacDem, fileGlacDem);
-            disp([char(39) sPath{ii}.ice char(39) ' has been chosen as the glacier DEM grid.']);
+            %Load manual flow direction grid (ESRI ASCII Format):
+            if sMeta.ldFdr == 1
+                %Flow direction selection and display:
+                uiwait(msgbox(sprintf(['Select the flow direction grid (typically created using ArcGIS) for ' ...
+                    sMeta.region{ii} '.\n']), '(Click OK to Proceed)','modal'));
+                [fileFdr, foldFdr] = uigetfile({'*.asc';'*.txt'},['Select the flow direction grid for ' ...
+                    sMeta.region{ii}], startPath);
+                sPath{ii}.fdr = fullfile(foldFdr, fileFdr);
+                disp([char(39) sPath{ii}.fdr char(39) ' has been chosen as the flow direction grid.']);
 
-            if isempty(fileGlacDem) || isequal(fileGlacDem, 0)
-               error('CCHF_main:noGlacierDem',['No glacier DEM grid '...
-                   'has been selected, even though the option was chosen.' ...
-                   ' Therefore, the program is aborting.']); 
+                if isempty(fileFdr) || isequal(fileFdr, 0)
+                   error('CCHF_main:noFDR',['No flow direction grid '...
+                       'has been selected, even though the option was chosen.' ...
+                       ' Therefore, the program is aborting.']); 
+                end
             end
-        elseif ~regexpbl(sMeta.iceGrid, 'none')
-            error('CCHF_main:unknownIceGridType',['The ice grid method is ' sMeta.iceGrid ', which is not known.']);
-        end
 
 
-        %Load debris cover grid (if single value, assumed uniform thickness):
-        if sMeta.blDebris && ~regexpbl(sMeta.iceGrid, 'none')
-            uiwait(msgbox(sprintf(['Select the debris cover grid for ' ...
-                sMeta.region{ii} '.\n']), '(Click OK to Proceed)','modal'));
-            [fileDeb, foldDeb] = uigetfile({'*.asc';'*.txt'},['Select the debris cover grid for ' ...
-                sMeta.region{ii}], startPath);
-            sPath{ii}.icdbr = fullfile(foldDeb, fileDeb);
-            disp([char(39) sPath{ii}.icdbr char(39) ' has been chosen as the debris thickness grid.']);
-
-            if isempty(fileDeb) || isequal(fileDeb, 0)
-               error('CCHF_main:noDebris',['No glacier surface debris grid '...
-                   'has been selected, even though the option was chosen.' ...
-                   ' Therefore, the program is aborting.']); 
+            %FIND GLACIER DATA PATH:
+            if regexpbl(sMeta.iceGrid, 'fine') && isempty(find_att(sMeta.module, 'glacier','no_warning'))
+                warning('CCHF_main:fineDemNoGlacier',['The glacier grid resolution '...
+                    'is being set to be the same as the main grid because no '...
+                    'glacier dynamics module has been selected.']);
+                sMeta.iceGrid = 'same';
             end
-        end
-        
-        %UI to locate ice thickness grid (if specified)
-        iceWEMod = find_att(sMeta.module, 'glacier0');
-        if strcmpi(iceWEMod, 'external') && ~regexpbl(sMeta.iceGrid, 'none')
-            uiwait(msgbox(sprintf(['Select the ice thickness grid (expressed as water equivalent) for ' ...
-                sMeta.region{ii} '.\n']), '(Click OK to Proceed)','modal'));
-            [fileIcWe, foldIcWe] = uigetfile({'*.asc';'*.txt'},['Select the ice thickness grid (water equivalent) for ' ...
-                sMeta.region{ii}], startPath);
-            sPath{ii}.icwe = fullfile(foldIcWe, fileIcWe);
-            disp([char(39) sPath{ii}.icwe char(39) ' has been chosen as the ice thickness grid (expressed as water equivalent).']);
 
-            if isempty(fileIcWe) || isequal(fileIcWe, 0)
-               error('CCHF_main:noIceWaterEq',['No glacier thickness grid '...
-                   'has been selected, even though the option was chosen.' ...
-                   ' Therefore, the program is aborting.']); 
+            if regexpbl(sMeta.iceGrid, 'same')
+                uiwait(msgbox(sprintf(['Select the glacier presence '...
+                    'geo-referenced grid or shapefile for ' ...
+                    sMeta.region{ii} '.\n']), '(Click OK to Proceed)','modal'));
+                [fileGlac, foldGlac] = uigetfile({'*.*'},['Select the binary glacier presence grid for ' ...
+                    sMeta.region{ii}], startPath);
+                sPath{ii}.ice = fullfile(foldGlac, fileGlac);
+                disp([char(39) sPath{ii}.ice char(39) ' has been chosen as the binary glacier presence grid.']);
+
+                if isempty(fileGlac) || isequal(fileGlac, 0)
+                   error('CCHF_main:noGlacier',['No glacier presence grid '...
+                       'has been selected, even though the option was chosen.' ...
+                       ' Therefore, the program is aborting.']); 
+                end
+            elseif regexpbl(sMeta.iceGrid, 'fine')
+                iceAuxDisp = ['on a finer grid that will determine the ' ...
+                    'spatial scale of glacier process evaluation'];
+
+                uiwait(msgbox(sprintf(['Select the glacier presence geo-referenced grid or shapefile for ' ...
+                    sMeta.region{ii} iceAuxDisp '.\n']), '(Click OK to Proceed)','modal'));
+                [fileGlac, foldGlac] = uigetfile({'*.*'},['Select the glacier presence geo-referenced grid or shapefile for ' ...
+                    sMeta.region{ii} iceAuxDisp '.\n'], startPath);
+                sPath{ii}.ice = fullfile(foldGlac, fileGlac);
+                disp([char(39) sPath{ii}.ice char(39) ' has been chosen as the glacier presence grid.']);
+
+                if isempty(fileGlac) || isequal(fileGlac, 0)
+                   error('CCHF_main:noGlacier',['No glacier presence grid '...
+                       'has been selected, even though the option was chosen.' ...
+                       ' Therefore, the program is aborting.']); 
+                end
+
+                uiwait(msgbox(sprintf(['Select the glacier surface DEM for ' ...
+                    sMeta.region{ii} iceAuxDisp '.\n']), '(Click OK to Proceed)','modal'));
+                [fileGlacDem, foldGlacDem] = uigetfile({'*.*'},['Select the glacier surface DEM for ' ...
+                    sMeta.region{ii} iceAuxDisp '.\n'], startPath);
+                sPath{ii}.iceDem = fullfile(foldGlacDem, fileGlacDem);
+                disp([char(39) sPath{ii}.ice char(39) ' has been chosen as the glacier DEM grid.']);
+
+                if isempty(fileGlacDem) || isequal(fileGlacDem, 0)
+                   error('CCHF_main:noGlacierDem',['No glacier DEM grid '...
+                       'has been selected, even though the option was chosen.' ...
+                       ' Therefore, the program is aborting.']); 
+                end
+            elseif ~regexpbl(sMeta.iceGrid, 'none')
+                error('CCHF_main:unknownIceGridType',['The ice grid method is ' sMeta.iceGrid ', which is not known.']);
             end
-        end
-        
-        %Load ice lake fraction
-        if sMeta.blIcePond == 1  && ~regexpbl(sMeta.iceGrid, 'none')
-            uiwait(msgbox(sprintf(['Select the glacier lake fraction grid (range = 0 to 1) for ' ...
-                sMeta.region{ii} '.\n']), '(Click OK to Proceed)','modal'));
-            [fileIcePnd, foldIcePnd] = uigetfile({'*.asc';'*.txt'},['Select the glacier lake fraction grid for ' ...
-                sMeta.region{ii}], startPath);
-            sPath{ii}.icpndx = fullfile(foldIcePnd, fileIcePnd);
-            disp([char(39) sPath{ii}.icpndx char(39) ' has been chosen as the glacier pond fraction grid.']);
 
-            if isempty(fileIcePnd) || isequal(fileIcePnd, 0)
-               error('CCHF_main:noIceLake',['No glacier pond fraction grid '...
-                   'has been selected, even though the option was chosen.' ...
-                   ' Therefore, the program is aborting.']); 
+
+            %Load debris cover grid (if single value, assumed uniform thickness):
+            if sMeta.blDebris && ~regexpbl(sMeta.iceGrid, 'none')
+                uiwait(msgbox(sprintf(['Select the debris cover grid for ' ...
+                    sMeta.region{ii} '.\n']), '(Click OK to Proceed)','modal'));
+                [fileDeb, foldDeb] = uigetfile({'*.asc';'*.txt'},['Select the debris cover grid for ' ...
+                    sMeta.region{ii}], startPath);
+                sPath{ii}.icdbr = fullfile(foldDeb, fileDeb);
+                disp([char(39) sPath{ii}.icdbr char(39) ' has been chosen as the debris thickness grid.']);
+
+                if isempty(fileDeb) || isequal(fileDeb, 0)
+                   error('CCHF_main:noDebris',['No glacier surface debris grid '...
+                       'has been selected, even though the option was chosen.' ...
+                       ' Therefore, the program is aborting.']); 
+                end
             end
-        end
+
+            %UI to locate ice thickness grid (if specified)
+            iceWEMod = find_att(sMeta.module, 'glacier0');
+            if strcmpi(iceWEMod, 'external') && ~regexpbl(sMeta.iceGrid, 'none')
+                uiwait(msgbox(sprintf(['Select the ice thickness grid (expressed as water equivalent) for ' ...
+                    sMeta.region{ii} '.\n']), '(Click OK to Proceed)','modal'));
+                [fileIcWe, foldIcWe] = uigetfile({'*.asc';'*.txt'},['Select the ice thickness grid (water equivalent) for ' ...
+                    sMeta.region{ii}], startPath);
+                sPath{ii}.icwe = fullfile(foldIcWe, fileIcWe);
+                disp([char(39) sPath{ii}.icwe char(39) ' has been chosen as the ice thickness grid (expressed as water equivalent).']);
+
+                if isempty(fileIcWe) || isequal(fileIcWe, 0)
+                   error('CCHF_main:noIceWaterEq',['No glacier thickness grid '...
+                       'has been selected, even though the option was chosen.' ...
+                       ' Therefore, the program is aborting.']); 
+                end
+            end
+
+            %Load ice lake fraction
+            if sMeta.blIcePond == 1  && ~regexpbl(sMeta.iceGrid, 'none')
+                uiwait(msgbox(sprintf(['Select the glacier lake fraction grid (range = 0 to 1) for ' ...
+                    sMeta.region{ii} '.\n']), '(Click OK to Proceed)','modal'));
+                [fileIcePnd, foldIcePnd] = uigetfile({'*.asc';'*.txt'},['Select the glacier lake fraction grid for ' ...
+                    sMeta.region{ii}], startPath);
+                sPath{ii}.icpndx = fullfile(foldIcePnd, fileIcePnd);
+                disp([char(39) sPath{ii}.icpndx char(39) ' has been chosen as the glacier pond fraction grid.']);
+
+                if isempty(fileIcePnd) || isequal(fileIcePnd, 0)
+                   error('CCHF_main:noIceLake',['No glacier pond fraction grid '...
+                       'has been selected, even though the option was chosen.' ...
+                       ' Therefore, the program is aborting.']); 
+                end
+            end
 
 
-%         %If a binary grid is being used to clip the region:
-%         if blClip == 1
-%             uiwait(msgbox(sprintf(['Select the binary region grid that will be used to clip the ' ...
-%                 sMeta.region{ii} ' region.\n']), '(Click OK to Proceed)','modal'));
-%             [fileRegClip, foldRegClip] = uigetfile({'*.asc';'*.txt'},['Select the binary region clip grid for ' ...
-%                 sMeta.region{ii}], startPath);
-%             sPath{ii}.regionClip = fullfile(foldRegClip, fileRegClip);
-%             disp([char(39) sPath{ii}.regionClip char(39) ' has been chosen as the binary region clip grid.']);
-% 
-%             if isempty(fileRegClip) || isequal(fileRegClip, 0)
-%                error('CCHF_main:noClip',['No region clipping file '...
-%                    'has been selected, even though the option was chosen.' ...
-%                    ' Therefore, the program is aborting.']); 
-%             end
-%         end
+    %         %If a binary grid is being used to clip the region:
+    %         if blClip == 1
+    %             uiwait(msgbox(sprintf(['Select the binary region grid that will be used to clip the ' ...
+    %                 sMeta.region{ii} ' region.\n']), '(Click OK to Proceed)','modal'));
+    %             [fileRegClip, foldRegClip] = uigetfile({'*.asc';'*.txt'},['Select the binary region clip grid for ' ...
+    %                 sMeta.region{ii}], startPath);
+    %             sPath{ii}.regionClip = fullfile(foldRegClip, fileRegClip);
+    %             disp([char(39) sPath{ii}.regionClip char(39) ' has been chosen as the binary region clip grid.']);
+    % 
+    %             if isempty(fileRegClip) || isequal(fileRegClip, 0)
+    %                error('CCHF_main:noClip',['No region clipping file '...
+    %                    'has been selected, even though the option was chosen.' ...
+    %                    ' Therefore, the program is aborting.']); 
+    %             end
+    %         end
 
 
-        %Identify climate variables to load:
-        [sMeta.varLd, sMeta.varLdDisp] = clm_var_load(sMeta.module);
-        %Load climate variables:
-        sPath{ii} = clm_path_ui(sPath{ii}, sMeta, sMeta.region{ii});
+            %Identify climate variables to load:
+            [sMeta.varLd, sMeta.varLdDisp] = clm_var_load(sMeta.module);
+            %Load climate variables:
+            sPath{ii} = clm_path_ui(sPath{ii}, sMeta, sMeta.region{ii});
+        end %End inputs UIs
 
 
         %Load DEM and calculate watershed geometry fields:
@@ -260,7 +272,7 @@ if sMeta.useprevrun == 0
         clear('sDem');
 
         %Load observation data to use for calibration or validation:
-        if regexpbl(sMeta.runType,{'calibrat','validat','default'})
+        if regexpbl(sMeta.runType,{'calibrat','validat','default'}) && isempty(sMeta.pathinputs)
             %Calibration/validation data required:
             uiwait(msgbox(sprintf(['Select the file(s) with observation data for ' ...
                 sMeta.region{ii} '.  If data does not include information such as location, you will '...
@@ -276,6 +288,8 @@ if sMeta.useprevrun == 0
 
                 disp([pathGage{ii}{jj} ' has been selected as observation data file ' num2str(jj) ' of ' num2str(sMeta.nGage) ' for ' sMeta.region{ii} '.']);
             end
+        elseif ~regexpbl(sMeta.runType,{'calibrat','validat','default'}) && ~isempty(sMeta.pathinputs)
+            pathGage{ii} = cell(0,1);
         end
 
         %Create unique 'main' output directory based upon inputs:
@@ -344,9 +358,15 @@ if sMeta.useprevrun == 0
             end
             
             %Load observation data:
-            sObs{ii} = read_gagedata(pathGage{ii}, sHydro{ii}.lon, sHydro{ii}.lat, ...
+            [sObs{ii}, pathCchfGage] = read_gagedata(pathGage{ii}, sHydro{ii}.lon, sHydro{ii}.lat, ...
                 'time',[sMeta.dateStart;sMeta.dateEnd], ...
                 'mask',sHydro{ii}.dem);
+            
+            %Save path to CCHF formatted obersvation data (to save and use
+            %in future runs)
+            if ~isempty(pathCchfGage)
+                pathGage{ii} = pathCchfGage;
+            end
         else
             sObs{ii} = struct;
         end
@@ -420,15 +440,29 @@ if sMeta.useprevrun == 0
 
     %Find individual files to load each timestep (saves time later)
     for ii = 1 : nSites
-        sPath{ii} = path_find_files(sPath{ii}, sMeta);    
+        if isempty(sMeta.pathinputs)
+            sPath{ii} = path_find_files(sPath{ii}, sMeta);    
+        end
     %     %Record root directory in sMeta (for use during simulations)
     %     indOutRt = regexpi(sPath{ii}.output,filesep);
     %     sMeta.rtDir{ii} = sPath{ii}.output(1:indOutRt(end)-1);
 
-        sMeta.rtDir{ii} = sPath{ii}.dem;
+        [sMeta.rtDir{ii}, ~, ~] = fileparts(sPath{ii}.dem);
     end
     clear ii
 
+    if isempty(sMeta.pathinputs)
+        [dirInputs, ~, ~] = fileparts(sMeta.rtDir{1});
+        fileInputs = 'CCHF_saved_input_paths_4';
+        for ii = 1 : nSites
+            fileInputs = [fileInputs '_' sMeta.region{ii}];
+        end
+        fileInputs = [fileInputs '.mat'];
+        
+        pathInputs = fullfile(dirInputs,fileInputs);
+        save(pathInputs, 'sPath', 'pathGage');
+        disp(['Paths of all input data used saved to ' pathInputs char(10) 'This path can be set in main script to supress UI for loading inputs. You can customize the file name and location.'])
+    end
 
     %%RUN THE HYDROLOGIC MODEL:
     tStrt = now;
@@ -526,6 +560,14 @@ else %Load output structures saved during previous run
     [fileRun, foldRun] = uigetfile({'*.mat'}, 'Select the Matlab array containing output from the previous run', pwd);
     load(fullfile(foldRun, fileRun));
     nSites = numel(sMeta.region(:));
+end
+
+%Create outputs
+if nargout > 0
+   varargout{1} = sOutput; 
+   if nargout > 1
+       varargout{2} = sObs; 
+   end
 end
 
 

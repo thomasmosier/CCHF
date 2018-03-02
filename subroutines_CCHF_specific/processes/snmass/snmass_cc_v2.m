@@ -196,38 +196,6 @@ if isfield(sCryo,'tsn')
         %In the above, there shouldn't actually be any liquid water at
         %locations where cc is positive
 
-%     %Set temperature of bare ice:  
-%     %Find indices of bare ice:
-%     indBIce = setdiff(find(sCryo.icx ~= 0), indSnow);
-%         indBIce3 = ind2_3d(size(sAtm.tas),indBIce, sAtm.indtas);
-% %     sCryo.tsn(indBIce) = 0;
-% %     sCryo.tsn(indBIce) = min(0, squeeze(sAtm.tas(indBIce3)));
-%     %Temprature of bare ice is min(0, air temp):
-%     if isfield(sAtm,'tasmin')
-%         sCryo.tsn(indBIce) = min(0, squeeze(sAtm.tasmin(indBIce3)));
-%     else
-%         sCryo.tsn(indBIce) = min(0, squeeze(sAtm.tas(indBIce3)));
-%     end
-
-%     %Temperature of debris covered ice is mean air temperature:
-%     if isfield(sCryo,'icdbr')
-%         indDebris = intersect(indBIce, find(~isnan(sCryo.icdbr)));
-%             indDebris3 = ind2_3d(size(sAtm.tas),indDebris, sAtm.indtas);
-% 		if isfield(sAtm,'tasmin')	
-% 			sCryo.tsn(indDebris) = squeeze(sAtm.tasmin(indDebris3));
-% 		else
-% 			sCryo.tsn(indDebris) = squeeze(sAtm.tas(indDebris3));
-% 		end
-%     end
-
-%     
-%     if any(any(sCryo.tsn < sCryo.tsnmin & sCryo.snw > 0.01))
-% %         if ~regexpbl(sMeta.mode, 'calib')
-% %             warning('snowpack_enbal:negSnowTmp',['Snowpack temperature is less than the minimum, which is ' ...
-% %                 num2str(sCryo.tsnmin) ' for at least one cell. It is being set to the minimum.']);
-% %         end
-%         sCryo.tsn(  sCryo.tsn < sCryo.tsnmin) = sCryo.tsnmin; 
-%     end 
     
     %%MAKE CORRECTIONS TO TEMPERATURE BASED ON LIMITS AND ASSUMPTIONS:
     %ADJUST SNOW INTERNAL TEMP AND OTHER PARAMETERS:
@@ -244,36 +212,3 @@ if isfield(sCryo,'tsn')
     %Set surface skin temperature equal to average internal temperature (i.e. isothermal assumption):
     sCryo.tssn = sCryo.tsn;
 end
-
-
-
-% %%MELT ICE:
-% %if snowpack has ice field, allow additional melt at those locations:
-% %Only finds indices where ice exists and where melt potential greater than
-% %snowpack:
-% if isfield(sCryo,'icx')
-%     indIceMlt = find( sCryo.icx ~= 0 & sCryo.lhpme > 0);
-% else
-%     indIceMlt = [];
-% end
-% 
-% %Calculate changes using residual energy at locations with ice:
-% if ~isempty(indIceMlt)
-%     %Calculate ice melt, which involves different degree-index factor
-%     ratioMelt = sCryo.hfneti(indIceMlt)./sCryo.hfnet(indIceMlt);
-%     maxRat = 4;
-%     ratioMelt(ratioMelt > maxRat) = maxRat;
-%     ratioMelt(ratioMelt < 0) = 0; %Can't have negative ice energy
-%     sCryo.lhicme(indIceMlt) = 10^(dii)*ratioMelt.*sCryo.lhpme(indIceMlt);
-%         sCryo.lhpme(indIceMlt) = 0;
-%         
-%     %Scale melt for debris covered glacier cells:
-%     if isfield(sCryo,'icdbr')
-%         indDebrisMlt = intersect(indIceMlt, find(~isnan(sCryo.icdbr))); 
-%     	sCryo.lhicme(indDebrisMlt) = debScl*sCryo.lhicme(indDebrisMlt);
-%     end
-%     sCryo.lhicme( isnan(sCryo.lhicme)) = 0;
-%     sCryo.iclr(indIceMlt) = sCryo.icx(indIceMlt).*sCryo.lhicme(indIceMlt); %Ice released = fractional coverage * melt
-%     sCryo.icdwe(indIceMlt) = -sCryo.lhicme(indIceMlt); %Vertical melt in ice
-% end
-

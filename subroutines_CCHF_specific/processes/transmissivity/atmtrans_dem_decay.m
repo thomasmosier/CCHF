@@ -30,14 +30,14 @@ function varargout = atmtrans_dem_decay(sHydro,varargin)
 
  
 global sAtm
-
+            
 %VERSION WITHOUT FITTING PARAMETERS:
 if isempty(varargin(:))
 	varargout{1} = cell(0,6);
-    varargout{1} = cat(1,varargout{1}, {'trans_clear_intercept',   0, 1, 0.71, 'atm_tansmit_dem_decay','cryo'});
-    varargout{1} = cat(1,varargout{1}, {'trans_clear_dem',   0, 0.08, 0.023, 'atm_tansmit_dem_decay','cryo'});
-    varargout{1} = cat(1,varargout{1}, {'trans_decay_rate',   1, 7, 3.4, 'atm_tansmit_dem_decay','cryo'});
-    varargout{1} = cat(1,varargout{1}, {'trans_decay_power',   1, 4, 1.6, 'atm_tansmit_dem_decay','cryo'});
+    varargout{1} = cat(1,varargout{1}, {'trans_clear_intercept',   0, 1, 0.7105, 'atmtrans_dem_decay','cryo'});
+    varargout{1} = cat(1,varargout{1}, {'trans_clear_dem',   0, 0.08, 0.0235, 'atmtrans_dem_decay','cryo'});
+    varargout{1} = cat(1,varargout{1}, {'trans_decay_rate',   1, 7, 3.4318, 'atmtrans_dem_decay','cryo'});
+    varargout{1} = cat(1,varargout{1}, {'trans_decay_power',   1, 4, 1.6142, 'atmtrans_dem_decay','cryo'});
     return
 else
     a = find_att(varargin{1}.coef,'trans_clear_intercept'); 

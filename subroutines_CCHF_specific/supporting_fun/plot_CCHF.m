@@ -236,7 +236,7 @@ if regexpbl(sMeta.dt,{'day','daily'}) && numel(sMeta.dateStart) == 2
     sMeta.dateStart = [sMeta.dateStart 1];
 end
 
-strDates = date2str(days_2_date(vecTsPts, sMeta.dateStart, 'gregorian'), 'm/d/y');
+strDates = date2str(days_2_date_v2(vecTsPts, sMeta.dateStart, 'gregorian'), 'm/d/y');
 nXTicks = round(linspace(1,nTsPts,10));
 set(gca, 'XTickLabel',strDates(nXTicks), 'XTick',(nXTicks))
 set(gca, 'XTickLabelRotation', 45);

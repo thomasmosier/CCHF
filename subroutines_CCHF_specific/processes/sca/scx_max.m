@@ -38,3 +38,5 @@ optThresh = find_att(sMeta.global,'SCA_SWE_opt_depth');
 sCryo.scx = zeros(size(sCryo.snw),'single');
 
 sCryo.scx(sCryo.snw >= optThresh) = 1;
+
+sCryo.scx(isnan(sCryo.snw)) = nan;

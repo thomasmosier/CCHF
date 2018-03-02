@@ -46,11 +46,11 @@ sCryo.snlr = zeros(size(sCryo.snw),'single');
 %Find holding capacity (percentage of solid snow):
 sCryo.snlh = holdCap*sCryo.snw;
 %Find indices where it's exceeded:
-indRelease = find(sCryo.lwsnl > sCryo.snlh);
+indRelease = find(sCryo.snlw > sCryo.snlh);
 if ~isempty(indRelease)
     %Amount of release equals exceedance of liquid water holding capacity:
     sCryo.snlr(indRelease) = sCryo.snlw(indRelease) - sCryo.snlh(indRelease);
     sCryo.sndwe(indRelease) = sCryo.sndwe(indRelease) - sCryo.snlr(indRelease);
     %Remove drained water from snowpack liquid water content:
-    sCryo.lwsnl(indRelease) = sCryo.snlh(indRelease);
+    sCryo.snlw(indRelease) = sCryo.snlh(indRelease);
 end

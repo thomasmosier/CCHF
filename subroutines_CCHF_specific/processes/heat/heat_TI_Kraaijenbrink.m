@@ -19,9 +19,14 @@ global sCryo sAtm
 
 if isempty(varargin(:))
     varargout{1} = cell(0,6);
-    varargout{1} = cat(1,varargout{1}, {'watt_per_deg_snow', 0, 60, 42.35, 'heat_TI_Kraaijenbrink','cryo'});
-    varargout{1} = cat(1,varargout{1}, {'watt_per_deg_ice',  0, 60,    40, 'heat_TI_Kraaijenbrink','cryo'}); %Units of depth melt
+    varargout{1} = cat(1,varargout{1}, {'watt_per_deg_snow', 10, 50, 20, 'heat_TI_Kraaijenbrink','cryo'});
+    varargout{1} = cat(1,varargout{1}, {'watt_per_deg_ice',  10, 60, 40, 'heat_TI_Kraaijenbrink','cryo'}); %Units of depth melt
     
+    %The degree index factor here is approx 3.9 times degree-day factors
+    %with units of mm / C / day. Shea et al., 2015 find snow DD factor of
+    %about 5 mm / C / day, which is approximately 19 - 20, and clean ice DD
+    %factor of 9.7, which is 30-40 (range comes from approx standard
+    %deviation cites in their paper)
     return
 else
     wattperdegS = find_att(varargin{1}.coef,'watt_per_deg_snow');

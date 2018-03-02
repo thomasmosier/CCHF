@@ -29,7 +29,7 @@ if isempty(varargin(:))
 
     return
 else
-%Nothing
+	sMeta = varargin{1};
 end
 
 if ~isfield(sCryo, 'icalb')

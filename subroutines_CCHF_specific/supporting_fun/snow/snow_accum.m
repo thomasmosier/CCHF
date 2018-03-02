@@ -30,8 +30,8 @@ end
 if ~isfield(sCryo,'snw')
     sCryo.snw = zeros(size(squeeze(sAtm.pr(1,:,:))),'single');
 end
-if ~isfield(sCryo,'lwsnl')
-    sCryo.lwsnl = zeros(size(squeeze(sAtm.pr(1,:,:))),'single');
+if ~isfield(sCryo,'snlw')
+    sCryo.snlw = zeros(size(squeeze(sAtm.pr(1,:,:))),'single');
 end
 
 sLand.rnrf = zeros(size(squeeze(sAtm.pr(1,:,:))),'single');
@@ -43,7 +43,7 @@ sCryo.sndwe = sCryo.sndwe + sAtm.prsn;
 %Where there's snow, add rain to snow liquid, else add to land
 indSnow = find(sCryo.snw > 0);
 if~isempty(indSnow)
-    sCryo.lwsnl(indSnow)  = sCryo.lwsnl(indSnow) + sAtm.rain(indSnow);
+    sCryo.snlw(indSnow)  = sCryo.snlw(indSnow) + sAtm.rain(indSnow);
     sCryo.sndwe(indSnow) = sCryo.sndwe(indSnow) + sAtm.rain(indSnow);
 end
 indNoSnow = find(sCryo.snw <= 0);
@@ -53,10 +53,10 @@ end
 
 %%Set internal average snow temp to nan if no snow present
 if isfield(sCryo,'tsn')
-    sCryo.tsn(sCryo.snw == 0 & sCryo.lwsnl == 0 & sCryo.icx == 0) = nan;
+    sCryo.tsn(sCryo.snw == 0 & sCryo.snlw == 0 & sCryo.icx == 0) = nan;
     
     %If snow temp = nan and there is snow, set to atm temp
-    indNew = find(isnan(sCryo.tsn) & (sCryo.snw ~= 0 | sCryo.lwsnl ~= 0 | sCryo.icx ~= 0));
+    indNew = find(isnan(sCryo.tsn) & (sCryo.snw ~= 0 | sCryo.snlw ~= 0 | sCryo.icx ~= 0));
     sCryo.tsn(indNew) = 0;
     indNew3 = ind2_3d(size(sAtm.tas),indNew,sAtm.indtas);
     indTas3 = find(sAtm.tas(indNew3) < 0);

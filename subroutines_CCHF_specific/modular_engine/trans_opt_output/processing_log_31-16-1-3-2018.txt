@@ -1,0 +1,102 @@
+disp(['All displayed text is being written to ' char(39) fileDiary ...
+    char(39) '.']);
+All displayed text is being written to '/Users/thomas/git_local/CCHF/subroutines_CCHF_specific/modular_engine/trans_opt_output/processing_log_31-16-1-3-2018.txt'.
+
+
+
+warning('off', 'MATLAB:LargeImage');
+
+%Load data
+sRsds = read_geodata_v2(pathRsds, varRsds, lonLd, latLd, yrsLd, fr, cropType, 'no_disp');
+sRsdt = read_geodata_v2(pathRsdt, varRsdt, lonLd, latLd, yrsLd, fr, cropType, 'no_disp');
+sTmax = read_geodata_v2(pathTmax, varTmax, lonLd, latLd, yrsLd, fr, cropType, 'no_disp');
+sTmin = read_geodata_v2(pathTmin, varTmin, lonLd, latLd, yrsLd, fr, cropType, 'no_disp');
+sElev = read_geodata_v2(pathElev, varElev, lonLd, latLd, yrsLd, fr, cropType, 'no_disp');
+    sElev.(varElev) = squeeze(sElev.(varElev)/gp2m); %Transform from geopotential to meters
+
+%Check that all grids align:
+if ~align_check(sElev.(varLon), sRsds.(varLon), sElev.(varLat), sRsds.(varLat))
+    error('shortwaveCalibration:rsdsNotAligned','The rsds grid is not aligned with the input elevation grid.');
+elseif  ~align_check(sElev.(varLon), sRsdt.(varLon), sElev.(varLat), sRsdt.(varLat))
+    error('shortwaveCalibration:rsdtNotAligned','The rsdt grid is not aligned with the input elevation grid.');
+elseif  ~align_check(sElev.(varLon), sTmax.(varLon), sElev.(varLat), sTmax.(varLat))
+    error('shortwaveCalibration:tmaxNotAligned','The tmax grid is not aligned with the input elevation grid.');
+elseif  ~align_check(sElev.(varLon), sTmin.(varLon), sElev.(varLat), sTmin.(varLat))    
+    error('shortwaveCalibration:tminNotAligned','The tmin grid is not aligned with the input elevation grid.');
+end
+
+%Calculate transmissivity:
+transEra = sRsds.(varRsds) ./ sRsdt.(varRsdt);
+
+transEraSpat = squeeze(mean(transEra, 1));
+%Calculate temperature range:
+tasRng = tas_range(sTmax.(varTmax), sTmin.(varTmin));
+transDem1 = transmissivity_dem_decay(tasRng, sElev.(varElev), coef(ii,a,1), coef(ii,a,2), coef(ii,a,3), coef(ii,a,4));
+{Undefined function or variable 'ii'.
+} 
+coefB = [0.71114,0.023555,3.465,1.6083; 0.70983,0.023422,3.3986,1.6201];
+coefBM = mean(coefB)
+
+coefBM =
+
+    0.7105    0.0235    3.4318    1.6142
+
+coefB = [0.71114,0.023555,3.465,1.6083; 0.70983,0.023422,3.3986,1.6201];
+coefBM = mean(coefB);
+transDem = transmissivity_dem_decay(tasRng, sElev.(varElev), coefB(1,1), coefB(1,2), coefB(1,3), coefB(1,4));
+errTemp(1) = fitness(transEra(:), transDem(:), fitMetric)
+
+errTemp =
+
+    0.2022
+
+transDem = transmissivity_dem_decay(tasRng, sElev.(varElev), coefB(2,1), coefB(2,2), coefB(2,3), coefB(2,4));
+errTemp(2) = fitness(transEra(:), transDem(:), fitMetric)
+
+errTemp =
+
+    0.2022    0.2022
+
+transDem = transmissivity_dem_decay(tasRng, sElev.(varElev), coefBM(1), coefBM(2), coefBM(3), coefBM(4));
+errTemp(3) = fitness(transEra(:), transDem(:), fitMetric)
+
+errTemp =
+
+    0.2022    0.2022    0.2022
+
+0.8-0.23*(-0.8)
+
+ans =
+
+    0.9840
+
+0.8-0.23*(3.4)
+
+ans =
+
+    0.0180
+
+CCHF_main_v2_7Jan2018_Karora_temp
+[Warning: <a href="matlab: opentoline('/Users/thomas/git_local/CCHF/subroutines_CCHF_specific/modular_engine/CCHF_implement.m',598,34)">File: CCHF_implement.m Line: 598 Column: 34
+</a>The temporary variable nIter will be cleared at the beginning of each iteration of the parfor loop.
+Any value assigned to it before the loop will be lost.  If nIter is used before it is assigned in the parfor loop, a
+runtime error will occur.
+See <a href="matlab: helpview([docroot '/distcomp/distcomp_ug.map'],'PARFOR_TEMPORARY_VARIABLES')">Parallel for Loops in MATLAB, "Temporary Variables"</a>.] 
+[> In <a href="matlab: opentoline('/Users/thomas/Library/Mobile Documents/com~apple~CloudDocs/Matlab_scripts/Himalaya_glaciers_tools/CCHF_project_scripts/CCHF_main_v2_7Jan2018_Karora_temp.m',388,1)">CCHF_main_v2_7Jan2018_Karora_temp at 388</a>] 
+'/Users/thomas/Library/Mobile Documents/com~apple~CloudDocs/Karora_9Jan2018/karora_dem.asc' has been chosen as the DEM.
+'/Users/thomas/Library/Mobile Documents/com~apple~CloudDocs/Karora_9Jan2018/karora_fdr.asc' has been chosen as the flow direction grid.
+'/Users/thomas/Library/Mobile Documents/com~apple~CloudDocs/Karora_9Jan2018/RGI5_Karora/RGI_5_Karora.shp' has been chosen as the binary glacier presence grid.
+'/Users/thomas/Library/Mobile Documents/com~apple~CloudDocs/Karora_9Jan2018/ice_properties_Karora/debris_thickness_HKHK_wmean_Karora.asc' has been chosen as the debris thickness grid.
+'/Users/thomas/Library/Mobile Documents/com~apple~CloudDocs/Karora_9Jan2018/ice_properties_Karora/ice_thickness_HKHK_wmean_Karora.asc' has been chosen as the ice thickness grid (expressed as water equivalent).
+'/Users/thomas/Library/Mobile Documents/com~apple~CloudDocs/Karora_9Jan2018/ice_properties_Karora/glacier_lake_fraction_HKHK_wmean_Karora.asc' has been chosen as the glacier pond fraction grid.
+'/Users/thomas/Library/Mobile Documents/com~apple~CloudDocs/Karora_9Jan2018/climate_ERAi_ds/karora_pre' has been chosen as the precipitation time-series data.
+'/Users/thomas/Library/Mobile Documents/com~apple~CloudDocs/Karora_9Jan2018/climate_ERAi_ds/karora_tmp' has been chosen as the mean near-surface air temperature time-series data.
+'/Users/thomas/Library/Mobile Documents/com~apple~CloudDocs/Karora_9Jan2018/climate_ERAi_ds/karora_tmx' has been chosen as the maximum near-surface air temperature time-series data.
+'/Users/thomas/Library/Mobile Documents/com~apple~CloudDocs/Karora_9Jan2018/climate_ERAi_ds/karora_tmn' has been chosen as the minimum near-surface air temperature time-series data.
+Data are now being read from '/Users/thomas/Library/Mobile Documents/com~apple~CloudDocs/Karora_9Jan2018/karora_dem.asc'.
+Data have finished loading from '/Users/thomas/Library/Mobile Documents/com~apple~CloudDocs/Karora_9Jan2018/karora_dem.asc'.
+Data are now being read from '/Users/thomas/Library/Mobile Documents/com~apple~CloudDocs/Karora_9Jan2018/karora_fdr.asc'.
+Data have finished loading from '/Users/thomas/Library/Mobile Documents/com~apple~CloudDocs/Karora_9Jan2018/karora_fdr.asc'.
+/Users/thomas/Library/Mobile Documents/com~apple~CloudDocs/Karora_9Jan2018/CCHF_formatted_observations-flow-casi.txt has been selected as observation data file 1 of 1 for Karora.
+The output path is '/Users/thomas/Library/Mobile Documents/com~apple~CloudDocs/default_1999thru2009-heat_ETI_debris-snmass_cc-icmlt'.
+

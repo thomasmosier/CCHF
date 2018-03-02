@@ -27,6 +27,9 @@ close all   %Closes all figure windows.
 
 
 
+%Path for all inputs (file with stored paths is created during model run in
+%which user selects inputs through GUI)
+path2Inputs = '';
 
 
 %%USER INPUTS:
@@ -96,7 +99,7 @@ moduleSet = { ...
     'icmlt', 'ratio'; ... %ice melt representation
     'runoff', 'bucket'; ... %runoff representation
     'toa', 'DeWalle'; ... %top-of-atmosphere radiation representation
-    'atmtrans', 'dem_exp_decay'; ... %atmospheric transmissivity representation
+    'atmtrans', 'dem_decay'; ... %atmospheric transmissivity representation
     'snalbedo', 'Pelli'; ... %snow albedo representation
     'icalbedo', 'constant'; ... %ice albedo representation
     'glacier0', 'external'; ... %glacier water equivalent at time 0
@@ -224,11 +227,23 @@ output = {...
     };
 
    
-%Any values assigned here will overwrite existing values from other sources 
+%Values assigned here will overwrite existing values from other sources 
 %(and will not be calibrated)
+%Format is {name of function, parameter name, value}
 %Leave empty if no parameters should be set
-knownCfValues = {'atm_transmit_DeWalle', 'atm_lin_scalar', 0.3}; %Format is {name of function, parameter name, value}
-
+knownCfValues = {...
+    'atmtrans_dem_decay', 'trans_clear_intercept', 0.7105; ...
+    'atmtrans_dem_decay', 'trans_clear_dem', 0.0235; ...
+    'atmtrans_dem_decay', 'trans_decay_rate', 3.4318; ...
+    'atmtrans_dem_decay', 'trans_decay_power', 1.6142; ...
+    'partition_ramp', 'tmp_snow', -1; ...
+    'partition_ramp', 'tmp_rain', 3 ...
+    }; 
+%Values for 'atmtrans' derived from optimization relative to ERA
+%Values for 'partition_ramp' derived from visual inspection of figure in 
+    %Dai, A. (2008). Temperature and pressure dependence of the rain-snow 
+    %phase transition over land and ocean
+    
 
 %Boolean value to display time-series plots of modelled output:
 blDispOutput = 1;
@@ -302,6 +317,7 @@ sMeta = struct;
     sMeta.('ldFdr') = useFdr;
     sMeta.('nGage') = nGage;
     sMeta.('useprevrun') = blPrevRun;
+    sMeta.('pathinputs') = path2Inputs;
 
 sOpt = struct;
     sOpt.('fitTest') = fitType;
@@ -376,4 +392,4 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%IMPLEMENTATION CCHF MODEL:    
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-CCHF_implement(sMeta, sOpt);
+[sMod, sObs] = CCHF_implement(sMeta, sOpt);

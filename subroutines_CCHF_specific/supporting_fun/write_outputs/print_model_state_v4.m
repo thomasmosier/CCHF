@@ -407,31 +407,46 @@ else
                                 .*sHydro.area(indAreaCurr))/nansum(sHydro.area(indAreaCurr));
                         end
                     case 'casi' %Special case for snow covered area:
-                        if isfield(sCryo,'icdbr')
+                        if isfield(sCryo,'icdbr') %There is a debris field
+                            optThresh = find_att(sMeta.global,'debris_opt_depth'); 
+                            
                             %If debris cover field, only count non-debris covered ice
                             if strcmpi(locOut{kk},'all') 
-                                if isfield(sModOut.(locOut{kk}),['path' char(sModOut.(locOut{kk}).fields{ll})])
-                                    %NOT PROGRAMMED YET
-                                    if indTsPrintCurr == 1
-                                        warning('print_model_state:varNotProgrammed','Writing a gridded file for this type has not been programmed yet');
-                                    end
-                                else
-                                    %NOT PROGRAMMED YET
-                                    if indTsPrintCurr == 1
-                                        warning('print_model_state:varNotProgrammed','Writing a gridded file for this type has not been programmed yet');
-                                    end
+                                casiTemp = zeros(size(sCryo.scx), 'single');
+                                %Use ice fraction at locations without
+                                %debris
+                                casiTemp(sCryo.icdbr < optThresh | isnan(sCryo.icdbr)) ...
+                                    = sCryo.icx(sCryo.icdbr < optThresh | isnan(sCryo.icdbr));
+                                
+                                casiTemp = 100*max(sCryo.scx, casiTemp);
+                                casiTemp(isnan(sCryo.scx)) = nan;
+                                
+                                sModOut.(locOut{kk}).(nmCurr)(indTsPrintCurr,:,:) = casiTemp;
+                                
+                                %Write to file
+                                if isfield(sModOut.(locOut{kk}), [char(nmCurr) '_path'])
+                                    fileNm = fullfile(foldGrids, nmCurr, [char(file_nm(sMeta.region, sModOut.(locOut{kk}).fields{ll}, sModOut.(locOut{kk}).date(indDate,:))) '.nc']);
+                                    print_grid_NC_v2(fileNm, casiTemp, nmCurr, sHydro.lon, sHydro.lat, sMeta.dateCurr, sMeta.dateCurr, 1);
                                 end
                             else
-                                casiTemp = max(sCryo.scx(indGageCurr), sCryo.icx(indGageCurr));
-                                casiTemp(sCryo.icdbr > 0) = 0;
-
+                                indGageCurr = indGageCurr(:);
+                                indAreaCurr = indAreaCurr(:);
+                                                    
+                                casiTemp = zeros([numel(indGageCurr), 1], 'single');
+                                casiTemp(sCryo.icdbr < optThresh | isnan(sCryo.icdbr)) ...
+                                    = sCryo.icx(indGageCurr(sCryo.icdbr < optThresh | isnan(sCryo.icdbr)));
+                                
+                                casiTemp = max(sCryo.scx(indGageCurr),casiTemp);
+                                
+                                indUse = find(~isnan(sCryo.scx(indGageCurr)));
+                                
                                 sModOut.(locOut{kk}).(nmCurr)(indTsPrintCurr) = ...
-                                    100*nansum(casiTemp.*sHydro.area(indAreaCurr)) ...
-                                /nansum(sHydro.area(indAreaCurr));
+                                    100*nansum(casiTemp(indUse).*sHydro.area(indAreaCurr(indUse)))/nansum(sHydro.area(indAreaCurr(indUse)));
                             end
                         else %No debris cover field
                             if strcmpi(locOut{kk},'all') 
                                 casiTemp = 100*max(sCryo.scx, sCryo.icx);
+                                casiTemp(isnan(sCryo.scx)) = nan;
                                 sModOut.(locOut{kk}).(nmCurr)(indTsPrintCurr,:,:) = casiTemp;
 
                                 %Write to file
