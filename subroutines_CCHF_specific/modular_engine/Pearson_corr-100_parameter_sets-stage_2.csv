@@ -1,0 +1,14 @@
+ ,tmp_snow,tmp_rain,watt_per_deg_snow,watt_per_deg_ice,cc_pwr,sublimate_scl,sn_hold,ice_melt_pwr,debris_scalar,PET_pwr,soil_moisture_capacity,drain_rate,timelag_pwr
+tmp_snow,1.000000,-1.000000,-1.000000,-1.000000,-1.000000,NaN,-1.000000,-1.000000,1.000000,NaN,NaN,NaN,NaN
+tmp_rain,-1.000000,1.000000,1.000000,1.000000,1.000000,NaN,1.000000,1.000000,-1.000000,NaN,NaN,NaN,NaN
+watt_per_deg_snow,-1.000000,1.000000,1.000000,1.000000,1.000000,NaN,1.000000,1.000000,-1.000000,NaN,NaN,NaN,NaN
+watt_per_deg_ice,-1.000000,1.000000,1.000000,1.000000,1.000000,NaN,1.000000,1.000000,-1.000000,NaN,NaN,NaN,NaN
+cc_pwr,-1.000000,1.000000,1.000000,1.000000,1.000000,NaN,1.000000,1.000000,-1.000000,NaN,NaN,NaN,NaN
+sublimate_scl,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN
+sn_hold,-1.000000,1.000000,1.000000,1.000000,1.000000,NaN,1.000000,1.000000,-1.000000,NaN,NaN,NaN,NaN
+ice_melt_pwr,-1.000000,1.000000,1.000000,1.000000,1.000000,NaN,1.000000,1.000000,-1.000000,NaN,NaN,NaN,NaN
+debris_scalar,1.000000,-1.000000,-1.000000,-1.000000,-1.000000,NaN,-1.000000,-1.000000,1.000000,NaN,NaN,NaN,NaN
+PET_pwr,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,1.000000,NaN,NaN,NaN
+soil_moisture_capacity,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,1.000000,NaN,NaN
+drain_rate,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,1.000000,NaN
+timelag_pwr,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,1.000000

@@ -188,7 +188,7 @@ else
 % 
 %         %Write to file
 %         if isfield(sModOut.all, 'flow_path')
-%             fileNm = fullfile(foldGrids, 'flow', [file_nm(sMeta.region, '_flow_', sModOut.all.date(indDate,:)) '.nc']);
+%             fileNm = fullfile(foldGrids, 'flow', [file_nm(sMeta.region{sMeta.siteCurr}, '_flow_', sModOut.all.date(indDate,:)) '.nc']);
 %             print_grid_NC_v2(fileNm, sLand.flow, 'flow', sHydro.lon, sHydro.lat, sMeta.dateCurr, sMeta.dateCurr, 1);
 %         end 
 %         
@@ -202,7 +202,7 @@ else
 % 
 %         %Write to file
 %         if isfield(sModOut.(locOut{kk}), 'casi_path')
-%             fileNm = fullfile(foldGrids, 'casi', [file_nm(sMeta.region, 'casi', sModOut.all.date(indDate,:)) '.nc']);
+%             fileNm = fullfile(foldGrids, 'casi', [file_nm(sMeta.region{sMeta.siteCurr}, 'casi', sModOut.all.date(indDate,:)) '.nc']);
 %             print_grid_NC_v2(fileNm, squeeze(sModOut.all.casi(indTsPrintCurr,:,:)), 'casi', sHydro.lon, sHydro.lat, sMeta.dateCurr, sMeta.dateCurr, 1);
 %         end 
 %         
@@ -227,7 +227,7 @@ else
 % 
 %         %Write to file
 %         if isfield(sModOut.(locOut{kk}), 'geodetic_path')
-%             fileNm = fullfile(foldGrids, 'geodetic', [file_nm(sMeta.region, 'geodetic', sModOut.all.date(indDate,:)) '.nc']);
+%             fileNm = fullfile(foldGrids, 'geodetic', [file_nm(sMeta.region{sMeta.siteCurr}, 'geodetic', sModOut.all.date(indDate,:)) '.nc']);
 %             print_grid_NC_v2(fileNm, geodeticTemp, 'geodetic', sHydro.lon, sHydro.lat, sMeta.dateCurr, sMeta.dateCurr, 1);
 %         end
 % 
@@ -280,7 +280,7 @@ else
 
                     %Write to file
                     if isfield(sModOut.(locOut{kk}), [char(nmCurr) '_path'])
-                        fileNm = fullfile(foldGrids, nmCurr, [char(file_nm(sMeta.region, sModOut.(locOut{kk}).fields{ll}, sModOut.(locOut{kk}).date(indDate,:))) '.nc']);
+                        fileNm = fullfile(foldGrids, nmCurr, [char(file_nm(sMeta.region{sMeta.siteCurr}, sModOut.(locOut{kk}).fields{ll}, sModOut.(locOut{kk}).date(indDate,:))) '.nc']);
                         print_grid_NC_v2(fileNm, sLand.(nmCurr), nmCurr, sHydro.lon, sHydro.lat, sMeta.dateCurr, sMeta.dateCurr, 1);
                     end
                 else
@@ -313,7 +313,7 @@ else
 
                     %Write to file
                     if isfield(sModOut.(locOut{kk}), [char(nmCurr) '_path'])
-                        fileNm = fullfile(foldGrids, nmCurr, [char(file_nm(sMeta.region, sModOut.(locOut{kk}).fields{ll}, sModOut.(locOut{kk}).date(indDate,:))) '.nc']);
+                        fileNm = fullfile(foldGrids, nmCurr, [char(file_nm(sMeta.region{sMeta.siteCurr}, sModOut.(locOut{kk}).fields{ll}, sModOut.(locOut{kk}).date(indDate,:))) '.nc']);
                         print_grid_NC_v2(fileNm, sAtm.(nmCurr), nmCurr, sHydro.lon, sHydro.lat, sMeta.dateCurr, sMeta.dateCurr, 1);
                     end
                 else
@@ -425,7 +425,7 @@ else
                                 
                                 %Write to file
                                 if isfield(sModOut.(locOut{kk}), [char(nmCurr) '_path'])
-                                    fileNm = fullfile(foldGrids, nmCurr, [char(file_nm(sMeta.region, sModOut.(locOut{kk}).fields{ll}, sModOut.(locOut{kk}).date(indDate,:))) '.nc']);
+                                    fileNm = fullfile(foldGrids, nmCurr, [char(file_nm(sMeta.region{sMeta.siteCurr}, sModOut.(locOut{kk}).fields{ll}, sModOut.(locOut{kk}).date(indDate,:))) '.nc']);
                                     print_grid_NC_v2(fileNm, casiTemp, nmCurr, sHydro.lon, sHydro.lat, sMeta.dateCurr, sMeta.dateCurr, 1);
                                 end
                             else
@@ -451,7 +451,7 @@ else
 
                                 %Write to file
                                 if isfield(sModOut.(locOut{kk}), [char(nmCurr) '_path'])
-                                    fileNm = fullfile(foldGrids, nmCurr, [char(file_nm(sMeta.region, sModOut.(locOut{kk}).fields{ll}, sModOut.(locOut{kk}).date(indDate,:))) '.nc']);
+                                    fileNm = fullfile(foldGrids, nmCurr, [char(file_nm(sMeta.region{sMeta.siteCurr}, sModOut.(locOut{kk}).fields{ll}, sModOut.(locOut{kk}).date(indDate,:))) '.nc']);
                                     print_grid_NC_v2(fileNm, casiTemp, nmCurr, sHydro.lon, sHydro.lat, sMeta.dateCurr, sMeta.dateCurr, 1);
                                 end
                             else
@@ -477,7 +477,7 @@ else
 
                             %Write to file
                             if isfield(sModOut.(locOut{kk}), [char(nmCurr) '_path'])
-                                fileNm = fullfile(foldGrids, nmCurr, [char(file_nm(sMeta.region, sModOut.(locOut{kk}).fields{ll}, sModOut.(locOut{kk}).date(indDate,:))) '.nc']);
+                                fileNm = fullfile(foldGrids, nmCurr, [char(file_nm(sMeta.region{sMeta.siteCurr}, sModOut.(locOut{kk}).fields{ll}, sModOut.(locOut{kk}).date(indDate,:))) '.nc']);
                                 print_grid_NC_v2(fileNm, geodeticTemp, nmCurr, sHydro.lon, sHydro.lat, sMeta.dateCurr, sMeta.dateCurr, 1);
                             end
                         else
@@ -490,7 +490,7 @@ else
 
                             %Write to file
                             if isfield(sModOut.(locOut{kk}), [char(nmCurr) '_path'])
-                                fileNm = fullfile(foldGrids, nmCurr, [char(file_nm(sMeta.region, sModOut.(locOut{kk}).fields{ll}, sModOut.(locOut{kk}).date(indDate,:))) '.nc']);
+                                fileNm = fullfile(foldGrids, nmCurr, [char(file_nm(sMeta.region{sMeta.siteCurr}, sModOut.(locOut{kk}).fields{ll}, sModOut.(locOut{kk}).date(indDate,:))) '.nc']);
                                 print_grid_NC_v2(fileNm, sCryo.(nmCurr), nmCurr, sHydro.lon, sHydro.lat, sMeta.dateCurr, sMeta.dateCurr, 1);
                             end
                         else
