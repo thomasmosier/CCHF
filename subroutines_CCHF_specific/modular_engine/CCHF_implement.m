@@ -437,12 +437,9 @@ if sMeta.useprevrun == 0
     disp_CCHF_meta_v2(sPath, sMeta)  
 
 
-
     %Find individual files to load each timestep (saves time later)
     for ii = 1 : nSites
-        if isempty(sMeta.pathinputs)
-            sPath{ii} = path_find_files(sPath{ii}, sMeta);    
-        end
+        sPath{ii} = path_find_files(sPath{ii}, sMeta);    
     %     %Record root directory in sMeta (for use during simulations)
     %     indOutRt = regexpi(sPath{ii}.output,filesep);
     %     sMeta.rtDir{ii} = sPath{ii}.output(1:indOutRt(end)-1);

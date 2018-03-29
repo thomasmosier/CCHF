@@ -47,7 +47,7 @@ sCryo.snsb = zeros(size(sCryo.snw),'single');
 elevSubMag = sHydro.dem - 3000;
 elevSubMag(elevSubMag < 0) = 0;
 
-constant = 0.0015*10^(-3); %units = m/day
+constant = 0.0015/1000; %units = (mm/day) * (m/mm)
 
 
 %Table 1 (Lutz et al., 2016) 
