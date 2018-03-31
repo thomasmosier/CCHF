@@ -99,7 +99,7 @@ elseif regexpbl(filesMODIS{1}, 'MOD10C2') %8-Day, geographic coordinates
     %'Eight_Day_CMG_Confidence_Index'
 elseif regexpbl(filesMODIS{1}, 'MOD10A2')
     dateRef = [2000,1,1];
-    datesMODIS{2} = days_2_date(days_since(dateRef,datesMODIS{1}, 'gregorian') + 7, dateRef, 'gregorian');
+    datesMODIS{2} = days_2_date_v2(days_since(dateRef,datesMODIS{1}, 'gregorian') + 7, dateRef, 'gregorian');
     varMod = 'MOD_Grid_Snow_500m';
     fieldMod = 'Maximum_Snow_Extent'; 
     evalType = 'max';

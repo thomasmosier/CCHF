@@ -256,12 +256,12 @@ if sMeta.useprevrun == 0
 
 
         %Load DEM and calculate watershed geometry fields:
-        sDem = read_geodata_v2(sPath{ii}.dem, 'data', nan(1,2), nan(1,2), nan(1,2), '0', 'out', 'none');
+        sDem = read_geodata_v2(sPath{ii}.dem, 'data', nan(1,2), nan(1,2), nan(1,2), '0', 'out', 'none', 'onefile');
         sHydro{ii}.dem = sDem.data;
         sHydro{ii}.lat = sDem.(varLat);
         sHydro{ii}.lon = sDem.(varLon);
         if isfield(sPath{ii}, 'fdr')
-            sFdr = read_geodata_v2(sPath{ii}.fdr, 'data', nan(1,2), nan(1,2), nan(1,2), '0', 'out', 'none');
+            sFdr = read_geodata_v2(sPath{ii}.fdr, 'data', nan(1,2), nan(1,2), nan(1,2), '0', 'out', 'none', 'onefile');
             sHydro{ii}.fdrESRI = sFdr.data;
             clear('sFdr');
         else

@@ -50,7 +50,7 @@ if isfield(sPath, 'ice') %&& ~regexpbl(sMeta.mode, 'parameter')
 
         %Use edg to crop ice dem:
         if regexpbl(sMeta.iceGrid, 'fine')
-            sIceDem = read_geodata_v2(sPath.iceDem, 'data', nan(1,2), nan(1,2), nan(1,2), 0, 'out', 'none','no_disp');
+            sIceDem = read_geodata_v2(sPath.iceDem, 'data', nan(1,2), nan(1,2), nan(1,2), 0, 'out', 'none','no_disp', 'onefile');
                 sIceDem.data = squeeze(sIceDem.data);
 
             %FORCE EDGES OF FINE GRID TO ALIGN WITH EDGES OF MAIN GRID:
@@ -154,7 +154,7 @@ if isfield(sPath, 'ice') %&& ~regexpbl(sMeta.mode, 'parameter')
             indIce = find(~isnan(iceExist));
 %             disp('finished first ice shp interp')
         else
-            sIceInput = read_geodata_v2(sPath.ice, 'data', nan(1,2), nan(1,2), nan(1,2), 0, 'out', 'none','no_disp');
+            sIceInput = read_geodata_v2(sPath.ice, 'data', nan(1,2), nan(1,2), nan(1,2), 0, 'out', 'none','no_disp', 'onefile');
                 sIceInput.data = squeeze(sIceInput.data);
             %Check that coordinates are same as iceDEM:
             lonRes = log10(round(1/nanmean(abs(diff(sIceInput.lon)))))+1;
@@ -382,7 +382,7 @@ varLat = 'latitude';
 varLon = 'longitude';
 %Load debris thickness grid (if present):
 if isfield(sPath, 'icdbr')
-    sDebris = read_geodata_v2(sPath.icdbr, 'data', nan(1,2), nan(1,2), nan(1,2), 0, 'out', 'none','no_disp');
+    sDebris = read_geodata_v2(sPath.icdbr, 'data', nan(1,2), nan(1,2), nan(1,2), 0, 'out', 'none','no_disp', 'onefile');
         sDebris.data = squeeze(sDebris.data);
     if ~isequal(size(sDebris.data), size(sIceInit.icgrddem))
         resDebris = [mean(abs(diff(sDebris.(varLat)))), mean(abs(diff(sDebris.(varLon))))];
@@ -408,7 +408,7 @@ end
 
 %Load glacier lake fraction grid (if present)
 if isfield(sPath, 'icpndx')
-    sPond = read_geodata_v2(sPath.icpndx, 'data', nan(1,2), nan(1,2), nan(1,2), 0, 'out', 'none','no_disp');
+    sPond = read_geodata_v2(sPath.icpndx, 'data', nan(1,2), nan(1,2), nan(1,2), 0, 'out', 'none','no_disp', 'onefile');
         sPond.data = squeeze(sPond.data);
     if ~isequal(size(sPond.data), size(sIceInit.icgrddem))
         resDebris = [mean(abs(diff(sPond.(varLat)))), mean(abs(diff(sPond.(varLon))))];
@@ -435,7 +435,7 @@ end
 
 %Load ice thickness (water equivalent) grid (if present)
 if isfield(sPath, 'icwe')
-    sIceWe = read_geodata_v2(sPath.icwe, 'data', nan(1,2), nan(1,2), nan(1,2), 0, 'out', 'none','no_disp');
+    sIceWe = read_geodata_v2(sPath.icwe, 'data', nan(1,2), nan(1,2), nan(1,2), 0, 'out', 'none','no_disp', 'onefile');
         sIceWe.data = squeeze(sIceWe.data);
     if ~isequal(size(sIceWe.data), size(sIceInit.icgrddem))
         resIceWe = [mean(abs(diff(sIceWe.(varLat)))), mean(abs(diff(sIceWe.(varLon))))];
