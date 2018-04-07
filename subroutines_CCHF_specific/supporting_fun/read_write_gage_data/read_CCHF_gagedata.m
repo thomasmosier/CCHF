@@ -95,8 +95,10 @@ else
                 switch strtrim(lineCurr(1:indLab-1))
                     case 'Longitude'
                         lonCurr = str2double(strtrim(lineCurr(indLab+1:end)));
-                        if isnan(lonCurr) && regexpbl(strtrim(lineCurr(indLab+1:end)),{'spatial','mean','avg','ave'})
+                        if isnan(lonCurr) && regexpbl(strtrim(lineCurr(indLab+1:end)),{'mean','avg','average'})
                             lonCurr = 'avg';
+                        elseif isnan(lonCurr) && regexpbl(strtrim(lineCurr(indLab+1:end)),'all')
+                            lonCurr = 'all';
                         elseif ~isnumeric(lonCurr)
                             warning('read_CCHF_data:Lon',['The current '...
                                 'longitude value is NaN but it is not '...
@@ -104,8 +106,10 @@ else
                         end
                     case 'Latitude'
                         latCurr = str2double(strtrim(lineCurr(indLab+1:end)));
-                        if isnan(latCurr) && regexpbl(strtrim(lineCurr(indLab+1:end)),{'spatial','mean','avg','ave'})
+                        if isnan(latCurr) && regexpbl(strtrim(lineCurr(indLab+1:end)),{'mean','avg','average'})
                             latCurr = 'avg';
+                        elseif isnan(latCurr) && regexpbl(strtrim(lineCurr(indLab+1:end)),'all')
+                            latCurr = 'all';
                         elseif ~isnumeric(latCurr)
                             warning('read_CCHF_data:Lat',['The current '...
                                 'latitude value is NaN but it is not '...
@@ -129,6 +133,12 @@ else
         if ~isempty(varCurr)
             varAll{end+1} = varCurr;
         end
+        
+%         if regexpbl(varCurr, 'flag')
+%             keyboard
+%             while ~regexpbl(fgets(fid),'\w') && ~isnumeric(lineCurr)
+%             end
+%         end
 
         %Either load data from path or from lines within txt file:
         pathField = '';
@@ -160,9 +170,12 @@ else
                     datesCurr = sGageCurr.([varCurr '_date']);
                 end
 
-                varFlag = [varCurr '_flag'];
-                if regexpbl(nmsTemp, varFlag)
-                    flgData = sGageCurr.(varFlag);
+                varFlag1 = [varCurr '_flag'];
+                varFlag2 = [varCurr 'flag'];
+                if regexpbl(nmsTemp, varFlag1)
+                    flgData = sGageCurr.(varFlag1);
+                elseif regexpbl(nmsTemp, varFlag2)
+                    flgData = sGageCurr.(varFlag2);
                 else
                     flgData = []; 
                 end
@@ -197,8 +210,6 @@ else
                     fileLd extLd '.']);
             end
         else
-    %         disp('loading other data')
-    %         keyboard
             %Close when end of file reached
             if isnumeric(lineCurr) %Means the end of the file has been reached.
 %                 %Close file and return to invoking function
@@ -299,7 +310,14 @@ else
         sObs.(nameStCurr).('lat') = latCurr; 
 
         if ~isempty(flgData)
-           sObs.(nameStCurr).([varCurr '_flag']) = flgData; 
+            if regexpbl(nmsTemp, varFlag1)
+                sObs.(nameStCurr).(varFlag1) = flgData;
+            elseif regexpbl(nmsTemp, varFlag2)
+                sObs.(nameStCurr).(varFlag2) = flgData;
+            else
+                sObs.(nameStCurr).(varFlag1) = flgData; 
+            end
+            
         end
         if ~isfield(sObs.(nameStCurr), varCurr)
             sObs.(nameStCurr).(varCurr) = dataCurr;
@@ -350,6 +368,28 @@ else
     disp(['CCHF format observation data is being saved to: ' pathObsSv]);
     save(pathObsSv, 'sObs', 'varAll');
 end
+
+
+%Ensure no date fields for "flag":
+ptsLp = fieldnames(sObs);
+for ii = 1 : numel(ptsLp)
+    fldsCurr = fieldnames(sObs.(ptsLp{ii}));
+    for jj = numel(fldsCurr) : -1 : 1
+        if ~regexpbl(fldsCurr{jj}, 'flag')
+            fldsCurr(jj) = '';
+        end
+    end
+    
+    if ~isempty(fldsCurr)
+        for jj = numel(fldsCurr) : -1 : 1
+            if ~isequal(fldsCurr{jj}(end-3:end), 'flag')
+                
+                sObs.(ptsLp{ii}) = rmfield(sObs.(ptsLp{ii}), fldsCurr{jj});
+            end
+        end
+    end
+end
+
 
 
 if nargout == 2

@@ -392,7 +392,7 @@ if isfield(sPath, 'icdbr')
         if isequal(round2(resDebris, prec), round2(resIceDem, prec)) || all(resDebris < resIceDem)
             sDebris.data = geodata_area_wgt(sDebris.(varLon), sDebris.(varLat), sDebris.data, sIceInit.icgrdlon, sIceInit.icgrdlat, 'nansum');
         else
-            error('CCHF_backbone:mismatchIceDebris', ...
+            error('iceGridLoaded:mismatchIceDebris', ...
                 'The ice and debris cover grids are not the same size.');
         end
     end
@@ -401,9 +401,10 @@ if isfield(sPath, 'icdbr')
 %     sIceInit.icdbr = sparse(szIce(1),szIce(2));
 %     sIceInit.icdbr(indIce) = sDebris.data(indIce);
 
-    warning('ice_grid_init:debrisCover',['Debris cover thickness grid loaded. Ensure this '...
-        'is used in the ice processs representations '...
-        '(including heat calculation).'])
+    disp(['Debris cover thickness grid loaded from ' sPath.icdbr]);
+%     warning('ice_grid_init:debrisCover',['Debris cover thickness grid loaded. Ensure this '...
+%         'is used in the ice processs representations '...
+%         '(including heat calculation).']);
 end
 
 %Load glacier lake fraction grid (if present)
@@ -428,9 +429,10 @@ if isfield(sPath, 'icpndx')
 %     sIceInit.icdbr = sparse(szIce(1),szIce(2));
 %     sIceInit.icdbr(indIce) = sDebris.data(indIce);
 
-    warning('ice_grid_init:icPond',['Ice pond fraction loaded. Ensure this '...
-        'is actually used in the ice processs representations '...
-        '(including heat calculation).'])
+    disp(['Ice pond fraction loaded from ' sPath.icpndx]);
+%     warning('ice_grid_init:icPond',['Ice pond fraction loaded. Ensure this '...
+%         'is actually used in the ice processs representations '...
+%         '(including heat calculation).'])
 end
 
 %Load ice thickness (water equivalent) grid (if present)
@@ -454,9 +456,10 @@ if isfield(sPath, 'icwe')
 %     sIceInit.icdbr = sparse(szIce(1),szIce(2));
 %     sIceInit.icdbr(indIce) = sDebris.data(indIce);
 
-    warning('ice_grid_init:icWe',['Ice water equivalent loaded. Ensure this '...
-        'is actually used in the ice processs representations '...
-        '(including heat calculation).'])
+    disp(['Ice water equivalent thickness loaded from ' sPath.icwe]);
+%     warning('ice_grid_init:icWe',['Ice water equivalent loaded. Ensure this '...
+%         'is actually used in the ice processs representations '...
+%         '(including heat calculation).'])
 end
 
 disp('Finished ice grid initialization');

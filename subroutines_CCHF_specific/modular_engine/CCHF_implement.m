@@ -183,15 +183,15 @@ if sMeta.useprevrun == 0
 
             %Load debris cover grid (if single value, assumed uniform thickness):
             if sMeta.blDebris && ~regexpbl(sMeta.iceGrid, 'none')
-                uiwait(msgbox(sprintf(['Select the debris cover grid for ' ...
+                uiwait(msgbox(sprintf(['Select the debris cover thickness grid (meters depth) for ' ...
                     sMeta.region{ii} '.\n']), '(Click OK to Proceed)','modal'));
-                [fileDeb, foldDeb] = uigetfile({'*.asc';'*.txt'},['Select the debris cover grid for ' ...
+                [fileDeb, foldDeb] = uigetfile({'*.asc';'*.txt'},['Select the debris cover thickness grid for ' ...
                     sMeta.region{ii}], startPath);
                 sPath{ii}.icdbr = fullfile(foldDeb, fileDeb);
-                disp([char(39) sPath{ii}.icdbr char(39) ' has been chosen as the debris thickness grid.']);
+                disp([char(39) sPath{ii}.icdbr char(39) ' has been chosen as the debris cover thickness grid.']);
 
                 if isempty(fileDeb) || isequal(fileDeb, 0)
-                   error('CCHF_main:noDebris',['No glacier surface debris grid '...
+                   error('CCHF_main:noDebris',['No glacier debris cover thickness grid '...
                        'has been selected, even though the option was chosen.' ...
                        ' Therefore, the program is aborting.']); 
                 end
@@ -200,7 +200,7 @@ if sMeta.useprevrun == 0
             %UI to locate ice thickness grid (if specified)
             iceWEMod = find_att(sMeta.module, 'glacier0');
             if strcmpi(iceWEMod, 'external') && ~regexpbl(sMeta.iceGrid, 'none')
-                uiwait(msgbox(sprintf(['Select the ice thickness grid (expressed as water equivalent) for ' ...
+                uiwait(msgbox(sprintf(['Select the ice thickness grid (expressed as water equivalent, meters depth) for ' ...
                     sMeta.region{ii} '.\n']), '(Click OK to Proceed)','modal'));
                 [fileIcWe, foldIcWe] = uigetfile({'*.asc';'*.txt'},['Select the ice thickness grid (water equivalent) for ' ...
                     sMeta.region{ii}], startPath);
@@ -216,9 +216,9 @@ if sMeta.useprevrun == 0
 
             %Load ice lake fraction
             if sMeta.blIcePond == 1  && ~regexpbl(sMeta.iceGrid, 'none')
-                uiwait(msgbox(sprintf(['Select the glacier lake fraction grid (range = 0 to 1) for ' ...
+                uiwait(msgbox(sprintf(['Select the glacier pond fraction grid (range = 0 to 1) for ' ...
                     sMeta.region{ii} '.\n']), '(Click OK to Proceed)','modal'));
-                [fileIcePnd, foldIcePnd] = uigetfile({'*.asc';'*.txt'},['Select the glacier lake fraction grid for ' ...
+                [fileIcePnd, foldIcePnd] = uigetfile({'*.asc';'*.txt'},['Select the glacier pond fraction grid for ' ...
                     sMeta.region{ii}], startPath);
                 sPath{ii}.icpndx = fullfile(foldIcePnd, fileIcePnd);
                 disp([char(39) sPath{ii}.icpndx char(39) ' has been chosen as the glacier pond fraction grid.']);
@@ -342,12 +342,15 @@ if sMeta.useprevrun == 0
         disp([char(39) sPath{1}.coef char(39) ' has been chosen as the set of parameter coefficients.']);
     end
 
-
     %LOAD ALL OBSERVATION DATA
     for ii = 1 : nSites
         sMeta.siteCurr = ii;
 
         if regexpbl(sMeta.runType,{'calibrat','validat','default'})
+            if ischar(pathGage{ii})
+                pathGage{ii} = {pathGage{ii}};
+            end  
+            
             %Remove any duplicate or empty elements:
             pathGage{ii} = unique(pathGage{ii}(~cellfun('isempty',pathGage{ii})));  
             
@@ -412,9 +415,9 @@ if sMeta.useprevrun == 0
     end
 
     %Set paramters specified in main function header:
-    if ~regexpbl(sMeta.runType,'calibrate')
+    if ~regexpbl(sMeta.runType,'calibrate') %Any run type besides calibration
         sMeta.coef = CCHF_set_prm_val(sMeta.coef, sMeta.fixedPrm);
-    else
+    else %Calibration
         sMeta.coefAtt = CCHF_set_prm_val(sMeta.coefAtt, sMeta.fixedPrm);
     end
 
@@ -584,7 +587,7 @@ if ~regexpbl(sMeta.runType,'sim')
         cellStats = [sOpt.fitTest, 'kge', statsExtra];
     end
     
-    
+
     if numel(sOutput) == nSites %&& isstruct(sOutput{1})
         for mm = 1 : nSites
             %Create output directory for assessment plots:
@@ -602,6 +605,7 @@ if ~regexpbl(sMeta.runType,'sim')
         end
         clear mm
     else %This is used when validation is run to assess equifinality
+        %This whole conditonal section needs to be updated...
         %Check if output is in memory or saved as path:
         if isstruct(sOutput{1})
             typOut = 'struct';
@@ -627,21 +631,18 @@ if ~regexpbl(sMeta.runType,'sim')
         scoreTemp = cell(numel(sOutput(:)), 1);
         obsTypTemp = scoreTemp;
         
+        %Loop over outer-set
         parfor mm = 1 : numel(sOutput(:))
-            if strcmpi(typOut, 'struct')
-                nIter = numel(sOutput{mm}(:));
-            elseif strcmpi(typOut, 'path')
-                nIter = nSites;
-            end
-
             scoreSameTemp = cell(nIter,1);
             typSameTemp = scoreSameTemp;
             
             if strcmpi(typOut, 'struct')
+                nIter = numel(sOutput{mm}(:));
                 for nn = 1 : nIter
                     [scoreSameTemp{nn}, typSameTemp{nn}] = report_stats_v2(sObs{nn}, sOutput{mm}{nn}, cellStats, '', sMeta, 'no_disp', 'no_write');
                 end
             elseif strcmpi(typOut, 'path')
+                nIter = nSites;
                 for nn = 1 : nSites
                     [foldLd, fileLd, ~]= fileparts(sOutput{mm}{nn});
                     temp = load(fullfile(foldLd, [fileLd '_' sMeta.region{nn} '.mat']));
@@ -658,10 +659,9 @@ if ~regexpbl(sMeta.runType,'sim')
             obsTypTemp{mm} = typSameTemp;
         end
         clear mm
-        
-            
+          
         if ~isempty(gcp('nocreate'))
-           pctRunOnAll warning('on', 'all') %Turn on warnings during parfor
+           pctRunOnAll warning('on', 'all') %Turn on warnings
         end
 
         %Close dedicated workers used for parallel processing:

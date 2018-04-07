@@ -10,3 +10,10 @@ elseif nPrm > 7 && nPrm < 10
 else
     nRCarlo = 3000;
 end
+
+
+% nPr = (1:10);
+% nRuns = [500,500,500,500,1000,1000,1000,2000,2000,2000];
+% nRuns500 = 500*log(nPr);
+% nRuns1000 = 1000*log(nPr);
+% plot(nPr, nRuns, nPr, nRuns500, nPr, nRuns1000)

@@ -430,7 +430,9 @@ if all2d(~isnan(time))
                 date{1} = sObs.(ptsCurr{ii}).(dateStFld);
                 date{2} = sObs.(ptsCurr{ii}).(dateEnFld);
             else
-                warning('read_gagedate:dateFind',['No date field found in sObs.' ptsCurr{ii} '.']);
+                if ~regexpbl(varCurr{kk}, 'flag')
+                    warning('read_gagedate:dateFind',['No date field found in sObs at pt ' ptsCurr{ii} ' for field ' varCurr{kk} '.']);
+                end
             end
 
             if numel(date{1}(1,:)) < numel(time(1,:))
