@@ -434,6 +434,7 @@ end
 %Set output path and header for writing coefficients:
 pathGenParam = fullfile(sPath{1}.outputMain,['parameter_each_gen' '.txt']);
 pathBstCoef = fullfile(sPath{1}.outputMain,['coefficients_' 'fittest' '.txt']);
+
 disp(['All output from model calibration will be written to:' char(39) sPath{1}.outputMain]);
 
 hdrFull = {['Module_set: ' sMeta.strModule]; ...
@@ -872,8 +873,7 @@ for ss = indStgStrt : nStage
     prmCorr(prmSig > threshSig) = nan;
 
     %Write to file:
-    [foldCf, ~, ~] = fileparts(sPath{1}.coef);
-    pathCorr = fullfile(foldCf, ['Pearson_corr-' num2str(sOpt.nbest) '_parameter_sets-stage_' num2str(ss) '.csv']);
+    pathCorr = fullfile(sPath{1}.outputMain, ['Pearson_corr-' num2str(sOpt.nbest) '_parameter_sets-stage_' num2str(ss) '.csv']);
     fCorr = fopen(pathCorr,'w+');
 
     nCol = numel(bestPrmSets{ss}(1,:)) + 1;

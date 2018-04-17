@@ -59,6 +59,7 @@ end
 
 nStage = numel(prmIn(:));
 nPrm = numel(prmIn{1}(1,:));
+nSets = numel(prmIn{1}(:,1)); 
 bestPrm = nan(nPrm, 1);
 avgPrm = bestPrm;
 sdPrm = avgPrm;
@@ -92,9 +93,11 @@ for ii = 1 : numel(avgPrm)
     x1 = 100;
 %     x1 = perAvgPrm(ii) + 1;
     y1 = ii;
-    str1 = [num2str(round2(avgPrm(ii), 3)) '  [' num2str(round2(prmBnds(ii,1), 3)) '\rightarrow' num2str(round2(prmBnds(ii,2), 3)) ']' ]; %'\leftarrow sin(\pi) = 0';
+    str1 = [num2str(round2(bestPrm(ii), 3)) '  [' num2str(round2(prmBnds(ii,1), 3)) '\rightarrow' num2str(round2(prmBnds(ii,2), 3)) ']' ]; %'\leftarrow sin(\pi) = 0';
     hText(ii) = text(x1,y1,str1);
 end
+
+hText(end+1) = text(0.2,0.2, ['Bars are mean of ' num2str(nSets) ' best prm sets. Dots and text are best performing.']);
     
 
 %Change X labels:
