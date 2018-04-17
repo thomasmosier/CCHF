@@ -81,95 +81,125 @@ sOutput = cell(nSites, 1);
 sObs = sOutput;
 modError = nan(nSites, 1);
 
+%Used to determine if coefficients loaded from variable input arguments
+blCfVar = 0;
+pathOut = '';
 
-%If coefficient parameter set given as variable input argument, override
-%parameters in sMeta.
+%Parse additional variable input arguments
+if ~isempty(varargin(:)) && numel(varargin(:)) > 0
+    for ii = 1 : numel(varargin(:))
+%             if isnumeric(varargin{ii}) && all(~isnan(varargin{ii}))
+%                 varargin{ii} = num2cell(squeeze(varargin{ii}));
+%             end
+        if regexpbl(varargin{ii}, {'cf', 'coef'})
+            cfTmp = varargin{ii+1};
+            if isnumeric(cfTmp)
+                cfTmp = num2cell(cfTmp);
+            end
+            if ~isequal(size(sMeta.coefAtt(:,1)), size(cfTmp(:)))
+                error('cchfEngine:cfDiffSz',['The cf attribute matrix has ' ...
+                    num2str(numel(sMeta.coefAtt(:,1))) ' entries and '...
+                    'the input cf matrix has ' num2str(numel(cfTmp)) ' entries.']);
+            end
+            sMeta.coef = [sMeta.coefAtt(:,1), cfTmp(:)];
+            blCfVar = 1;
+        elseif regexpbl(varargin{ii}, 'obs')
+            sObs = varargin{ii+1};
+        elseif regexpbl(varargin{ii}, 'path')
+            pathOut = varargin{ii+1};
+        elseif regexpbl(varargin{ii}, {'eval','att'})
+            evalAtt = varargin{ii+1};
+        end
+
+%             if isfield(sMeta,'coefAtt') && isequal(size(sMeta.coefAtt(:,1)), size(squeeze(varargin{ii}(:))))
+%                 sMeta.coef = [sMeta.coefAtt(:,1), varargin{ii}(:)];
+%                 blCfVar = 1;
+%             elseif isfield(sMeta,'coef') && numel(sMeta.coef(:,1)) == numel(squeeze(varargin{ii})) && ischar(sMeta.coef{ii})
+%                 sMeta.coef = [sMeta.coef(:,1), varargin{ii}(:)];
+%                 blCfVar = 1;
+%             elseif iscell(varargin{ii}) 
+%                 if isstruct(varargin{ii}{1})
+%                     sObs = varargin{ii};
+%                 elseif ~any(size(varargin{ii}) == 1) && ischar(varargin{ii}{1,1}) && ischar(varargin{ii}{2,1})
+%                     evalAtt = varargin{ii};
+%                 end
+%             elseif ischar(varargin{ii}) && regexpbl(varargin{ii}, 'path')
+%                 pathOut = varargin{ii+1};
+% %                 error('backbone:varargTyoe',['Variable argument 2 '...
+% %                     'must be structure of observations and 3 must '...
+% %                     'be cell array with evaluation attributes.']);
+%             end
+    end
+
+    if ~isempty(evalAtt)
+        fitTest  = find_att(evalAtt, 'fitTest');
+        dateEval = find_att(evalAtt, 'dateEval');
+        fitReq   = find_att(evalAtt, 'fitReq');
+    end
+    if numel(sMeta.dateRun(1,:)) > numel(dateEval)
+        dateEval = [dateEval, ones(1, numel(sMeta.dateRun(1,:)) - numel(dateEval))];
+    elseif numel(sMeta.dateRun(1,:)) < numel(dateEval)
+        dateEval = dateEval(1:numel(sMeta.dateRun(1,:)));
+    end
+    indEval = find(ismember(sMeta.dateRun, dateEval, 'rows') == 1);
+    if isempty(indEval)
+        strDateEval = blanks(0);
+        for kk = 1 : numel(dateEval)
+            strDateEval = [strDateEval, num2str(dateEval(kk))];
+            if kk ~= numel(dateEval)
+                strDateEval = [strDateEval, '-'];
+            end
+        end
+       error('backbone:dateMismatch',['The dateEval, ' ...
+           strDateEval ', does not match any of the dates the model will be run for.']); 
+    end
+end
+
+
+%Implement options only used in non-parameter finding runs
 if ~regexpbl(sMeta.mode,'parameter')
     if ~isfield(sMeta,'dateRun')
         sMeta = dates_run(sMeta,'spin');
     end
-    
-    %Used to determine if coefficients loaded from variable input arguments
-    blCfVar = 0;
-    pathOut = '';
-    %Parse additional variable input arguments
-    if ~isempty(varargin(:)) && numel(varargin(:)) > 0
-        for ii = 1 : numel(varargin(:))
-            if isnumeric(varargin{ii}) && all(~isnan(varargin{ii}))
-                varargin{ii} = num2cell(squeeze(varargin{ii}));
-            end
-
-            if isfield(sMeta,'coefAtt') && isequal(size(sMeta.coefAtt(:,1)), size(squeeze(varargin{ii}(:))))
-                sMeta.coef = [sMeta.coefAtt(:,1), varargin{ii}(:)];
-                blCfVar = 1;
-            elseif isfield(sMeta,'coef') && numel(sMeta.coef(:,1)) == numel(squeeze(varargin{ii})) && ischar(sMeta.coef{ii})
-                sMeta.coef = [sMeta.coef(:,1), varargin{ii}(:)];
-                blCfVar = 1;
-            elseif iscell(varargin{ii}) 
-                if isstruct(varargin{ii}{1})
-                    sObs = varargin{ii};
-                elseif ~any(size(varargin{ii}) == 1) && ischar(varargin{ii}{1,1}) && ischar(varargin{ii}{2,1})
-                    evalAtt = varargin{ii};
-                end
-            elseif ischar(varargin{ii}) && regexpbl(varargin{ii}, 'path')
-                pathOut = varargin{ii+1};
-%                 error('backbone:varargTyoe',['Variable argument 2 '...
-%                     'must be structure of observations and 3 must '...
-%                     'be cell array with evaluation attributes.']);
-            end
-        end
-
-        if ~isempty(evalAtt)
-            fitTest  = find_att(evalAtt, 'fitTest');
-            dateEval = find_att(evalAtt, 'dateEval');
-            fitReq   = find_att(evalAtt, 'fitReq');
-        end
-        if numel(sMeta.dateRun(1,:)) > numel(dateEval)
-            dateEval = [dateEval, ones(1, numel(sMeta.dateRun(1,:)) - numel(dateEval))];
-        elseif numel(sMeta.dateRun(1,:)) < numel(dateEval)
-            dateEval = dateEval(1:numel(sMeta.dateRun(1,:)));
-        end
-        indEval = find(ismember(sMeta.dateRun, dateEval, 'rows') == 1);
-        if isempty(indEval)
-            strDateEval = blanks(0);
-            for kk = 1 : numel(dateEval)
-                strDateEval = [strDateEval, num2str(dateEval(kk))];
-                if kk ~= numel(dateEval)
-                    strDateEval = [strDateEval, '-'];
-                end
-            end
-           error('backbone:dateMismatch',['The dateEval, ' ...
-               strDateEval ', does not match any of the dates the model will be run for.']); 
-        end
-    end
-        
+      
+    %If coefficient parameter set given as variable input argument, override
+    %parameters in sMeta.
     if blCfVar == 0
         if isfield(sMeta,'coef')
-            if numel(sMeta.coef(1,:)) >= 2 && numel(sMeta.coef(1,:)) <= 4
-                sMeta.coef = sMeta.coef;
-            else
+            if numel(sMeta.coef(1,:)) < 2 || numel(sMeta.coef(1,:)) > 4
                 error('CCHF_backbone:coefHydroDim',[char(39) 'sMeta.coef' char(39)...
-                    ' has unexpected dimenions.']);
+                    ' has an unexpected number of columns.']);
             end
         elseif isfield(sMeta,'coefAtt')
-            if numel(sMeta.coefAtt(1,:)) >= 5
-                sMeta.coef = sMeta.coefAtt(:,[1,4,5]);
+            if numel(sMeta.coefAtt(1,:)) == 5
+                sMeta.coef = sMeta.coefAtt(:,[1,4]);
+            else
+                error('CCHF_backbone:coefattHydroDim',[char(39) 'sMeta.coefAtt' char(39)...
+                    ' has an unexpected number of columns.']);
             end
         else
             error('CCHF_backbone:noCoef1',['No input field containing '...
                 'the requisite model parameters was found.']);
         end
-    elseif blCfVar == 1 && (~isfield(sMeta, 'coef') || any2d(isnan(cell2mat(sMeta.coef(:,2)))))
-        error('CCHF_backbone:coefVar',['Variable input argument being ' ...
-            'used to assign parameter values, but neither ' char(39) ...
-            'sMeta.coef' char(39) ' nor ' char(39) 'sMeta.coefAtt' ...
-            char(39) ' appear to contain the necessary model parameter name '...
-            'fields.']);
+    elseif blCfVar == 1 
+        if ~isfield(sMeta, 'coef') 
+            error('CCHF_backbone:noCoefField',['Variable input argument being ' ...
+                'used to assign parameter values, but neither ' char(39) ...
+                'sMeta.coef' char(39) ' does not exist.']);
+        elseif any2d(size(sMeta.coef) == 1)
+            error('CCHF_backbone:coefWrongSize',['Variable input argument being ' ...
+                'used to assign parameter values, but appears to be missing a column (either parameter names or values)']);
+            
+        elseif any(isnan(cell2mat(sMeta.coef(:,2))))
+            error('CCHF_backbone:coefNan',['Variable input argument being ' ...
+                'used to assign parameter values, but ' char(39) ...
+                'sMeta.coef' char(39) ' has at least one nan value.']);
+        end
     end
         
     if isempty(sMeta.coef)
-        error('CCHF_backbone:noCoef2',['An input parameter field was found but '...
-            'its format is not correct.']);
+        error('CCHF_backbone:coefEmpty',['An input parameter field was found but '...
+            'it is empty.']);
     end
 end
 

@@ -73,18 +73,16 @@ elseif regexpbl(pathPrm,'.csv')
         end
     end
     clear ii
-
-    %If loaded parameters contain multiple sets, put each in seperate
-    %cell array and calculate correlation between parameters:
-    if all(size(prmArray) ~= 1)
-        prmCellTemp = cell(numel(prmArray(:,1)),1);
-        for mm = 1: numel(prmCellTemp(:))
-            prmCellTemp{mm} = prmArray(mm, :);
-        end
-
-        coefOut = prmCellTemp;
-    else
-        coefOut = prmArray;
+    
+    %Populate output cell array, where each entry is a cell array of
+    %parameter names and values
+    szPrmIn = size(prmArray);
+    coefOut = cell([szPrmIn(1), 1]);
+    [coefOut{:}] = deal(cell([szPrmIn(2), 2]));
+    
+    for mm = 1 : numel(coefOut(:))
+        coefOut{mm}(:,1) = varPrm(:);
+        coefOut{mm}(:,2) = num2cell(prmArray(mm,:))';
     end
 else
     [~, ~, extCf] = fileparts(pathPrm);

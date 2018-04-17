@@ -463,7 +463,7 @@ if sMeta.useprevrun == 0
         save(pathInputs, 'sPath', 'pathGage');
         disp(['Paths of all input data used saved to ' pathInputs char(10) 'This path can be set in main script to supress UI for loading inputs. You can customize the file name and location.'])
     end
-
+    
     %%RUN THE HYDROLOGIC MODEL:
     tStrt = now;
     % sOutput = cell(1,1);
@@ -475,7 +475,9 @@ if sMeta.useprevrun == 0
     elseif regexpbl(sMeta.runType,{'valid','sim'})
         sMeta.mode = 'validate';
 
-        if iscell(sMeta.coef) && ~ischar(sMeta.coef{1}) && ~all2d( size(sMeta.coef{1}) == 1 )
+        %Validate model using one of two different settings: 
+        %(1) Multiple parameter sets or (2) single parameter set
+        if iscell(sMeta.coef) && ~ischar(sMeta.coef{1}) && ~all2d(size(sMeta.coef{1}) == 1)
             nReg = numel(sMeta.region(:));
             pathValOut = cell(nReg, 1);
             for ii = 1 : nReg
@@ -487,9 +489,14 @@ if sMeta.useprevrun == 0
             
             sMeta = rmfield_x(sMeta,'progress');
 
-            coefAll = nan(numel(sMeta.coef(:,1)), numel(sMeta.coef{1}));
-            for ii = 1 : numel(coefAll(:,1))
-                coefAll(ii,:) = sMeta.coef{ii,:};
+            %Ensure no output data written to file:
+            sMeta.wrtGridOut = 0;
+            sMeta.blDispOut = 0;
+            
+            %Reformat all parameter sets:
+            coefAll = nan([numel(sMeta.coef{1}(:,1)), numel(sMeta.coef(:,1))]);
+            for ii = 1 : numel(coefAll(1,:))
+                coefAll(:,ii) = cell2mat(sMeta.coef{ii,:}(:,2));
             end
             clear ii
 
@@ -508,20 +515,17 @@ if sMeta.useprevrun == 0
                pctRunOnAll warning('off', 'all') %Turn off warnings during parfor
             end
 
-            sOutput = cell(numel(coefAll(:,1)),1);
+            sOutput = cell(numel(coefAll(1,:)),1);
             nRuns = numel(coefAll(:,1));
-            parfor ii = 1 : numel(coefAll(:,1))
+            parfor ii = 1 : numel(coefAll(1,:))
                 if mod(ii,10) == 0
                    display(['Currently on validation run ' num2str(ii) ' of ' num2str(nRuns)]); 
                 end
-                %sMeta.coef = coefAll(ii,:);
-%                 sOutTemp = struct;
 
+                %Write output to matlab file
                 sOutput{ii} = fullfile(pathValOut, [valRt num2str(ii) '.mat']);
                 
-%                 sPath.wrtoutput = sOutput{ii};
-                [~] = CCHF_engine_v4(sPath, sHydro, sMeta, coefAll(ii,:)', 'path', sOutput{ii});
-%                 sOutput{ii} = CCHF_engine_v4(sPath, sHydro, sMeta, coefAll(ii,:)');
+                [~] = CCHF_engine_v4(sPath, sHydro, sMeta, 'cf', coefAll(:,ii), 'path', sOutput{ii});
             end
             clear ii
 
@@ -631,18 +635,20 @@ if ~regexpbl(sMeta.runType,'sim')
         scoreTemp = cell(numel(sOutput(:)), 1);
         obsTypTemp = scoreTemp;
         
-        %Loop over outer-set
-        parfor mm = 1 : numel(sOutput(:))
-            scoreSameTemp = cell(nIter,1);
-            typSameTemp = scoreSameTemp;
-            
+        %Loop over outer-set (either number of sites or number of parameter
+        %sets)
+        warning('off', 'MATLAB:mir_warning_maybe_uninitialized_temporary');
+        parfor mm = 1 : numel(sOutput(:))           
             if strcmpi(typOut, 'struct')
                 nIter = numel(sOutput{mm}(:));
+                scoreSameTemp = cell(nIter,1);
+                typSameTemp = cell(nIter,1);
                 for nn = 1 : nIter
                     [scoreSameTemp{nn}, typSameTemp{nn}] = report_stats_v2(sObs{nn}, sOutput{mm}{nn}, cellStats, '', sMeta, 'no_disp', 'no_write');
                 end
             elseif strcmpi(typOut, 'path')
-                nIter = nSites;
+                scoreSameTemp = cell(nSites,1);
+                typSameTemp = cell(nSites,1);
                 for nn = 1 : nSites
                     [foldLd, fileLd, ~]= fileparts(sOutput{mm}{nn});
                     temp = load(fullfile(foldLd, [fileLd '_' sMeta.region{nn} '.mat']));
@@ -659,6 +665,7 @@ if ~regexpbl(sMeta.runType,'sim')
             obsTypTemp{mm} = typSameTemp;
         end
         clear mm
+        warning('on', 'MATLAB:mir_warning_maybe_uninitialized_temporary')
           
         if ~isempty(gcp('nocreate'))
            pctRunOnAll warning('on', 'all') %Turn on warnings

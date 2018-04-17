@@ -623,7 +623,7 @@ for ss = indStgStrt : nStage
             fitCurrSites = nan(nSites, 1);
             
             if all(~isnan(dateEval))
-                [sModTemp, fitTemp] = CCHF_engine_v4(sPath, sHydro, sMeta, prmCurr(jj,:)', obsCurr, shortEvalAtt);
+                [sModTemp, fitTemp] = CCHF_engine_v4(sPath, sHydro, sMeta, 'cf', prmCurr(jj,:)', 'obs', obsCurr, 'evalatt', shortEvalAtt);
                 if isnan(fitTemp)
                     for mm = 1 : nSites
                         fitCurrSites(mm) = nanmean(cell2mat(mod_v_obs_v2(obsCurr{mm}, sModTemp{mm}, fitTest, 'combineType')));
@@ -633,7 +633,7 @@ for ss = indStgStrt : nStage
                     fitCurrSites = fitTemp(:)';
                 end
             else
-                sModTemp = CCHF_engine_v4(sPath, sHydro, sMeta, prmCurr(jj,:)');
+                sModTemp = CCHF_engine_v4(sPath, sHydro, sMeta, 'cf', prmCurr(jj,:)');
                 for mm = 1 : nSites
                     fitCurrSites(mm) = nanmean(cell2mat(mod_v_obs_v2(obsCurr{mm}, sModTemp{mm}, fitTest, 'combineType')));
                 end
@@ -902,7 +902,7 @@ delete(poolobj);
 
 
 %Rerun model for best parameter set:
-sModOut = CCHF_engine_v4(sPath, sHydro, sMeta, stageBestPrm{end});
+sModOut = CCHF_engine_v4(sPath, sHydro, sMeta, 'cf', stageBestPrm{end});
 
 
 %Write and Plot parameters:
