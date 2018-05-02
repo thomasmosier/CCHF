@@ -28,15 +28,15 @@ global sAtm
 %dataPath = path of data to load
 %tsDate = vector of date [year, month, day]
 %sHydro = structure of with entries
-    %sHydro.lat = latitudes to load
-    %sHydro.lon = longitudes to load
+    %sHydro.(varLat) = latitudes to load
+    %sHydro.(varLon) = longitudes to load
 
 %OUTPUTS:
 %sDataO = geodata structure of form:
     %sDataO.info = Cell array of general dataset information 
-    %sDataO.lat = vector of latitudes
+    %sDataO.(varLat) = vector of latitudes
     %sDataO.attLat = cell array with attribute list for latitude coordinate
-    %sDataO.lon = vector of longitudes
+    %sDataO.(varLon) = vector of longitudes
     %sDataO.attLon = cell array with attribute list for longitude coordinate
     %sDataO.time = vector of times corresponding to each data grid loaded
     %sDataO.attTime = cell array with attribute list for time coordinate
@@ -44,6 +44,8 @@ global sAtm
     %sDataO.attData = cell array with attribute list for data
     %sDataO.var = Name of the climate variable in the structure
    
+varLon = 'longitude';
+varLat = 'latitude';
 
 %Exit function if all requested data already loaded:
 if ~isempty(dateCurr) && ~all(isnan(dateCurr))
@@ -135,8 +137,8 @@ if ~isempty(dateCurr) && ~all(isnan(dateCurr))
                             varCurr ' alternative names have not been programmed for. Add in statement above.']);
                     end
                 end
-                sDataCurr.lon = sHydro.lon;
-                sDataCurr.lat = sHydro.lat;
+                sDataCurr.(varLon) = sHydro.(varLon);
+                sDataCurr.(varLat) = sHydro.(varLat);
                 sDataCurr.time = ncread(fileCurr,'time');
                 sDataCurr.attTime = ncinfo(fileCurr,'time');
                     sDataCurr.attTime = squeeze(struct2cell(sDataCurr.attTime.Attributes))';
@@ -144,8 +146,8 @@ if ~isempty(dateCurr) && ~all(isnan(dateCurr))
                     sDataCurr.attData = squeeze(struct2cell(sDataCurr.attData.Attributes))';
                 sDataCurr.data = single(ncread(fileCurr,varRead));
             elseif regexpbl(fileCurr, {'.txt','.asc'})
-                sDataCurr.lon = sHydro.lon;
-                sDataCurr.lat = sHydro.lat;
+                sDataCurr.(varLon) = sHydro.(varLon);
+                sDataCurr.(varLat) = sHydro.(varLat);
 
                 %Look for marker of time-res
                 if isfield(sPath, [varCurr 'Res'])
@@ -194,7 +196,7 @@ if ~isempty(dateCurr) && ~all(isnan(dateCurr))
                 sDataCurr.attTime = {'calendar', 'Gregorian'; 'units', 'days_since 1000-01-01'};
                 sDataCurr.time = days_since([1000,1,1], dateCurr, 'Gregorian');
 
-                sDataCurr.data = nan([1, numel(sHydro.lat), numel(sHydro.lon)],'single');
+                sDataCurr.data = nan([1, numel(sHydro.(varLat)), numel(sHydro.(varLon))],'single');
                 [sDataCurr.data(1,:,:), ~, ~] = read_ESRI(sPath.([varCurr 'File']){sMeta.indCurr});
 
                 %If precipitation, assumes units are mm:
@@ -240,19 +242,19 @@ if ~isempty(dateCurr) && ~all(isnan(dateCurr))
         end
 
         %Transform data to lat-lon grid used with other datasets:
-        if nanmean(abs(sDataCurr.lat-sHydro.lat)) > sMeta.spEps || nanmean(abs(sDataCurr.lon-sHydro.lon)) > sMeta.spEps
-        %if ~isequal(round2(sDataCurr.lat,4),round2(sHydro.lat,4)) || ~isequal(round2(sDataCurr.lon,4),round2(sHydro.lon,4 ))
+        if nanmean(abs(sDataCurr.(varLat)-sHydro.(varLat))) > sMeta.spEps || nanmean(abs(sDataCurr.(varLon)-sHydro.(varLon))) > sMeta.spEps
+        %if ~isequal(round2(sDataCurr.(varLat),4),round2(sHydro.(varLat),4)) || ~isequal(round2(sDataCurr.(varLon),4),round2(sHydro.(varLon),4 ))
             warning('one_month_data_load:regrid', ...
                 ['Data loaded from ' char(39) ...
                 strrep(sPath.(varCurr),'\',':') char(39) ...
                 ' are being regridded.  This adds processing time.']);
  
             %Initialize new grid:
-            sDataCurr.dataTemp = nan(squeeze(numel(sDataCurr.data(:,1,1))), numel(sHydro.lat), numel(sHydro.lon));
+            sDataCurr.dataTemp = nan(squeeze(numel(sDataCurr.data(:,1,1))), numel(sHydro.(varLat)), numel(sHydro.(varLon)));
 
             %Regrid:
             for ii = 1 : numel(sDataCurr.data(:,1,1))
-                sDataCurr.dataTemp(ii,:,:) = area_int_2D_v2(sDataCurr.lon, sDataCurr.lat, squeeze(sDataCurr.data(ii,:,:)), sHydro.lon, sHydro.lat,'nansum');
+                sDataCurr.dataTemp(ii,:,:) = area_int_2D_v2(sDataCurr.(varLon), sDataCurr.(varLat), squeeze(sDataCurr.data(ii,:,:)), sHydro.(varLon), sHydro.(varLat),'nansum');
             end
 
             %Transfer regular data field:
@@ -260,8 +262,8 @@ if ~isempty(dateCurr) && ~all(isnan(dateCurr))
             sDataCurr = rmfield(sDataCurr,'dataTemp');
 
             %Replace lat and lon:
-            sDataCurr.lon = sHydro.lon;
-            sDataCurr.lat = sHydro.lat;
+            sDataCurr.(varLon) = sHydro.(varLon);
+            sDataCurr.(varLat) = sHydro.(varLat);
         end
 
         %Change units and change to metric:
@@ -324,8 +326,8 @@ if ~isempty(dateCurr) && ~all(isnan(dateCurr))
         sAtm.(['date' varCurr]) = datesNew;
         
         if ll == 1 && ~isfield(sAtm,'lat')
-            sAtm.lat = sDataCurr.lat;
-            sAtm.lon = sDataCurr.lon;
+            sAtm.(varLat) = sDataCurr.(varLat);
+            sAtm.(varLon) = sDataCurr.(varLon);
         end
 
         %Transfer data from current variable to combined data structure

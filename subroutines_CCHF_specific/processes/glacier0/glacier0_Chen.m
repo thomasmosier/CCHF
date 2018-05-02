@@ -37,18 +37,27 @@ if isfield(sCryo, 'icx')
 %     b = 15.4;
 %     c = 0.5;
 %     %Estimate ice thickness:
-%     gThick = a + b*sCryo.iceArea.^c; 
+%     gThick = a + b*sCryo.igrdeArea.^c; 
 
     %%CHEN AND OHMURA:
     %Use empirical coefficients from paper:
     a = 28.5;
     b = 0.357;
+
+    if ~isfield(sCryo, 'igrdarea')
+        sCryo.igrdarea = area_geodata(sCryo.igrdlon, sCryo.igrdlat, 'center');
+    end
+    
     %Estimate ice thickness:
     gThick = a*(sCryo.icx.*sHydro.area).^b; 
+    %Interpolate thickness to glacier grid:
+    gThick = interp2(sHydro.lon, sHydro.lat, gThick, sCryo.igrdlon, sCryo.igrdlat);
     
-    sCryo.icwe = (rhoI/rhoW)*gThick;
+    %Estimate water equivalent:
+    sCryo.igrdwe = (rhoI/rhoW)*gThick;
 
-    sCryo.icbsdem = sHydro.dem - gThick;
+    %Estimate glacier base elevation:
+    sCryo.igrdbsdem = sHydro.dem - gThick;
 else
     error('glacier0Chen:noArea','Ice thickness cannot be estimated because there is no area approximation.');
 end

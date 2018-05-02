@@ -33,7 +33,7 @@ path2Inputs = '';
 
 
 %%USER INPUTS:
-%Select the time period to downscale:
+%Select the type of model run:
 runType = 'calibrate';	%Either 'default' (guess a parameter set), 
                             %'calibrate' (for optimizing parameters), 
                             %'calibrate_resume' (use this if a calibration 

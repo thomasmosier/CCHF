@@ -23,19 +23,28 @@ function glacier0_external(sHydro, sMeta)
 %climate equilibrium.
 global sCryo
 
-%Empirical ice thickness based on
-%Chen, J., & Ohmura, A. (1990). Estimation of Alpine glacier water 
-%resources and their change since the 1870s. IAHS publ, 193, 127-135.
 
 rhoI = find_att(sMeta.global,'density_ice'); 
 rhoW = find_att(sMeta.global,'density_water');
 
+
+if ~isfield(sCryo, 'igrddem')
+    error('glacier0External:noArea', ['Glacier base elevation cannot be '...
+        'estimated because no ice grid DEM is available (field name = igrddem)']);
+end
+
 if isfield(sCryo, 'icwe')
-    sCryo.icbsdem = sHydro.dem - full(sCryo.icwe)*(rhoW/rhoI);
+    sCryo.igrdbsdem = sCryo.igrddem - full(sCryo.icwe)*(rhoW/rhoI);
+elseif isfield(sCryo, 'igrdwe')
+    sCryo.igrdbsdem = sCryo.igrddem - full(sCryo.igrdwe)*(rhoW/rhoI);
 elseif isfield(sCryo, 'icdepth')
-    sCryo.icwe = (rhoI/rhoW)*full(sCryo.icdepth);
+    sCryo.igrdwe = (rhoI/rhoW)*full(sCryo.icdepth);
     
-    sCryo.icbsdem = sHydro.dem - full(sCryo.icdepth);
+    sCryo.igrdbsdem = sCryo.igrddem - full(sCryo.icdepth);
+elseif isfield(sCryo, 'igrddepth')
+    sCryo.igrdwe = (rhoI/rhoW)*full(sCryo.igrddepth);
+    
+    sCryo.igrdbsdem = sHydro.dem - full(sCryo.igrddepth);
 else
-    error('glacier0External:noArea','Ice thickness cannot be estimated because there is no area approximation.');
+    error('glacier0External:noArea','Ice thickness and base DEM cannot be initialized because there is no depth or thickness approximation.');
 end

@@ -36,24 +36,24 @@ g = find_att(sMeta.global,'grav_accel');
 
 %Set minimal angle to 1.5 degrees (sind(1.5) = 0.0262) (From Shea et al.)
 
-sCryo.icegrdslopefdr(sCryo.icegrdslopefdr > -0.0262 & sCryo.icegrdslopefdr < 0) = -0.0262; 
-sCryo.icegrdslopefdr(sCryo.icegrdslopefdr >= 0 & sCryo.icegrdslopefdr <= 0.0262) = 0.0262;
+sCryo.igrdslopefdr(sCryo.igrdslopefdr > -0.0262 & sCryo.igrdslopefdr < 0) = -0.0262; 
+sCryo.igrdslopefdr(sCryo.igrdslopefdr >= 0 & sCryo.igrdslopefdr <= 0.0262) = 0.0262;
 
-gThick = abs(tauNaught./(-rhoI*g*sCryo.icegrdslopefdr));
+gThick = abs(tauNaught./(-rhoI*g*sCryo.igrdslopefdr));
 gThick(gThick < 0) = 0;
 % gThick(isnan(sCryo.icwe)) = nan;
 % gThick(sCryo.icwe == 0) = 0;
 
-if issparse(sCryo.icwe)
+if issparse(sCryo.igrdwe)
     gThick = sparse(double(gThick));
 else
     gThick = single(gThick);
 end
 
-sCryo.icgrdwe = (rhoI/rhoW)*gThick;
+sCryo.igrdwe = (rhoI/rhoW)*gThick;
 
 if issparse(sCryo.icwe)
-    sCryo.icgrdbsdem = sCryo.icgrddem - full(gThick);
+    sCryo.igrdbsdem = sCryo.igrddem - full(gThick);
 else
-    sCryo.icgrdbsdem = sCryo.icgrddem - gThick;
+    sCryo.igrdbsdem = sCryo.igrddem - gThick;
 end

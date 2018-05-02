@@ -490,12 +490,15 @@ end
 %GLACIER PROCESSES (INCLUDES GLACIER DYNAMICS OPTIONS): 
 %FUNCTIONS TO ONLY BE IMPLEMENTED IF GLACIER OUTLINES PRESENT
 if isfield(sCryo,'icx') && any2d(sCryo.icx > 0) && sMeta.glacierDynamics == 1
-    if sMeta.indCurr == 1 && ~regexpbl(sMeta.mode, 'calib')
-        disp('Calculating glacier dynamics');
-    end
     glacMoveMod = find_att(sMeta.module,'glaciermove', 'no_warning');
-    
     firnMod = find_att(sMeta.module,'firn', 'no_warning');
+    
+    if sMeta.indCurr == 1 && ~regexpbl(sMeta.mode, 'calib')
+        disp(['Calculating glacier dynamics each year of model run. '...
+            'This includes lateral redistribution and glacier mass balance.']);
+        disp(['The lateral movement module is ' glacMoveMod ' and the mass balance module is ' firnMod '.']);
+    end
+    
             
     if ~regexpbl(sMeta.mode,'parameter') && regexpbl(firnMod, 'simple')
         %Model firn compaction (i.e. metamorphism from snow to ice) using

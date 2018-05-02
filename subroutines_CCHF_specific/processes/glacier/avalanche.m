@@ -45,11 +45,9 @@ szMn = size(sHydro.dem);
 if ~isfield(sCryo,strIcF) ||  ~isfield(sCryo,strIcT) 
     %Angle is in degrees:
     angCrit = find_att(sMeta.global,'avalanche_angle');
-
     %Ensure critical angle expressed as positive number:
-    if angCrit < 0
-        angCrit = -angCrit;
-    end
+    angCrit = abs(angCrit);
+    
     %If expressed as degrees, convert to rise over run:
     if angCrit > 10
         angCrit = tand(angCrit);

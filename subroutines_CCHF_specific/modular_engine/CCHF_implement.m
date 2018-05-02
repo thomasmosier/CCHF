@@ -127,10 +127,7 @@ if sMeta.useprevrun == 0
 
             %FIND GLACIER DATA PATH:
             if regexpbl(sMeta.iceGrid, 'fine') && isempty(find_att(sMeta.module, 'glacier','no_warning'))
-                warning('CCHF_main:fineDemNoGlacier',['The glacier grid resolution '...
-                    'is being set to be the same as the main grid because no '...
-                    'glacier dynamics module has been selected.']);
-                sMeta.iceGrid = 'same';
+                disp('The glacier grid resolution is fine but glaciers are being treated as static.');
             end
 
             if regexpbl(sMeta.iceGrid, 'same')
@@ -152,9 +149,9 @@ if sMeta.useprevrun == 0
                     'spatial scale of glacier process evaluation'];
 
                 uiwait(msgbox(sprintf(['Select the glacier presence geo-referenced grid or shapefile for ' ...
-                    sMeta.region{ii} iceAuxDisp '.\n']), '(Click OK to Proceed)','modal'));
+                    sMeta.region{ii} ' ' iceAuxDisp '.\n']), '(Click OK to Proceed)','modal'));
                 [fileGlac, foldGlac] = uigetfile({'*.*'},['Select the glacier presence geo-referenced grid or shapefile for ' ...
-                    sMeta.region{ii} iceAuxDisp '.\n'], startPath);
+                    sMeta.region{ii} ' ' iceAuxDisp '.\n'], startPath);
                 sPath{ii}.ice = fullfile(foldGlac, fileGlac);
                 disp([char(39) sPath{ii}.ice char(39) ' has been chosen as the glacier presence grid.']);
 
@@ -165,9 +162,9 @@ if sMeta.useprevrun == 0
                 end
 
                 uiwait(msgbox(sprintf(['Select the glacier surface DEM for ' ...
-                    sMeta.region{ii} iceAuxDisp '.\n']), '(Click OK to Proceed)','modal'));
+                    sMeta.region{ii} ' ' iceAuxDisp '.\n']), '(Click OK to Proceed)','modal'));
                 [fileGlacDem, foldGlacDem] = uigetfile({'*.*'},['Select the glacier surface DEM for ' ...
-                    sMeta.region{ii} iceAuxDisp '.\n'], startPath);
+                    sMeta.region{ii} ' ' iceAuxDisp '.\n'], startPath);
                 sPath{ii}.iceDem = fullfile(foldGlacDem, fileGlacDem);
                 disp([char(39) sPath{ii}.ice char(39) ' has been chosen as the glacier DEM grid.']);
 
@@ -258,8 +255,8 @@ if sMeta.useprevrun == 0
         %Load DEM and calculate watershed geometry fields:
         sDem = read_geodata_v2(sPath{ii}.dem, 'data', nan(1,2), nan(1,2), nan(1,2), '0', 'out', 'none', 'onefile');
         sHydro{ii}.dem = sDem.data;
-        sHydro{ii}.lat = sDem.(varLat);
-        sHydro{ii}.lon = sDem.(varLon);
+        sHydro{ii}.(varLat) = sDem.(varLat);
+        sHydro{ii}.(varLon) = sDem.(varLon);
         if isfield(sPath{ii}, 'fdr')
             sFdr = read_geodata_v2(sPath{ii}.fdr, 'data', nan(1,2), nan(1,2), nan(1,2), '0', 'out', 'none', 'onefile');
             sHydro{ii}.fdrESRI = sFdr.data;
@@ -361,7 +358,7 @@ if sMeta.useprevrun == 0
             end
             
             %Load observation data:
-            [sObs{ii}, pathCchfGage] = read_gagedata(pathGage{ii}, sHydro{ii}.lon, sHydro{ii}.lat, ...
+            [sObs{ii}, pathCchfGage] = read_gagedata(pathGage{ii}, sHydro{ii}.(varLon), sHydro{ii}.(varLat), ...
                 'time',[sMeta.dateStart;sMeta.dateEnd], ...
                 'mask',sHydro{ii}.dem);
             
@@ -377,11 +374,12 @@ if sMeta.useprevrun == 0
         if isempty(sMeta.output{ii})
            sMeta.output{ii} = sMeta.addoutput;
         end
-        [sMeta.output{ii}, sObs{ii}] = output_all_gage(sMeta.output{ii}, sObs{ii}, sHydro{ii}.lon, sHydro{ii}.lat);
+        [sMeta.output{ii}, sObs{ii}] = output_all_gage(sMeta.output{ii}, sObs{ii}, sHydro{ii}.(varLon), sHydro{ii}.(varLat));
     end
     clear ii
 
 
+    %Calculate watershed properties and load/initialize glacier data:
     for ii = 1 : nSites
         sMeta.siteCurr = ii;
 
@@ -395,7 +393,7 @@ if sMeta.useprevrun == 0
         sHydro{ii} = watershed(sHydro{ii});
 
         %Initialize ice grid:
-        [sHydro{ii}.sIceInit, sHydro{ii}.icbl] = ice_grid_load_v2(sHydro{ii}, sPath{ii}, sMeta);
+        sHydro{ii}.sIceInit = ice_grid_load_v2(sHydro{ii}, sPath{ii}, sMeta);
     end
     clear ii
 
@@ -405,7 +403,7 @@ if sMeta.useprevrun == 0
     sMeta.mode = 'parameter';
     sMeta.coefAtt = CCHF_engine_v4(sPath, sHydro, sMeta);
 
-
+    keyboard
     %IF VALIDATION, LOAD COEFFICIENT SET AND COMPARE TO PARAMETERS NEEDED FOR CURRENT MODEL:
     if regexpbl(sMeta.runType,{'valid','sim'})
         sMeta.coef = CCHF_ld_prms(sPath{1}.coef, sMeta);
@@ -604,7 +602,7 @@ if ~regexpbl(sMeta.runType,'sim')
             report_stats_v2(sObs{mm}, sOutput{mm}, cellStats, sPath{mm}.output, sMeta);
 
             %Create plots: modeled versus observed
-            mod_v_obs_v2(sObs{mm}, sOutput{mm}, sOpt.fitTest, 'plot', dirModObs, 'scatter','grid','combineType', 'lon', sHydro{mm}.lon, 'lat', sHydro{mm}.lat, 'wrtGridTyp', wrtGrid);
+            mod_v_obs_v2(sObs{mm}, sOutput{mm}, sOpt.fitTest, 'plot', dirModObs, 'scatter','grid','combineType', 'lon', sHydro{mm}.(varLon), 'lat', sHydro{mm}.(varLat), 'wrtGridTyp', wrtGrid);
             mod_v_obs_v2(sObs{mm}, sOutput{mm}, sOpt.fitTest, 'plot', dirModObs,'combineType', 'wrtTyp', sMeta.wrtTyp);
         end
         clear mm

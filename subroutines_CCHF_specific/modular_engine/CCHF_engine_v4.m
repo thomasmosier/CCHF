@@ -54,7 +54,8 @@ function varargout = CCHF_engine_v4(sPath, sHydro, sMeta, varargin)
     %'output' = output path
 
 
-    
+varLat = 'latitude';
+varLon = 'longitude';
     
 %%Set default values:
 %This value simply determines when to test the fitness of the current
@@ -257,7 +258,7 @@ for mm = 1 : nSites
                 error('backbone:unkownFileType','The present file type has not been coded for.');
             end
 
-            if isequal(round2(latTemp,4),round2(sHydro{mm}.lat,4)) && isequal(round2(lonTemp,4),round2(sHydro{mm}.lon,4 ))
+            if isequal(round2(latTemp,4),round2(sHydro{mm}.(varLat),4)) && isequal(round2(lonTemp,4),round2(sHydro{mm}.(varLon),4 ))
                 if ~isfield(sPath{mm},'varNm')
                     sPath{mm}.varNm = cell(size(sMeta.varLd));
                 end
@@ -295,7 +296,7 @@ for mm = 1 : nSites
         end
 
         %Determine resolution of hydro grid and store in sMeta:
-        sMeta.spRes = nanmean([nanmean(abs(diff(sHydro{mm}.lat))), nanmean(abs(diff(sHydro{mm}.lon)))]);
+        sMeta.spRes = nanmean([nanmean(abs(diff(sHydro{mm}.(varLat)))), nanmean(abs(diff(sHydro{mm}.(varLon))))]);
         sMeta.spEps = 0.1*sMeta.spRes;
 
         sMeta.frame = 0;
@@ -358,8 +359,8 @@ for mm = 1 : nSites
         %Initialize cryosphere and land arrays:
         if ii == 1   
             %Define edges of main grid and record in sMeta (useful for limiting data loaded using 'geodata'):
-            edgeLat = box_edg(sHydro{mm}.lat);
-            edgeLon = box_edg(sHydro{mm}.lon);
+            edgeLat = box_edg(sHydro{mm}.(varLat));
+            edgeLon = box_edg(sHydro{mm}.(varLon));
 
             sMeta.crd = [edgeLon(1), edgeLon(end), edgeLat(end), edgeLat(1)]; %[W, E, S, N]
 

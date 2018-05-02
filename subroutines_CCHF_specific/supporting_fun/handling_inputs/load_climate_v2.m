@@ -22,6 +22,10 @@ function load_climate_v2(sPath, sHydro, sMeta, varargin)
 
 global sAtm
 
+varLon = 'longitude';
+varLat = 'latitude';
+
+
 if isempty(sAtm)
    sAtm = struct; 
 end
@@ -79,15 +83,15 @@ end
 
 
 %Check that sAtm spatial grid aligns with DEM grid:
-if ~isempty(fieldnames(sAtm)) && (nanmean(abs(sAtm.lat-sHydro.lat)) > sMeta.spEps || nanmean(abs(sAtm.lon-sHydro.lon)) > sMeta.spEps)
+if ~isempty(fieldnames(sAtm)) && (nanmean(abs(sAtm.(varLat)-sHydro.(varLat))) > sMeta.spEps || nanmean(abs(sAtm.(varLon)-sHydro.(varLon))) > sMeta.spEps)
     warning('load_climate:diffSpatialGrid',['The spatial grid of the '...
         'DEM being used and the climate inputs are different. The '...
         'cliamte data is being spatially interpolated, which '...
         'significantly slows down the model.']);
     for ii = 1 : numel(sMeta.varLd)
-        gridTemp = nan([numel(sAtm.time),numel(sHydro.lat),numel(sHydro.lon)],'single');
+        gridTemp = nan([numel(sAtm.time),numel(sHydro.(varLat)),numel(sHydro.(varLon))],'single');
         for jj = 1 : numel(sAtm.time)
-            gridTemp(jj,:,:) = PCHIP_2D(sAtm.lon, sAtm.lat, squeeze(sAtm.(sMeta.varLd{ii})(jj,:,:)) , sHydro.lon, sHydro.lat);
+            gridTemp(jj,:,:) = PCHIP_2D(sAtm.(varLon), sAtm.(varLat), squeeze(sAtm.(sMeta.varLd{ii})(jj,:,:)) , sHydro.(varLon), sHydro.(varLat));
         end
         
         if regexpbl(sMeta.varLd{ii},'pr')
