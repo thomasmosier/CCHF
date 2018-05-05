@@ -329,8 +329,8 @@ if isfield(sPath, 'ice') %&& ~regexpbl(sMeta.mode, 'parameter')
             %centroids (including frame) contained with that main 
             %grid cell
 
-        sIceInit.ic2igrd = cell(szMain);
-        sIceInit.igrd2ic = nan(szIce(1),szIce(2), 'single');
+        sIceInit.main2igrd = cell(szMain);
+        sIceInit.igrd2main = nan(szIce(1),szIce(2), 'single');
 
         for ll = 1 : numel(sHydro.dem)
             [rC, cC] = ind2sub(szMain, ll);
@@ -356,12 +356,12 @@ if isfield(sPath, 'ice') %&& ~regexpbl(sMeta.mode, 'parameter')
                if ~isempty(indCurr)
                    %Sparse array in which the value indicates which main
                    %grid cell the centroid of the ice grid cell is within
-                   sIceInit.igrd2ic(indCurr) = ll;
+                   sIceInit.igrd2main(indCurr) = ll;
 
                    %Cell array (inherently sparse) that has same
                    %resolution as main grid and contains a list of any
                    %glacier cells within that grid:
-                   sIceInit.ic2igrd{ll} = indCurr;
+                   sIceInit.main2igrd{ll} = indCurr;
 %                    icBlMain(ll) = 1;
                end
             end
@@ -491,20 +491,40 @@ if isfield(sPath, 'icwe')
 
             prec = -order(min(resIceWe))+1;
             if isequal(round2(resIceWe, prec), round2(resIceGrd, prec)) || isequal(round2(resIceWe, prec), round2(resMain, prec)) || all(resIceWe < resMain)
-                sIceWe.data = geodata_area_wgt(sIceWe.(varLon), sIceWe.(varLat), sIceWe.data, sIceInit.igrdlon, sIceInit.igrdlat, 'nansum');
+                iGrdWeTemp = geodata_area_wgt(sIceWe.(varLon), sIceWe.(varLat), sIceWe.data, sIceInit.igrdlon, sIceInit.igrdlat, 'nansum');
             else
                 error('CCHF_backbone:mismatchIceWe', ...
                     'The ice and ice WE grids are not the same size.');
             end
+        else
+            iGrdWeTemp = sIceWe.data;
+        end
+
+        if ~isequal(size(sIceWe.data), size(sHydro.dem))
+            resIceWe  = [mean(abs(diff( sIceWe.(varLat)))), mean(abs(diff( sIceWe.(varLon))))];
+            resMain   = [mean(abs(diff( sHydro.(varLat)))), mean(abs(diff( sHydro.(varLon))))];
+            resIceGrd = [mean(abs(diff(sHydro.lat))), mean(abs(diff(sHydro.lon)))];
+
+            prec = -order(min(resIceWe))+1;
+            if isequal(round2(resIceWe, prec), round2(resIceGrd, prec)) || isequal(round2(resIceWe, prec), round2(resMain, prec)) || all(resIceWe < resMain)
+                icWeTemp = geodata_area_wgt(sIceWe.(varLon), sIceWe.(varLat), sIceWe.data, sHydro.lon, sHydro.lat, 'nansum');
+            else
+                error('CCHF_backbone:mismatchIceWe', ...
+                    'The ice and ice WE grids are not the same size.');
+            end
+        else
+            icWeTemp = sIceWe.data;
         end
         
-        sIceWe.data(isnan(sIceWe.data)) = 0;
+        iGrdWeTemp(isnan(iGrdWeTemp)) = 0;
+        icWeTemp(isnan(icWeTemp)) = 0;
         
-        save(pathIcweSv, 'sIceWe');
+        save(pathIcweSv, 'iGrdWeTemp', 'icWeTemp');
     end
 
-    %Populate sparse matrix:
-    sIceInit.igrdwe = sparse(double(sIceWe.data));
+    %Populate matrices:
+    sIceInit.icwe = icWeTemp;
+    sIceInit.igrdwe = sparse(double(iGrdWeTemp));
     
     disp(['Ice water equivalent thickness loaded from ' ...
         fullfile(foldIcweSv, fildIcweSv) '. This grid uses the potentially finer resolution igrd.']);

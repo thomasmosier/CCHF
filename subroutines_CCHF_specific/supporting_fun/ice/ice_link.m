@@ -24,38 +24,86 @@ function ice_link(sHydro)
 
 global sCryo
 
+%Define variables used further down:
+varLon = 'longitude';
+varLat = 'latitude';
+varIgrdLon = 'igrdlon';
+varIgrdLat = 'igrdlat';
+
+
+if ~isfield(sCryo, 'icmb')
+    error('iceLink:noMb','The cryosphere structure array has no mass balance field (at main hydrologic grid scale). This is required for computing glacier dynamics.')
+end
+
 %Translate change in ice water equivalent modelled in mass and energy 
 %function (using main grid) to ice grid:
-if isequal(sHydro.lat, sCryo.iceLat) && isequal(sHydro.lon, sCryo.iceLon) %Ice and main grids are same
-    sCryo.icdwe = sCryo.icdwe;
-    sCryo.icwe = sCryo.icwe + sparse(double(sCryo.icdwe));
+if isequal(sHydro.(varLat), sCryo.(varIgrdLat)) && isequal(sHydro.(varLon), sCryo.(varIgrdLon)) %Ice and main grids are same
+    %mass balance of igrd same as mb of main grid
+    sCryo.igrdmb = sCryo.icmb;
+    %Update water equivalent of igrd
+    sCryo.igrdwe  = sCryo.igrdwe + sCryo.igrdmb;
 else %Ice and main grids are different
-    sCryo.icgrddwe = zeros(size(sCryo.icgrddem));
+    sCryo.igrdmb = zeros(size(sCryo.igrddem), 'single');
     
-%     %Calculate areas of ice grid cells
-%     if ~isfield(sCryo,'iceArea')
-%         sCryo.iceArea = area_geodata(sCryo.iceLon, sCryo.iceLat);
-%     end
-    
-    warning('ice_link:needToEdit','This needs to be edited');
     %Loop over all grid cells in the main grid to distribute changes
-    for ii = 1 : numel(sHydro.dem)
-        indIce = find(sCryo.icgrdwe(sCryo.main2ice{ii}) > 0);
+    indIc = find(sCryo.icmb ~= 0);
+    for ii = 1 : numel(indIc)
+        indIgrd = find(sCryo.igrdwe(sCryo.main2igrd{indIc(ii)}) > 0);
                 
-%         %Calculate area ratio between sHydro.area.*sCryo.icx and
-%         %sum(sCryo.iceArea)
-%         %Use this to distribute water equivalent change from main grid to
-%         %fine grid.
-%         %**This assumes that all ice water change (positive and negative)
-%         %goes to cells that currently have ice.
-%         areaRatio = sHydro.area(ii).*sCryo.icx(ii) ...
-%             / sum(sCryo.iceArea(sCryo.main2ice{ii}(indIce)));
-        
-        %Distribute ice change from main grid to ice grid:
-        sCryo.icgrddwe(indIce) = sCryo.icgrddwe(ii); %This grid is depth 
-        %equivalent (regardless of fractional glacier coverage)
-        sCryo.icgrdwe(indIce) = sCryo.icgrdwe(indIce) + sCryo.icgrddwe(indIce);
+        %Distribute ice change from main grid to ice grid
+        %Everything is units of depth, so area differences do not matter here
+        %Mass balance:
+        sCryo.igrdmb(indIgrd) = sCryo.icmb(indIc(ii)); %This grid is depth 
+        %Water equivalent of igrd:
+        sCryo.igrdwe(indIgrd) = full(sCryo.igrdwe(indIgrd)) + sCryo.igrdmb(indIgrd);
     end
+    clear ii
 end
+
+
+%%Ensure ice water equivalent cannot have less than zero depth of ice:
+sCryo.igrdwe(sCryo.igrdwe < 0) = 0;
+
+
+%%Update fractional coverage of glaciers:
+%re-initialize grid:
+sCryo.icx = zeros(size(sCryo.icx), 'single');
+
+%Test if same number of iGrd cells in each main grid cell:
+varGridSame = 'nigrdsame';
+if ~isfield(sCryo, varGridSame)
+    testIgrd = countmember(single((1:numel(sHydro.dem))), sCryo.igrd2main);
+end
+if all(testIgrd(:) == testIgrd(1))
+    sCryo.(varGridSame) = 1;
+else
+    sCryo.(varGridSame) = 0;
+end
+
+%Find indices of main grid with glacier:
+indMnX = sCryo.igrd2main(sCryo.igrdwe > 0);
+%Unique main grid cells with glaciers
+[indMnXUnq] = unique(indMnX);
+%Number of glacier grid cells contained in each main grid cell with
+%glaciers:
+mnXfreq = countmember(indMnXUnq,indMnX);
     
+%Calculate fraction:
+if sCryo.(varGridSame) == 1
+    %Assign to ice fraction in main grid:
+    sCryo.icx(indMnXUnq) = mnXfreq/100;
+else
+    %Check number of glacier grid cells in each main grid cell:
+    nIgrdInMain = countmember(single((1:numel(sCryo.icx))'),sCryo.igrd2main);
+    %Assign to ice fraction in main grid:
+    sCryo.icx(indMnXUnq) = mnXfreq./nIgrdInMain(indMnXUnq);
+end
+
+
+%%Update icegrid surface elevation:
+rhoI = find_att(sMeta.global,'density_ice'); 
+rhoW = find_att(sMeta.global,'density_water');
+
+indUpdate = find(sCryo.igrdmb ~= 0);
+sCryo.igrddem(indUpdate) = sCryo.igrdbsdem(indUpdate) + (rhoW/rhoI)*sCryo.igrdwe(indUpdate);
     

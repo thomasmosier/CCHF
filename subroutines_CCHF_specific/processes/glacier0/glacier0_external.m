@@ -33,18 +33,21 @@ if ~isfield(sCryo, 'igrddem')
         'estimated because no ice grid DEM is available (field name = igrddem)']);
 end
 
-if isfield(sCryo, 'icwe')
-    sCryo.igrdbsdem = sCryo.igrddem - full(sCryo.icwe)*(rhoW/rhoI);
-elseif isfield(sCryo, 'igrdwe')
+% if isfield(sCryo, 'icwe')
+%     sCryo.icbsdem = sHydro.dem - full(sCryo.icwe)*(rhoW/rhoI);
+% end
+if isfield(sCryo, 'igrdwe')
     sCryo.igrdbsdem = sCryo.igrddem - full(sCryo.igrdwe)*(rhoW/rhoI);
-elseif isfield(sCryo, 'icdepth')
-    sCryo.igrdwe = (rhoI/rhoW)*full(sCryo.icdepth);
-    
-    sCryo.igrdbsdem = sCryo.igrddem - full(sCryo.icdepth);
-elseif isfield(sCryo, 'igrddepth')
-    sCryo.igrdwe = (rhoI/rhoW)*full(sCryo.igrddepth);
-    
-    sCryo.igrdbsdem = sHydro.dem - full(sCryo.igrddepth);
-else
+end
+% if isfield(sCryo, 'icdepth')
+%     sCryo.igrdwe = (rhoI/rhoW)*full(sCryo.icdepth);
+%     
+%     sCryo.igrdbsdem = sCryo.igrddem - full(sCryo.icdepth);
+% end
+% if isfield(sCryo, 'igrddepth')
+%     sCryo.igrdwe = (rhoI/rhoW)*full(sCryo.igrddepth);
+%     sCryo.igrdbsdem = sHydro.dem - full(sCryo.igrddepth);
+% end
+if ~isfield(sCryo, 'icwe') || ~isfield(sCryo, 'igrdwe')
     error('glacier0External:noArea','Ice thickness and base DEM cannot be initialized because there is no depth or thickness approximation.');
 end

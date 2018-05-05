@@ -1,4 +1,4 @@
-function flow_Muskingum(sHydro, varargin)
+function varargout = flow_Muskingum(sHydro, varargin)
 %sLand.flow has units of m^3 / time unit used if sLand.mrro has units of m.
 
 
@@ -6,7 +6,10 @@ global sLand
 
 %If not variable input argument, return parameters and do not proceed.
 %Clark time lag:
-if ~isempty(varargin(:))
+if isempty(varargin(:))
+    varargout{1} = cell(0,6);
+    return
+else
     sMeta = varargin{1};
 end
 

@@ -209,6 +209,9 @@ end
 for mm = 1 : nSites
     sMeta.siteCurr = mm;
     
+    [foldTemp, ~, ~] = fileparts(sPath{mm}.dem);
+    sMeta.foldstorage = fullfile(foldTemp, 'model_process_storage');
+    
     %Declare global variables (must clear them because model run in parallel)
     if ~regexpbl(sMeta.runType,'sim') %Don't clear land structure array if running simulation (may be dangerous but saves multiple hours for large grids)
         clear global sLand %Possibly simply initialize instead of clearing
@@ -376,9 +379,21 @@ for mm = 1 : nSites
                 for iIce = 1 : numel(nmIce)
                     sCryo.(nmIce{iIce}) = sHydro{mm}.sIceInit.(nmIce{iIce});
                 end
+                if issparse(sCryo.icx)
+                    sCryo.icx = full(sCryo.icx);
+                end
             else
                 error('cchfEngine:noIceGrid','No ice grid available. This should have been created in the main script.');
                 %sHydro{mm}.icbl = ice_grid_init(sHydro{mm}, sPath{mm}, sMeta);
+            end
+            %Set date (month/day) when glacier mass balance will be
+            %processed.
+            if all(~isnan(sMeta.dateStart))
+                dateTemp = days_2_date_v2(-1, sMeta.dateStart, 'gregorian');
+                sMeta.dateGlac = dateTemp(2:end);
+            else
+                sMeta.dateGlac = nan(size(sMeta.dateStart));
+                warning('cchfEngine:dateStartNan','The start date vector contains nan values. This is not allowed.');
             end
 
 
@@ -398,9 +413,9 @@ for mm = 1 : nSites
             sLand = rmfield_x(sAtm,{'data','pr','pre','tas','tasmin','tmin','tmn','tmax','tasmax','tmx','lat','lon','time','attTime','indCurr'});
 
             sLand.mrro = zeros(szDem,'single'); %runoff out of each cell
-            sLand.flow   = zeros(szDem,'single'); %flowrate at each cell
-            sLand.sm     = zeros(szDem,'single'); %Soil moisture field
-            sLand.et     = zeros(szDem,'single'); %evapotranspiration field
+            sLand.flow = zeros(szDem,'single'); %flowrate at each cell
+            sLand.sm   = zeros(szDem,'single'); %Soil moisture field
+            sLand.et   = zeros(szDem,'single'); %evapotranspiration field
         end
 
     %%DO EVERY ITERATION:

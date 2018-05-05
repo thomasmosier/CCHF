@@ -18,7 +18,7 @@
 % along with the Downscaling Package.  If not, see 
 % <http://www.gnu.org/licenses/>.
 
-function flow_Liston(sHydro, varargin)
+function varargout = flow_Liston(sHydro, varargin)
 %This function is modelled on Glen Liston's HydroFlow, described in
 %Liston, G. E., & Mernild, S. H. (2012). Greenland freshwater runoff. 
 %Part I: A runoff routing model for glaciated and nonglaciated landscapes 
@@ -36,7 +36,10 @@ disp('The flow_Liston function has not been checked to ensure it is working prop
 
 %If not variable input argument, return parameters and do not proceed.
 %Clark time lag:
-if ~isempty(varargin(:))
+if isempty(varargin(:))
+    varargout{1} = cell(0,6);
+    return
+else
     sMeta = varargin{1};
 end
 

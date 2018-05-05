@@ -403,7 +403,7 @@ if sMeta.useprevrun == 0
     sMeta.mode = 'parameter';
     sMeta.coefAtt = CCHF_engine_v4(sPath, sHydro, sMeta);
 
-    keyboard
+    
     %IF VALIDATION, LOAD COEFFICIENT SET AND COMPARE TO PARAMETERS NEEDED FOR CURRENT MODEL:
     if regexpbl(sMeta.runType,{'valid','sim'})
         sMeta.coef = CCHF_ld_prms(sPath{1}.coef, sMeta);

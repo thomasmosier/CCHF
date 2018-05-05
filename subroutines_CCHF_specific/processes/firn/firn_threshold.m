@@ -18,14 +18,19 @@
 % along with the Downscaling Package.  If not, see 
 % <http://www.gnu.org/licenses/>.
 
-function firn_compact_simple()
+function varargout = firn_threshold(varargin)
 
 
-% if isempty(varargin(:))
-%     varargout{1} = cell(0,6);
-%     
-%     return
-% end
+if isempty(varargin(:))
+    varargout{1} = cell(0,6);
+    varargout{1} = cat(1, varargout{1}, {'firn_depth', 5, 50, 30, 'firn_threshold','cryo'}); %Unitless scalar
+%     argout = cell(1,6);
+%     argout(1,:) = {'timelag_pwr', 0.5, 1.5, 0.9561, 'tLag_Clark', 'routing'}; %Unitless scalar
+    return
+else
+    sMeta = varargin{1};
+    threshold = find_att(sMeta.coef,'firn_depth'); %Unitless scalar
+end
 
 
 %DOES NOT USE:
@@ -36,17 +41,17 @@ function firn_compact_simple()
 
 global sCryo
 
-
-%Simply sets snow threshold. Any swe greater than that, becomes ice.
-threshold = 30; %(meters of water equivalent)
-
-
+%Initialize firn2ic grid
 sCryo.frn2ic = zeros(size(sCryo.snw));
 
+%Find indices greater than threshold:
 indCap = find(sCryo.snw > threshold);
 
 if ~isempty(indCap)
+    %Calculate
     sCryo.frn2ic(indCap) = sCryo.snw(indCap) - threshold;
+    
+    sCryo.icwe(indCap)  = sCryo.icwe(indCap) - sCryo.frn2ic(indCap);
     
     sCryo.icdwe(indCap) = sCryo.icdwe(indCap) + sCryo.frn2ic(indCap);
     sCryo.sndwe(indCap) = sCryo.sndwe(indCap) - sCryo.frn2ic(indCap);

@@ -44,10 +44,9 @@ end
 %memory issues:
 % sLand.tlagFdr = full(reshape(sum(sHydro.fdr.*sLand.tlag, 2), size(sHydro.dem)));
 
-% This doesn't work for large spatial domains:
+% This may not work well for large spatial domains
+
 sztLag = size(sHydro.dl);
-
-
 
 
 %Determine if array exists or needs to be calculated:
@@ -55,22 +54,11 @@ if ~isfield(sLand, 'tlag')
     %Create path for saving/loading tlag (this matters because for large
     %domains can take many hours to calculate
     if isfield(sMeta,'runType') && ~regexpbl(sMeta.runType, 'calib')
-        if isfield(sMeta,'rtDir')
-            rtDir = sMeta.rtDir;
-            if iscell(rtDir)
-               rtDir = rtDir{1}; 
-            end
-        else
-            rtDir = pwd;
-        end
-        rtDir = char(rtDir);
-        [rtDir, ~, ~] = fileparts(rtDir);
-
-        dirTlag = fullfile(rtDir, 'streamflow_model_grids');
+        dirTlag = sMeta.foldstorage;
         if ~exist(dirTlag, 'dir')
            mkdir(dirTlag); 
         end
-        pathTlag = fullfile(dirTlag, ['module_tLag_Johnstone_array_' sMeta.region{sMeta.siteCurr}  '_timelag_pwr_' num2str(round2(a,2)), '.mat']);
+        pathTlag = fullfile(dirTlag, [sMeta.region{sMeta.siteCurr} '_timelag_Johnstone_pwr=' num2str(round2(a,3)), '.mat']);
 
        varTLag = 'tlag';
     else
