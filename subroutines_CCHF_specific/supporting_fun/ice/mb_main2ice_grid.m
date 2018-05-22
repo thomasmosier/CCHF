@@ -18,7 +18,7 @@
 % along with the Downscaling Package.  If not, see 
 % <http://www.gnu.org/licenses/>.
 
-function ice_link(sHydro)
+function mb_main2ice_grid(sHydro, sMeta)
 %Translates changes from main grid to ice grid, which can be different.
 %Ensures conservation of mass between the grids.
 
@@ -35,8 +35,7 @@ if ~isfield(sCryo, 'icmb')
     error('iceLink:noMb','The cryosphere structure array has no mass balance field (at main hydrologic grid scale). This is required for computing glacier dynamics.')
 end
 
-%Translate change in ice water equivalent modelled in mass and energy 
-%function (using main grid) to ice grid:
+%Translate change in ice water equivalent modelled in using main grid to ice grid:
 if isequal(sHydro.(varLat), sCryo.(varIgrdLat)) && isequal(sHydro.(varLon), sCryo.(varIgrdLon)) %Ice and main grids are same
     %mass balance of igrd same as mb of main grid
     sCryo.igrdmb = sCryo.icmb;
@@ -69,15 +68,16 @@ sCryo.igrdwe(sCryo.igrdwe < 0) = 0;
 %re-initialize grid:
 sCryo.icx = zeros(size(sCryo.icx), 'single');
 
-%Test if same number of iGrd cells in each main grid cell:
+%Test if same number of igrd cells in each main grid cell:
 varGridSame = 'nigrdsame';
 if ~isfield(sCryo, varGridSame)
     testIgrd = countmember(single((1:numel(sHydro.dem))), sCryo.igrd2main);
-end
-if all(testIgrd(:) == testIgrd(1))
-    sCryo.(varGridSame) = 1;
-else
-    sCryo.(varGridSame) = 0;
+    
+    if all(testIgrd(:) == testIgrd(1))
+        sCryo.(varGridSame) = 1;
+    else
+        sCryo.(varGridSame) = 0;
+    end
 end
 
 %Find indices of main grid with glacier:
@@ -101,9 +101,11 @@ end
 
 
 %%Update icegrid surface elevation:
-rhoI = find_att(sMeta.global,'density_ice'); 
-rhoW = find_att(sMeta.global,'density_water');
-
 indUpdate = find(sCryo.igrdmb ~= 0);
-sCryo.igrddem(indUpdate) = sCryo.igrdbsdem(indUpdate) + (rhoW/rhoI)*sCryo.igrdwe(indUpdate);
+if ~isempty(indUpdate)
+    rhoI = find_att(sMeta.global,'density_ice'); 
+    rhoW = find_att(sMeta.global,'density_water');
+
+    sCryo.igrddem(indUpdate) = sCryo.igrdbsdem(indUpdate) + (rhoW/rhoI)*full(sCryo.igrdwe(indUpdate));
+end
     

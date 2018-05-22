@@ -28,7 +28,10 @@ persistent sModOut
 varLat = 'latitude';
 varLon = 'longitude';
 
-fldsCryo = [fieldnames(sCryo); 'casi'; 'stake'; 'geodetic'];
+%Mass balance fields are treated differently than other cryosphere fields because they are only recorded once every year.
+fldsmb = {'igrdmb'; 'icmb'}; 
+%Remove mass balance fields from cryosphere
+fldsCryo = setdiff([fieldnames(sCryo); 'casi'; 'stake'; 'geodetic'], fldsmb);
 fldsAtm  = fieldnames(sAtm);
 fldsLand = fieldnames(sLand);
 
@@ -329,7 +332,7 @@ else
                 %Also, write boolean parameter to record whether or not ice
                 %present at current location
                 if regexpbl(nmCurr, 'ic')
-                    %Check and record whethere there is ice at requested point
+                    %Check and record whether there is ice at requested point
                     indGageCurr = intersect(sModOut.(locOut{kk}).indGage, find(sCryo.icx ~= 0));
                     if ~isempty(indGageCurr)
                         sModOut.(locOut{kk}).icbl(indTsPrintCurr) = 1;
@@ -463,29 +466,20 @@ else
                                     ).*sHydro.area(indAreaCurr))/nansum(sHydro.area(indAreaCurr));
                             end
                         end
-                    case 'geodetic'
-                        iceDens = find_att(sMeta.global, 'density_ice_Bolch', 'no_warning');
-                        if isfield(sMeta, 'geodetic_density')
-                            iceDens = sMeta.geodetic_density;
-                        elseif ~isempty(iceDens) && ~isnan(iceDens)
-                            %Do nothing
-                        else
-                            iceDens = find_att(sMeta.global, 'density_ice');
-                        end
-
+                    case 'icdwe'
                         if strcmpi(locOut{kk}, 'all')
-                            geodeticTemp = (1000/iceDens)*(sCryo.sndwe + sCryo.icx.*sCryo.icdwe);
+                            icdweTemp = (sCryo.sndwe + sCryo.icx.*sCryo.icdwe);
 
-                            sModOut.(locOut{kk}).(nmCurr)(indTsPrintCurr,:,:) = geodeticTemp;
+                            sModOut.(locOut{kk}).(nmCurr)(indTsPrintCurr,:,:) = icdweTemp;
 
                             %Write to file
                             if isfield(sModOut.(locOut{kk}), [char(nmCurr) '_path'])
                                 fileNm = fullfile(foldGrids, nmCurr, [char(file_nm(sMeta.region{sMeta.siteCurr}, sModOut.(locOut{kk}).fields{ll}, sModOut.(locOut{kk}).date(indDate,:))) '.nc']);
-                                print_grid_NC_v2(fileNm, geodeticTemp, nmCurr, sHydro.(varLon), sHydro.(varLat), sMeta.dateCurr, sMeta.dateCurr, 1);
+                                print_grid_NC_v2(fileNm, icdweTemp, nmCurr, sHydro.(varLon), sHydro.(varLat), sMeta.dateCurr, sMeta.dateCurr, 1);
                             end
                         else
-                            geodeticTemp = (1000/iceDens)*(sCryo.sndwe(indGageCurr) + sCryo.icx(indGageCurr).*sCryo.icdwe(indGageCurr));
-                            sModOut.(locOut{kk}).(nmCurr)(indTsPrintCurr) = nansum(geodeticTemp.*sHydro.area(indAreaCurr))/nansum(sHydro.area(indAreaCurr));
+                            icdweTemp = (sCryo.sndwe(indGageCurr) + sCryo.icx(indGageCurr).*sCryo.icdwe(indGageCurr));
+                            sModOut.(locOut{kk}).(nmCurr)(indTsPrintCurr) = nansum(icdweTemp.*sHydro.area(indAreaCurr))/nansum(sHydro.area(indAreaCurr));
                         end
                     otherwise
                         if strcmpi(locOut{kk}, 'all')
@@ -500,11 +494,49 @@ else
                             sModOut.(locOut{kk}).(nmCurr)(indTsPrintCurr) = nansum(sCryo.(nmCurr)(indGageCurr).*sHydro.area(indAreaCurr))/nansum(sHydro.area(indAreaCurr));
                         end
                 end
+            elseif any(strcmpi(fldsmb, nmCurr)) %MASS BALANCE INFORMATION IN "sCryo"
+                keyboard
+                %Difference with mass balance fields is that they are only
+                %calculated once per year
+                if regexpbl(nmCurr, 'ic')
+                    fldMb = 'icmb';
+                elseif regexpbl(nmCurr, 'igrd')
+                    fldMb = 'igrdmb';
+                else
+                    error('printModelState:unknownIceFld',['The mass balance field ' nmCurr ' is not recognized.']);
+                end
+                if isfield(sMeta, 'dateGlac') 
+                    if isequal(sMeta.dateCurr(2:end), sMeta.dateGlac)
+                        if strcmpi(locOut{kk}, 'all')
+                            sModOut.(locOut{kk}).(nmCurr)(indTsPrintCurr,:,:) = sCryo.(fldMb);
+
+                            %Write to file
+                            if isfield(sModOut.(locOut{kk}), [char(nmCurr) '_path'])
+                                fileNm = fullfile(foldGrids, nmCurr, [char(file_nm(sMeta.region{sMeta.siteCurr}, sModOut.(locOut{kk}).fields{ll}, sModOut.(locOut{kk}).date(indDate,:))) '.nc']);
+                                print_grid_NC_v2(fileNm, mbTemp, nmCurr, sHydro.(varLon), sHydro.(varLat), sMeta.dateCurr, sMeta.dateCurr, 1);
+                            end
+                        else
+                            if strcmpi(fldMb, 'igrdmb')
+                                error('printModelState:igrdNotYetProgrammed', ...
+                                    ['Printing mb at specific indices of igrd ' ...
+                                    '(high-res grid used for ice) has not been programmed. ' ...
+                                    'This requires finding the correct spatial indices']);
+                            else
+                                sModOut.(locOut{kk}).(nmCurr)(indTsPrintCurr) = nansum(sCryo.(fldMb)(indGageCurr).*sHydro.area(indAreaCurr))/nansum(sHydro.area(indAreaCurr));
+                            end
+                        end
+                    end
+                else
+                    error('printModelState:noGlacierMbDate', ['No glacier date processing field is present. '...
+                        'This field is required because glacier processes are only calculated once per year.']);
+                end
+                
             else %FIELD NOT FOUND
                 if indTsPrintCurr == 1
                     warning('backbone:unknownOutput',[char(39) ...
-                        char(sModOut.(locOut{kk}).fields{ll}) char(39) ...
-                        ' is not a known output type.']);
+                        'Out for ' char(sModOut.(locOut{kk}).fields{ll}) char(39) ...
+                        'has been requested, but this is not a known output '...
+                        'type for the current model configuration.']);
                 end
             end
         end

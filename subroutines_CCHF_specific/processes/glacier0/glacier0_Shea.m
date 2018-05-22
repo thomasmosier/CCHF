@@ -34,12 +34,17 @@ rhoI = find_att(sMeta.global,'density_ice');
 rhoW = find_att(sMeta.global,'density_water');
 g = find_att(sMeta.global,'grav_accel');
 
-%Set minimal angle to 1.5 degrees (sind(1.5) = 0.0262) (From Shea et al.)
+varAngle = 'igrdslopeangfdr';
+varRiseRun = 'igrdslopefdr';
+%Calculate angle of slope from rise/run
+if ~isfield(sCryo, varAngle)
+    sCryo.(varAngle) = real(atand(sCryo.(varRiseRun)));
+    %Set minimal angle to 1.5 degrees to ensure no stagnant ice (based on Shea et al.)
+    sCryo.(varAngle)(sCryo.(varAngle) > -1.5 & sCryo.(varAngle) < 0) = -1.5; 
+    sCryo.(varAngle)(sCryo.(varAngle) >= 0 & sCryo.(varAngle) <= 1.5) = 1.5;
+end
 
-sCryo.igrdslopefdr(sCryo.igrdslopefdr > -0.0262 & sCryo.igrdslopefdr < 0) = -0.0262; 
-sCryo.igrdslopefdr(sCryo.igrdslopefdr >= 0 & sCryo.igrdslopefdr <= 0.0262) = 0.0262;
-
-gThick = abs(tauNaught./(-rhoI*g*sCryo.igrdslopefdr));
+gThick = abs(tauNaught./(rhoI*g*sind(sCryo.(varAngle))));
 gThick(gThick < 0) = 0;
 % gThick(isnan(sCryo.icwe)) = nan;
 % gThick(sCryo.icwe == 0) = 0;

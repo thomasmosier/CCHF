@@ -309,6 +309,7 @@ if isfield(sPath, 'ice') %&& ~regexpbl(sMeta.mode, 'parameter')
             wflowacc(sIceInit.igrdlon, sIceInit.igrdlat, sIceInit.igrddem,'type','single','edges','open','coord','geographic');
 
         %Calculate slope in the flow direction:
+        %SLOPE = rise / run (unitless; and not angle)
         sIceInit.igrdslopefdr = -sparse(reshape(sum(sIceInit.igrdfdr.*iceSurfSlope, 2), szIce));
 %             sIceInit.igrdslopefdr(sIceInit.igrddem == 0) = 0;
         %Calculate slope in all directions:

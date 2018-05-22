@@ -29,16 +29,18 @@ varLon = 'longitude';
 varLat = 'latitude';
 varIgrdLon = 'igrdlon';
 varIgrdLat = 'igrdlat';
+varSnavFdr = 'snavfdr';
+varSnav = 'snav';
 
 if isempty(varargin(:))
 	varargout{1} = cell(0,6);
-    varargout{1} = cat(1,varargout{1}, {'angle_critical', 1, 30, 10, 'avalanche','cryo'});
+    varargout{1} = cat(1,varargout{1}, {'angle_critical', 30, 70, 50, 'avalanche','cryo'});
     
     return
 else
     sMeta = varargin{1};
     angCrit = find_att(varargin{1}.coef, 'angle_critical');  
-    
+    angCritDisp = angCrit;
     %Stored as degrees for readability. Convert to rise over run:
     angCrit = tand(angCrit);
 end
@@ -63,7 +65,8 @@ if ~isfield(sCryo,'snavfdr')
     end
     pathStore = fullfile(dirStore, ...
         [sMeta.region{sMeta.siteCurr}, '_avalanche_', sMeta.iceGrid '_' ...
-        num2str(szMn(1)) 'x' num2str(szMn(2)) '_' num2str(szIce(1)) 'x' num2str(szIce(2))  '.mat']);
+        num2str(szMn(1)) 'x' num2str(szMn(2)) '_' num2str(szIce(1)) 'x' ...
+        num2str(szIce(2))  '_critical_angle_' num2str(angCritDisp) '.mat']);
     
     if ~exist(pathStore, 'file') %File does not exist, so create
         %display message that this will take a long time
@@ -78,55 +81,12 @@ if ~isfield(sCryo,'snavfdr')
         %and column is cell the flow is going to
         [indIgrdF, indIgrdT] = find(sCryo.igrdfdr ~= 0);  
 %         indFdr = sub2ind(size(sCryo.igrdslopefdr), indIgrdF, indIgrdT);
-        indAval = find(sCryo.igrdslopefdr(indIgrdF) <= -angCrit | sCryo.igrdslope(indIgrdF) >= angCrit); 
+        indAval = find(sCryo.igrdslopefdr(indIgrdF) <= -angCrit | sCryo.igrdslopefdr(indIgrdF) >= angCrit); 
         indIgrdF = indIgrdF(indAval);
         indIgrdT = indIgrdT(indAval);
 
-        %Avalanching only matters when cross "main" hydrologic grid 
-        indCross = find(sCryo.igrd2main(indIgrdF) ~= sCryo.igrd2main(indIgrdT));
-        indIgrdF = indIgrdF(indCross);
-        indIgrdT = indIgrdT(indCross);
-
-        %Find unique pairs of main grid indices (multiple ice grid cells may flow to same set of main grid cells):
-        %NOTE: the same main grid cell may flow to multiple main grid cells
-        %due to differences in flow direction at fine grid scale.
-        [temp, ~, ~] = unique([full(sCryo.igrd2main(indIgrdF)), full(sCryo.igrd2main(indIgrdT))],'rows');
-        indMnF = temp(:,1);
-        indMnT = temp(:,2);
-
-        
-        %%Calculate area-weighting factor for each main grid cell where avalanching crosses border. 
-        %These factors will be used during each time step to redistribute
-        %snow
-        
-        %Need areas for the cells that snow is avalanching from
-        indMnArea  = unique(indMnF);
-        indIceArea = unique(indIgrdF);
-        
-        %Initialize area arrays (same size as whole domain)
-        areaMain = sparse(szMn(1), szMn(2));
-        areaIce  = sparse(szIce(1), szIce(2));
-        
-        %Calculate areas
-        %It could be the case this this function is not correct
-        areaMain(indMnArea) = area_grid_pt( indMnArea,    sHydro.(varLon),    sHydro.(varLat));
-        areaIce(indIceArea) = area_grid_pt(indIceArea, sCryo.(varIgrdLon), sCryo.(varIgrdLat));
-
-        %%Calculate fractional contributions for cells that snow is avalanching from:
-        %Note: fractional contributions come from sum of areas in ice grid
-        %cells that avalance
-        fracMnF = zeros(numel(indMnF), 1, 'single');
-        
-        indIgrd2MainAvF = sCryo.igrd2main(indIgrdF);
-        indIgrd2MainAvT = sCryo.igrd2main(indIgrdT);
-        
-        %Loop over all main grid cells that are being looped over
-        for ii = 1 : numel(indMnF)
-            %Find ice grid indices contributing to current grid cell and
-            %calculate fraction
-            fracMnF(ii) = sum(full(areaIce(indIgrdF(indIgrd2MainAvF == indMnF(ii) & indIgrd2MainAvT == indMnT(ii)))))...
-                /areaMain(indMnF(ii));
-        end
+        [fracMnF, indMnF, indMnT] = ice2main_wgt(sCryo.(varIgrdLon), sCryo.(varIgrdLat), ...
+            sHydro.(varLon), sHydro.(varLat), sCryo.igrd2main, indIgrdF, indIgrdT);
         
         %Display time that has been taken
         if ~regexpbl(sMeta.mode, {'calib','valid'})
@@ -143,7 +103,7 @@ if ~isfield(sCryo,'snavfdr')
 
     
     %Create snow avalance "flow direction (and fraction)" grid
-    sCryo.snavfdr = sparse(double(indMnF),double(indMnT),double(fracMnF), prod(szMn), prod(szMn));
+    sCryo.(varSnavFdr) = sparse(double(indMnF),double(indMnT),double(fracMnF), prod(szMn), prod(szMn));
 end
 
 
@@ -165,15 +125,15 @@ end
 % strFrcMnF = fraction of snow in main grid that is being lost
 
 %Calculate snow avalanching:
-sCryo.snav = zeros(szMn, 'single');
+sCryo.(varSnav) = zeros(szMn, 'single');
 %First term is snow gains, second term is snow losses 
-sCryo.snav(:) = transpose(sCryo.snavfdr)*double(reshape(sCryo.snw,[],1)) - double(full(sum(sCryo.snavfdr, 2))).*sCryo.snw(:);
+sCryo.(varSnav)(:) = transpose(sCryo.(varSnavFdr))*double(reshape(sCryo.snw,[],1)) - double(full(sum(sCryo.(varSnavFdr), 2))).*sCryo.snw(:);
 
 % %For testing:
-% figure; imagesc(sCryo.snav); colorbar;
-% figure; histogram(sCryo.snav);
+% figure; imagesc(sCryo.(varSnav)); colorbar;
+% figure; histogram(sCryo.(varSnav));
 
 %Add snow avalanching to snow array:
-sCryo.snw = sCryo.snw + sCryo.snav;
+sCryo.snw = sCryo.snw + sCryo.(varSnav);
 %Set any negative values to zero:
 sCryo.snw(sCryo.snw < 0) = 0;

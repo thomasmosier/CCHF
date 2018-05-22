@@ -338,7 +338,7 @@ if sMeta.useprevrun == 0
         clear ii
         disp([char(39) sPath{1}.coef char(39) ' has been chosen as the set of parameter coefficients.']);
     end
-
+    
     %LOAD ALL OBSERVATION DATA
     for ii = 1 : nSites
         sMeta.siteCurr = ii;

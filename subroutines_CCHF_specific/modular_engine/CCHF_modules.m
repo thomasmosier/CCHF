@@ -517,50 +517,49 @@ end
 if isfield(sCryo,'icx') && any2d(sCryo.icx > 0) && sMeta.glacierDynamics == 1
     glacMoveMod = find_att(sMeta.module,'glaciermove', 'no_warning');
     
-    %Set date of each year when glacier processes will run
+    %Initialize grid to track glacier mass balance:
     if sMeta.indCurr == 1
-        %Initialize grid to track glacier mass balance:
+        sCryo.icmb = zeros(size(sHydro.dem),'single');
+        
+        %Display glacier mass balance date on first iteration
+        if  ~regexpbl(sMeta.mode, 'calib')
+            disp(['Calculating glacier dynamics each year of model run on ' ...
+                num2str(sMeta.dateGlac(1)) '/' num2str(sMeta.dateGlac(2)) '.']);
+        end
+    end
+    
+    %Reset mass balance on same day of the year at model start date
+    if isequal(sMeta.dateCurr(2:end), sMeta.dateStart(2:end))
         sCryo.icmb = zeros(size(sHydro.dem),'single');
     end
     
-    %Display glacier mass balance date on first iteration
-    if sMeta.indCurr == 1 && ~regexpbl(sMeta.mode, 'calib')
-        disp(['Calculating glacier dynamics each year of model run on ' ...
-            num2str(sMeta.dateGlac(1)) '/' num2str(sMeta.dateGlac(2)) '.']);
-        disp(['The lateral movement module is ' glacMoveMod '.']);
-    end
-    
-    %Each time step, record changes in mass balance:
+    %Each time step, record changes in mass balance at main grid (the main 
+    %grid mass balance is then translated to the glacier grid once per year):
     sCryo.icmb = sCryo.icmb + sCryo.icdwe;
     
-    %One day of each year, 
+    %On 355th day of each year:
     %(1) Translate main-grid mass balance to fine-scale gird and
     %(2) Record mass balance
     if isequal(sMeta.dateCurr(2:end), sMeta.dateGlac)
         %Translates changes calculated over main grid to changes calculated
         %over ice grid:
+        %This function must be first of glacier process representations 
+        %because it zeros glacier mass balance on the glacier grid
         if ~regexpbl(sMeta.mode,'parameter')
-            ice_link(sHydro)    %This function must be first of glacier process 
-                                %representations because it zeros glacier 
-                                %change for current time-step
+            mb_main2ice_grid(sHydro, sMeta)    
         end
 
         %Glacier sliding:
-        keyboard
-        if ~isempty(glacMoveMod) && regexpbl(glacMoveMod, 'Shea')
+        if ~isempty(glacMoveMod) && regexpbl(glacMoveMod, 'slide')
             %Model ice velocity:
-            glacier_velocity(sMeta);
+            glaciermove_velocity(sMeta);
 
             %Translate velocity into redistribution of ice between cells
-            glacier_slide(sMeta);
+            %(impacts mass balance)
+            glaciermove_slide(sHydro, sMeta);
         elseif ~isempty(glacMoveMod) && ~regexpbl(glacMoveMod, 'static')
             error('cchfModules:unknwownGlacierSlide', ['The glacier movement representation ' glacMoveMod ' not recognized.']);
         end
-        
-        %Print results:
-        
-        %reset mass balance:
-        sCryo.icmb(:) = 0;
     end
 end
     

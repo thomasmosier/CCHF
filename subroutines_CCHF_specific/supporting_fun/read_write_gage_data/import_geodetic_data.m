@@ -20,10 +20,12 @@
 
 function sGageCurr = import_geodetic_data(path, lon, lat, mask, varargin)
 
-varMB = 'geodetic';
+%Output is in units of water equivalent
+unitsOut = 'm.w.e.';
+
+varMB = 'icmb';
 flagWrt = 0;
 
-unitsOut = 'm.w.e.';
 
 if ~isempty(varargin(:)) && ~isempty(varargin{1}) && regexpbl(varargin{1}, {'interp','intrp','dist', 'avg','mean','average'})
     strType = varargin{1}; 
@@ -115,7 +117,15 @@ elseif regexpbl(ext, '.nc')
         latMeshMB = sData.lat;
     end
     
-    dataMB = sData.(varMB);
+    if isfield(sData, varMB)
+        varMbLoad = varMB;
+    elseif isfield(sData, 'geodetic')
+        varMbLoad = 'geodetic';
+    else
+        error('importGeodeticData:unknownNetCDFFeild','The NetCDf field with geodetic data is not known.');
+    end
+    
+    dataMB = sData.(varMbLoad);
     
     date = nc_days_2_date(sData, 'time_bnds');
     
@@ -123,10 +133,10 @@ elseif regexpbl(ext, '.nc')
     datesMB{2} = date(end,:);
     
     %Check units:
-    if isfield(sData, ['att' varMB])
-        unitsIn = find_att(sData.(['att' varMB]), 'units');
+    if isfield(sData, ['att' varMbLoad])
+        unitsIn = find_att(sData.(['att' varMbLoad]), 'units');
     else
-        error('importGeodeticData:noUnits', ['No units are present in the geodetic massbalance netCDF file at ' path]);
+        error('importGeodeticData:noUnits', ['No units are present in the geodetic mass balance netCDF file at ' path]);
     end
     
     if regexpbl(unitsIn, {'z', 'elev','ddem'})
