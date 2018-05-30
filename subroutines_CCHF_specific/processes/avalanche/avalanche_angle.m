@@ -25,12 +25,6 @@ function varargout = avalanche_angle(sHydro, varargin)
 
 global sCryo
 
-varLon = 'longitude';
-varLat = 'latitude';
-varIgrdLon = 'igrdlon';
-varIgrdLat = 'igrdlat';
-varSnavFdr = 'snavfdr';
-varSnav = 'snav';
 
 if isempty(varargin(:))
 	varargout{1} = cell(0,6);
@@ -44,6 +38,14 @@ else
     %Stored as degrees for readability. Convert to rise over run:
     angCrit = tand(angCrit);
 end
+
+%Define variables used here:
+varLon = 'longitude';
+varLat = 'latitude';
+varIgrdLon = 'igrdlon';
+varIgrdLat = 'igrdlat';
+varSnavFdr = 'snavfdr';
+varSnav = 'snav';
 
 
 
@@ -67,7 +69,7 @@ if ~isfield(sCryo,'snavfdr')
         [sMeta.region{sMeta.siteCurr}, '_avalanche_', sMeta.iceGrid '_' ...
         num2str(szMn(1)) 'x' num2str(szMn(2)) '_' num2str(szIce(1)) 'x' ...
         num2str(szIce(2))  '_critical_angle_' num2str(angCritDisp) '.mat']);
-    
+
     if ~exist(pathStore, 'file') %File does not exist, so create
         %display message that this will take a long time
         if ~regexpbl(sMeta.mode, {'calib','valid'})

@@ -18,7 +18,7 @@
 % along with the Downscaling Package.  If not, see 
 % <http://www.gnu.org/licenses/>.
 
-function glaciermove_velocity(sMeta)
+function varargout = glaciervel_sheer(varargin)
 
 %Weertman's sliding law (Eq. 7) of
 %Shea, J. M., Immerzeel, W. W., Wagnon, P., Vincent, C., & Bajracharya, S. 
@@ -27,6 +27,19 @@ function glaciermove_velocity(sMeta)
 
 global sCryo
 
+if isempty(varargin(:))
+	varargout{1} = cell(0,6);
+    varargout{1} = cat(1,varargout{1}, {'R_pwr', 7, 11, 9, 'glaciervel_sheer','cryo'});
+	%From Shea:
+    %R = 1.80*10^9; %Material roughness coefficient (Pa m^{-2} s) - Shea et al. treat R as a fitting parameter (+-5.00X10^8)
+    return
+else
+    sMeta = varargin{1};
+    coef = find_att(varargin{1}.coef, 'R_pwr');  
+
+    R = 1*10^(coef);
+end
+
 %Load constants:
 tauNaught = find_att(sMeta.global,'equil_shear'); 
 rhoW = find_att(sMeta.global,'density_water'); 
@@ -34,8 +47,8 @@ g = find_att(sMeta.global,'grav_accel');
 
 %Load assumptions:
 nu = 0.1; %Bedrock roughness (unitless)
-R = 1.80*10^9; %Material roughness coefficient (Pa m^{-2} s) - Shea et al. treat R as a fitting parameter (+-5.00X10^8)
 n = 3; %creep cosntant of Glen's Flow law (unitless)
+
 
 varAngle = 'igrdslopeangfdr';
 varSineAngle = 'igrdslopesinefdr';

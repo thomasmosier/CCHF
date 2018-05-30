@@ -21,6 +21,8 @@
 function write_CCHF_gagedata(path, sObs)
 
 
+varLon = 'longitude';
+varLat = 'latitude';
 
 namesPtsWrt = fieldnames(sObs);
 sNum = '%.6g';
@@ -50,23 +52,23 @@ for ii = 1 : numel(namesPtsWrt(:))
     namesCurr(strcmpi(namesCurr,'fields')) = [];
     namesCurr(strcmpi(namesCurr,'indGage')) = [];
     
-    if regexpbl(namesCurr,'lon')
-        lonCurr = sObs.(namesPtsWrt{ii}).lon;
+    if regexpbl(namesCurr, varLon)
+        lonCurr = sObs.(namesPtsWrt{ii}).(varLon);
         if isnan(lonCurr)
            lonCurr = 'spatial mean'; 
         end
-        namesCurr(strcmpi(namesCurr,'lon')) = [];
+        namesCurr(strcmpi(namesCurr,varLon)) = [];
     else
         error('write_CCHF_data:noLon',[namesPtsWrt{ii} ' does not have'...
             ' a longitude field and therefore cannot be written to file.']);
     end
 
-    if regexpbl(namesCurr,'lat')
-        latCurr = sObs.(namesPtsWrt{ii}).lat;
+    if regexpbl(namesCurr,varLat)
+        latCurr = sObs.(namesPtsWrt{ii}).(varLat);
         if isnan(latCurr)
            latCurr = 'spatial mean'; 
         end
-        namesCurr(strcmpi(namesCurr,'lat')) = [];
+        namesCurr(strcmpi(namesCurr,varLat)) = [];
     else
         error('write_CCHF_data:noLat',[namesPtsWrt{ii} ' does not have'...
             ' a latitude field and therefore cannot be written to file.']);

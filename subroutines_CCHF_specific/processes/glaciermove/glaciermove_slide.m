@@ -85,7 +85,7 @@ if ~isfield(sCryo, varIceFdrM)
     pathStore = fullfile(dirStore, ...
         [sMeta.region{sMeta.siteCurr}, '_glaciermove_slide_weight_', sMeta.iceGrid '_' ...
         num2str(numel(sHydro.(varLat))) 'x' num2str(numel(sHydro.(varLon))) '_' num2str(szIce(1)) 'x' num2str(szIce(2))  '.mat']);
-    
+
     if ~exist(pathStore, 'file') %File does not exist, so create
         %display message that this will take a long time
         if ~regexpbl(sMeta.mode, 'calib')

@@ -103,6 +103,10 @@ end
 namesObs = fieldnames(sObs);
 namesMod = fieldnames(sMod);
 
+%Variables that may indicate ice change
+varMb = {'geodetic', 'ice_change', 'mb', 'massbal'};
+
+
 
 
 %%FIND ALL DATA FIELDS PRESENT IN OBSERVATION DATA:
@@ -179,7 +183,7 @@ for ii = 1 : numel(namesObs(:)) %Loop over all data in the Observation data
     
         %Find indices for observation fields:
         indField = [];
-        if regexpbl(nmDataCurrObs{kk},'stake')
+        if regexpbl(nmDataCurrObs{kk},'stake') %Change in ice at one point (Glacier stake measurement)
             indField = [find(strcmpi(fieldsCurrMod, 'icdwe') == 1); ...
                 find(strcmpi(fieldsCurrMod, 'sndwe') == 1)];
             if numel(indField) < 2
@@ -197,7 +201,7 @@ for ii = 1 : numel(namesObs(:)) %Loop over all data in the Observation data
             
             evalType = 'sum';
             intrpType = 'sum';
-        elseif regexpbl(nmDataCurrObs{kk}, {'casi', 'icx', 'snx', 'sca'})
+        elseif regexpbl(nmDataCurrObs{kk}, {'casi', 'icx', 'snx', 'sca'}) %Snow cover
             %This is tricky because the data to compare with depends on the
             %metric. If metric is ''Parajka' (following Parajka & Blöschl,
             %2008), then compare MODIS SCA with modelled SWE. Otherwise,
@@ -214,11 +218,11 @@ for ii = 1 : numel(namesObs(:)) %Loop over all data in the Observation data
             end
             
             intrpType = 'mean';
-        elseif regexpbl(nmDataCurrObs{kk}, {'geodetic', 'mb', 'massbal'})
-            indField = find(strcmpi(fieldsCurrMod, 'geodetic') == 1);
+        elseif regexpbl(nmDataCurrObs{kk}, varMb) %Ice change
+            indField = find(strcmpi(fieldsCurrMod, 'icmb') == 1);
             evalType = 'sum';
             intrpType = 'sum';
-        elseif regexpbl(nmDataCurrObs{kk}, {'flow'})
+        elseif regexpbl(nmDataCurrObs{kk}, {'flow'}) %streamflow
             indField = find(strcmpi(fieldsCurrMod, 'flow') == 1);
             evalType = 'mean';
             intrpType = 'mean';
@@ -233,9 +237,20 @@ for ii = 1 : numel(namesObs(:)) %Loop over all data in the Observation data
         end
         
 
+        fldModDateStrt = [fieldsCurrMod{indField(1)} '_dateStart'];
+        fldModDateEnd  = [fieldsCurrMod{indField(1)}  '_dateEnd'];
         %Retrieve dates and temporal resolution of modelled data:
-        dataAll{cntrObs,2} = sMod.(namesMod{indCurr}).date; %Modelled date is always .date
-        tResMod = numel(dataAll{cntrObs,2}(1,:));
+        if isfield(sMod.(namesMod{indCurr}), fldModDateStrt) %Start and end dates
+            dataAll{cntrObs,2} = cell(2,1);
+            dataAll{cntrObs,2}{1} = sMod.(namesMod{indCurr}).(fldModDateStrt); 
+            dataAll{cntrObs,2}{2} = sMod.(namesMod{indCurr}).(fldModDateEnd);
+            tResMod = numel(dataAll{cntrObs,2}{1}(1,:));   
+        elseif isfield(sMod.(namesMod{indCurr}), 'date') %Dates same as model time step
+            dataAll{cntrObs,2} = sMod.(namesMod{indCurr}).date; %Modelled date is always '.date' except mass balance
+            tResMod = numel(dataAll{cntrObs,2}(1,:));
+        else
+            error('modVObs:noDateFieldMod',['No date field has been identified for the model field ' fieldsCurrMod{indField(1)} '.']);
+        end
         
         
         %Retrieve data from model:
@@ -266,20 +281,18 @@ for ii = 1 : numel(namesObs(:)) %Loop over all data in the Observation data
         end 
 
         %Retrieve data from observation:
-        if  numel(nmDataCurrObs(kk)) == 1
+        if numel(nmDataCurrObs(kk)) == 1
             dataAll{cntrObs,5} = sObs.(namesObs{ii}).(nmDataCurrObs{kk});
             
             %If there is a 'flag' field, value of 1 means don't use data in
             %analysis.
-            if isfield(sObs.(namesObs{ii}), 'flag')
+            varFlag = [nmDataCurrObs{kk} '_flag'];
+            if isfield(sObs.(namesObs{ii}), varFlag)
                 %Different flag treatment for 3D vs. 2D arrays
                 if numel(size(dataAll{cntrObs,5})) == 3
-                    if numel(sObs.(namesObs{ii}).flag) == numel(dataAll{cntrObs,5}(:,1,1))
+                    if numel(sObs.(namesObs{ii}).(varFlag)) == numel(dataAll{cntrObs,5}(:,1,1))
                         for mm = 1 : numel(dataAll{cntrObs,5}(:,1,1))
-                            if sObs.(namesObs{ii}).flag(mm) == 1
-%                                 if any2d(~isnan(squeeze(dataAll{cntrObs,5}(mm,:,:)))) 
-%                                     disp(num2str(mm))
-%                                 end
+                            if sObs.(namesObs{ii}).(varFlag)(mm) == 1
                                 dataAll{cntrObs,5}(mm,:,:) = nan;
                             end
                         end
@@ -287,8 +300,8 @@ for ii = 1 : numel(namesObs(:)) %Loop over all data in the Observation data
                         error('mod_v_obs:error3DFlagSz','The data quality flag has an unexpected size.');
                     end
                 elseif numel(size(dataAll{cntrObs,5})) == 2
-                    if numel(sObs.(namesObs{ii}).flag) == numel(dataAll{cntrObs,5})
-                        dataAll{cntrObs,5}(sObs.(namesObs{ii}).flag == 1) = nan;
+                    if numel(sObs.(namesObs{ii}).(varFlag)) == numel(dataAll{cntrObs,5})
+                        dataAll{cntrObs,5}(sObs.(namesObs{ii}).(varFlag) == 1) = nan;
                     else
                         error('mod_v_obs:error2DFlagSz','The data quality flag has an unexpected size.');
                     end
@@ -398,22 +411,22 @@ for ii = 1 : numel(namesObs(:)) %Loop over all data in the Observation data
                         'start and end dates']);
                 end
             end
-            
-            
+
+
             %Extract modelled data for time-series present in observations:
             if numel(size(dataAll{cntrObs,5})) == 2 && any(size(dataAll{cntrObs,5}) == 1) %Pt data
                 dataTempMod2Obs = nan(numel(dataAll{cntrObs,5}),1);
                 for ll = 1 : numel(dataAll{cntrObs,5})
-                    [~, indUpMod(1)] = ismember(dataAll{cntrObs,4}{1}(ll,:), dataAll{cntrObs,2}, 'rows');
-                    [~, indUpMod(2)] = ismember(dataAll{cntrObs,4}{2}(ll,:), dataAll{cntrObs,2}, 'rows');
+                    indModStrt = find(ismember(dataAll{cntrObs,2}, dataAll{cntrObs,4}{1}(ll,:), 'rows') == 1);
+                    indModEnd = find(ismember(dataAll{cntrObs,2}, dataAll{cntrObs,4}{2}(ll,:), 'rows') == 1);
 
-                    if all(indUpMod ~= 0) && indUpMod(2) > indUpMod(1) %If start and end dates of observation present in model, copy data
+                    if ~isempty(indModStrt) && ~isempty(indModEnd) && indModEnd >= indModStrt %If start and end dates of observation present in model, copy data
                         if regexpbl(evalType, 'sum')
-                            dataTempMod2Obs(ll) = nansum(dataAll{cntrObs,3}(indUpMod(1):indUpMod(2)));
+                            dataTempMod2Obs(ll) = nansum(dataAll{cntrObs,3}(indModStrt:indModEnd));
                         elseif regexpbl(evalType, 'mean')
-                            dataTempMod2Obs(ll) = nanmean(dataAll{cntrObs,3}(indUpMod(1):indUpMod(2)));
+                            dataTempMod2Obs(ll) = nanmean(dataAll{cntrObs,3}(indModStrt:indModEnd));
                         elseif regexpbl(evalType, 'max')
-                            dataTempMod2Obs(ll) = nanmax(dataAll{cntrObs,3}(indUpMod(1):indUpMod(2)));
+                            dataTempMod2Obs(ll) = nanmax(dataAll{cntrObs,3}(indModStrt:indModEnd));
                         else
                             error('mod_v_obs:unknownEvalType', [evalType ...
                                 ' is an unknown evaluation type and a '...
@@ -423,60 +436,75 @@ for ii = 1 : numel(namesObs(:)) %Loop over all data in the Observation data
                         dataAll{cntrObs,5}(ll) = nan;
                     end
                 end
-            elseif numel(size(dataAll{cntrObs,5})) == 3 || ~any(size(dataAll{cntrObs,5}) == 1)%gridded data
-                if numel(size(dataAll{cntrObs,5})) == 3
-                    nTsMod = numel(dataAll{cntrObs,5}(:,1,1));
+            elseif numel(size(dataAll{cntrObs,5})) == 3 || ~any(size(dataAll{cntrObs,5}) == 1) %gridded data
+                if numel(size(dataAll{cntrObs,5})) == 3 %Observations have 3 dimensions
+                    nTsObs = numel(dataAll{cntrObs,5}(:,1,1));
                     dataTempMod2Obs = nan(size(dataAll{cntrObs,5}),'single');             
                 else
-                    nTsMod = 1;
+                    nTsObs = 1;
                     dataTempMod2Obs = nan([1,size(dataAll{cntrObs,5})],'single'); 
                 end
-                
-                for ll = 1 : nTsMod
-                    [~, indUpMod(1)] = ismember(dataAll{cntrObs,4}{1}(ll,:), dataAll{cntrObs,2}, 'rows');
-                    [~, indUpMod(2)] = ismember(dataAll{cntrObs,4}{2}(ll,:), dataAll{cntrObs,2}, 'rows');
 
-                    %Special treatment for gridded geodetic measurements:
-                    if regexpbl(nmDataCurrObs{kk}, {'geodetic', 'ice_change'})
+                for ll = 1 : nTsObs
+                    if isnumeric(dataAll{cntrObs,2}) || (iscell(dataAll{cntrObs,2}) && numel(dataAll{cntrObs,2}) == 1) %Date field at model time step
+                        indModStrt = find(ismember(dataAll{cntrObs,2}, dataAll{cntrObs,4}{1}(ll,:), 'rows') == 1);
+                        indModEnd = find(ismember(dataAll{cntrObs,2}, dataAll{cntrObs,4}{2}(ll,:), 'rows') == 1);
+                        
+                        if ~isempty(indModStrt) && ~isempty(indModEnd) && indModEnd >= indModStrt %If start and end dates of observation present in model, copy data
+                            if regexpbl(evalType, 'sum')
+                                dataTempMod2Obs(ll,:,:) = squeeze(nansum(dataAll{cntrObs,3}(indModStrt:indModEnd,:,:), 1));
+                            elseif regexpbl(evalType, 'mean')
+                                dataTempMod2Obs(ll,:,:) = squeeze(nanmean(dataAll{cntrObs,3}(indModStrt:indModEnd,:,:), 1));
+                            elseif regexpbl(evalType, 'max')
+                                dataTempMod2Obs(ll,:,:) = squeeze(nanmax(dataAll{cntrObs,3}(indModStrt:indModEnd,:,:), 1));
+                            else
+                                error('mod_v_obs:unknownEvalType', [evalType ...
+                                    ' is an unknown evaluation type and a '...
+                                    'case has not been programmed for it.']);
+                            end
+                        else
+                            dataAll{cntrObs,5}(ll,:,:) = nan;
+                        end
+                    elseif iscell(dataAll{cntrObs,2}) && numel(dataAll{cntrObs,2}(:)) == 2 %Start and end dates for model field
                         %Geodetic observations are gridded and span two points
                         %in time (typically many years). Observation time 
                         %interval may not overlap perfectly with modelled 
-                        %time-series. Therefore, formulate units as 
-                        %change per 365 days
-                        if indUpMod(1) == 0
-                            indUpMod(1) = 1;
-                        end
-                        if indUpMod(2) == 0
-                            indUpMod(2) = numel(dataAll{cntrObs,2}(:,1));
+                        %time-series.
+                        nDatesMod = numel(dataAll{cntrObs,2}{1}(:,1));
+                        
+                        %Find days seperating mod and obs
+                        daysStrtTemp = nan(nDatesMod,1);
+                        daysEndTemp = daysStrtTemp;
+                        for zz = 1 : nDatesMod
+                            daysStrtTemp(zz) = days_since(dataAll{cntrObs,4}{1}(ll,:), dataAll{cntrObs,2}{1}(zz,:), 'gregorian');
+                            daysEndTemp(zz)  = days_since(dataAll{cntrObs,2}{2}(zz,:), dataAll{cntrObs,4}{2}(ll,:), 'gregorian');
                         end
                         
-                        nDaysMod = days_since(dataAll{cntrObs,2}(indUpMod(1),:), dataAll{cntrObs,2}(indUpMod(2),:), 'gregorian');
-                        dataTempMod2Obs(ll,:,:) = (365/nDaysMod)*squeeze(sum(dataAll{cntrObs,3}(indUpMod(1):indUpMod(2),:,:), 1));
+                        %Find indices of model that best include
+                        %observations (going over if necessary)
+                        %For start:
+                        if any(daysStrtTemp <= 0)
+                            indModStrt = find(daysStrtTemp <= 0, 1, 'last');
+                        else
+                            indModStrt = 1;
+                        end
+                        %For end:
+                        if any(daysEndTemp <= 0)
+                            indModEnd = find(daysEndTemp <= 0, 1, 'first');
+                        else
+                            indModEnd = numel(daysEndTemp);
+                        end
                         
+                        %Interpolate model to observation dates:
+                        nDaysMod = days_since(dataAll{cntrObs,2}{1}(indModStrt,:), dataAll{cntrObs,2}{2}(indModEnd,:), 'gregorian');
                         nDaysObs = days_since(dataAll{cntrObs,4}{1}(ll,:), dataAll{cntrObs,4}{2}(ll,:), 'gregorian');
-                        if numel(size(dataAll{cntrObs,5}(ll,:,:))) == 3
-                            dataAll{cntrObs,5}(ll,:,:) = (365/nDaysObs)*squeeze(dataAll{cntrObs,5}(ll,:,:));
-                        else
-                            mbTemp = dataAll{cntrObs,5}(:,:);
-                            dataAll{cntrObs,5} = nan([1, size(mbTemp)]);
-                            dataAll{cntrObs,5}(ll,:,:) = (365/nDaysObs)*mbTemp;
-                        end
-                    elseif all(indUpMod ~= 0) && indUpMod(2) > indUpMod(1) %If start and end dates of observation present in model, copy data
-                        if regexpbl(evalType, 'sum')
-                            dataTempMod2Obs(ll,:,:) = squeeze(sum(dataAll{cntrObs,3}(indUpMod(1):indUpMod(2),:,:), 1));
-                        elseif regexpbl(evalType, 'mean')
-                            dataTempMod2Obs(ll,:,:) = squeeze(mean(dataAll{cntrObs,3}(indUpMod(1):indUpMod(2),:,:), 1));
-                        elseif regexpbl(evalType, 'max')
-                            dataTempMod2Obs(ll,:,:) = squeeze(max(dataAll{cntrObs,3}(indUpMod(1):indUpMod(2),:,:), [], 1));
-                        else
-                            error('mod_v_obs:unknownEvalType', [evalType ...
-                                ' is an unknown evaluation type and a '...
-                                'case has not been programmed for it.']);
-                        end
+                        dataTempMod2Obs(ll,:,:) = (nDaysObs/nDaysMod)*squeeze(sum(dataAll{cntrObs,3}(indModStrt:indModEnd,:,:), 1));
+                        %For testing:
+                        %figure; imagesc(squeeze(dataTempMod2Obs(ll,:,:))); colorbar;
                     else
-                        dataAll{cntrObs,5}(ll,:,:) = nan;
+                        error('modVObs:unknownDateFormat',['The model date is of class ' class(dataAll{cntrObs,2}) ' and has ' num2str(numel(dataAll{cntrObs,2})) ' elements. This has not been programmed for.']);
                     end
-                end
+                end %End of loop over observations
             else
                 error('mod_v_obs:errDim', ['The current variable has ' ...
                     num2str(numel(size(numel(dataAll{cntrObs,5})))) ...

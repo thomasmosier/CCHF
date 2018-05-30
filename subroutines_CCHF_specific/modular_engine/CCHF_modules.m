@@ -549,11 +549,23 @@ if isfield(sCryo,'icx') && any2d(sCryo.icx > 0) && sMeta.glacierDynamics == 1
             mb_main2ice_grid(sHydro, sMeta)    
         end
 
+        
+        %Glacier velocity:
+        gvelMod = find_att(sMeta.module, 'glaciervel');
+        if regexpbl(gvelMod, 'sheer') 
+            if regexpbl(sMeta.mode,'parameter')
+                coef = cat(1,coef, glaciervel_sheer());
+            else
+                glaciervel_sheer(sMeta);
+            end
+
+        elseif ~regexpbl(gvelMod, 'none')
+            error('cchfModules:glaciervelUnknown', ['The glacier velocity representation ' gvelMod ' not recognized.']);
+        end
+            
+            
         %Glacier sliding:
         if ~isempty(glacMoveMod) && regexpbl(glacMoveMod, 'slide')
-            %Model ice velocity:
-            glaciermove_velocity(sMeta);
-
             %Translate velocity into redistribution of ice between cells
             %(impacts mass balance)
             glaciermove_slide(sHydro, sMeta);

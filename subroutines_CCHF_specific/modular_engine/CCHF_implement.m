@@ -589,7 +589,7 @@ if ~regexpbl(sMeta.runType,'sim')
         cellStats = [sOpt.fitTest, 'kge', statsExtra];
     end
     
-
+    keyboard
     if numel(sOutput) == nSites %&& isstruct(sOutput{1})
         for mm = 1 : nSites
             %Create output directory for assessment plots:
@@ -597,7 +597,7 @@ if ~regexpbl(sMeta.runType,'sim')
             if ~exist(dirModObs, 'dir')
                 mkdir(dirModObs);
             end
-        
+            
             %Display all stats and write to file
             report_stats_v2(sObs{mm}, sOutput{mm}, cellStats, sPath{mm}.output, sMeta);
 
