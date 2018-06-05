@@ -44,6 +44,8 @@ clrCust = [0.1,0.6,0.1; 0.1,0.1,0.7]; %Custom green and purple
 % szFrame = [3.5,3];
 szFrame = [12,7];
 
+varLon = 'longitude';
+varLat = 'latitude';
 
 %%RETRIEVE DATA FROM INPUT
 flagDataExists = 0;
@@ -94,7 +96,14 @@ else
 end
 
 if flagDataExists == 0
-    warning('plot_CCHF:noData','plot_CCHF is terminating without producing a plot because no data were found for the current field.');
+    fldErr = [];
+    for ii = 1 : numel(fieldsPlot(:))
+        fldErr = [fldErr, fieldsPlot{ii}];
+        if ii ~= numel(fieldsPlot(:))
+            fldErr = [fldErr, ', '];
+        end
+    end
+    warning('plot_CCHF:noData',['plot_CCHF is terminating without producing a plot because no data were found for the fields ' fldErr '.']);
     return
 end
 
@@ -198,8 +207,8 @@ for ii = 1 : numel(indFieldsPlot)
             set(hTs(indPlot),'LineWidth',lnWd, ...
                 'Color',colorsUse(mod(indPlot-1, nSeries)+1,:));
 
-            coordCurr = [sData.(char(fldsData(indFieldsPlot{ii}(jj)))).('lon'), ...
-                sData.(char(fldsData(indFieldsPlot{ii}(jj)))).('lat')];
+            coordCurr = [sData.(char(fldsData(indFieldsPlot{ii}(jj)))).(varLon), ...
+                sData.(char(fldsData(indFieldsPlot{ii}(jj)))).(varLat)];
             %Create legend entries:
             if any(~isnan(coordCurr))
                 strSeries{indPlot} = [fieldsPlot{ii} ' (' num2str(coordCurr(1)), ', ' num2str(coordCurr(2)) ')'];
@@ -247,7 +256,7 @@ elseif regexpbl(fieldsPlot{1}, 'snowradar')
     unitCurr = ' (SWE; m)';
 elseif regexpbl(fieldsPlot{1}, 'flow')
     unitCurr = ' (m^3/s)';
-elseif regexpbl(fieldsPlot{1}, 'heat')
+elseif regexpbl(fieldsPlot{1}, {'heat', 'hf'})
     unitCurr = ' (W/m^2)';
 else 
     unitCurr = ' (m)';

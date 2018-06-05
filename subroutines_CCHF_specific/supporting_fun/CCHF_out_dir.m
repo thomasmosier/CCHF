@@ -21,6 +21,8 @@
 function [dirOutput, strModules] = CCHF_out_dir(sPath, sMeta)
 
 
+%Last directory in the output directory tree
+dirExt = 'model_runs';
 
 %Find Name of directory to use:
 if isfield(sPath, 'resume') && ~isempty(sPath.resume)
@@ -99,7 +101,7 @@ else
         end
     end
     
-    dirOutput = fullfile(dirTS, dirCCHF);
+    dirOutput = fullfile(dirTS, dirCCHF, dirExt);
     %Create output directory
     if ~exist(dirOutput, 'dir')
         mkdir(dirOutput);

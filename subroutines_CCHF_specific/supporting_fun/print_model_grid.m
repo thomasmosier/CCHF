@@ -1,7 +1,7 @@
 function sModOut = print_model_grid(sModOut, sData, nmCurr, ptWrtCurr, indTsPrintCurr, sMeta, lon, lat, varargin)
 
 if isstruct(sData)
-    if ndims(sData.(nmFld)) == 3
+    if ndims(sData.(nmCurr)) == 3
 
         if isfield(sData, ['ind' nmCurr])
             indInputTsCurr = sData.(['ind' nmCurr]);

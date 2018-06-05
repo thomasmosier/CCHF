@@ -126,7 +126,7 @@ for ii = 1 : numel(path(:))
         end
         
         sGageCurr = import_geodetic_data(path{ii}, lon, lat, mask);
-        dataType{end+1} = 'icmb'; %Mass balance at main grid
+        dataType{end+1} = 'geodetic'; %Mass balance at main grid
     else
         error('read_CCHF_geodata:unknownType',['Filename ' char(39) fileNm char(39) ...
             ' is not a recognized input type. Program more observation data type.']);

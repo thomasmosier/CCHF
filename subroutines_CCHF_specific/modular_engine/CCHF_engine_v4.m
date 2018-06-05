@@ -341,7 +341,7 @@ for mm = 1 : nSites
     %     disp(['iteration ' num2str(ii) ' of ' num2str(numel(sMeta.dateRun(:,1)))]);
 
         if isfield(sMeta, 'indUpdate')
-            if ismember(ii, sMeta.indUpdate)
+            if any(ii == sMeta.indUpdate)
                 disp(['CCHF model is on time step '...
                     num2str(ii) ' of ' num2str(nTS) ' (site ' ...
                     num2str(mm) ' of ' num2str(nSites) ').']);

@@ -533,9 +533,6 @@ if isfield(sCryo,'icx') && any2d(sCryo.icx > 0) && sMeta.glacierDynamics == 1
         sCryo.icmb = zeros(size(sHydro.dem),'single');
     end
     
-    %Each time step, record changes in mass balance at main grid (the main 
-    %grid mass balance is then translated to the glacier grid once per year):
-    sCryo.icmb = sCryo.icmb + sCryo.icdwe;
     
     %On 355th day of each year:
     %(1) Translate main-grid mass balance to fine-scale gird and
@@ -544,7 +541,8 @@ if isfield(sCryo,'icx') && any2d(sCryo.icx > 0) && sMeta.glacierDynamics == 1
         %Translates changes calculated over main grid to changes calculated
         %over ice grid:
         %This function must be first of glacier process representations 
-        %because it zeros glacier mass balance on the glacier grid
+        %because it ensures ice calculations on main grid from current time
+        %step propogate to glacier grid
         if ~regexpbl(sMeta.mode,'parameter')
             mb_main2ice_grid(sHydro, sMeta)    
         end
@@ -573,6 +571,10 @@ if isfield(sCryo,'icx') && any2d(sCryo.icx > 0) && sMeta.glacierDynamics == 1
             error('cchfModules:unknwownGlacierSlide', ['The glacier movement representation ' glacMoveMod ' not recognized.']);
         end
     end
+     
+    %At end of each time step, record changes in mass balance at main grid (the main 
+    %grid mass balance is then translated to the glacier grid once per year):
+    sCryo.icmb = sCryo.icmb + sCryo.icdwe;
 end
     
     

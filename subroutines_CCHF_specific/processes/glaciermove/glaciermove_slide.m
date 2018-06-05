@@ -32,22 +32,25 @@ end
 
 varLon = 'longitude';
 varLat = 'latitude';
-varIceLon = 'igrdlon';
-varIceLat = 'igrdlat';
-varDl = 'igrdfdrdl';
-varIceFdr = 'igrdfdr';
-varIceDem = 'igrddem';
-varIceFdrM = 'igrdfdrmult';
-varIceWgtF = 'igrd2mainFlowWgt';
-varVel = 'igrdvel';
-varIceWE = 'igrdwe';
-varIceMb = 'igrdmb';
 varMnMb = 'icmb';
 varMnLat = 'iclateral';
 varMnIceWe = 'icwe';
+varMnIceDwe = 'icdwe';
 varMnIcx = 'icx';
 
-szIce = size(sCryo.(varIceDem));
+varIgrdLon = 'igrdlon';
+varIgrdLat = 'igrdlat';
+varIgrdDl = 'igrdfdrdl';
+varIgrdFdr = 'igrdfdr';
+varIgrdDem = 'igrddem';
+varIgrdFdrM = 'igrdfdrmult';
+varIgrdWgtF = 'igrd2mainFlowWgt';
+varIgrdVel = 'igrdvel';
+varIgrdWE = 'igrdwe';
+varIgrdMb = 'igrdmb';
+
+
+szIce = size(sCryo.(varIgrdDem));
 dt = time2sec(1,sMeta.dt,sMeta.dateCurr); 
 
 
@@ -55,10 +58,10 @@ dt = time2sec(1,sMeta.dt,sMeta.dateCurr);
 velThresh = 0.01/(3.154*10^7); %(1 cm per year; in units of m/s)
 
 %Calculate distance between grid cells along flow path:
-if ~isfield(sCryo, varDl)
+if ~isfield(sCryo, varIgrdDl)
     rEarth = find_att(sMeta.global,'radius_Earth');
     
-    dl = haversine_neighbors(sCryo.(varIceLon), sCryo.(varIceLat), rEarth,'sparse');
+    dl = haversine_neighbors(sCryo.(varIgrdLon), sCryo.(varIgrdLat), rEarth,'sparse');
 
     %Create field that is distance along flowpath:
     %Notes: Ice flow direction used for estimating flow distance includes 
@@ -70,13 +73,13 @@ if ~isfield(sCryo, varDl)
     %(2) Sum over dim 2 retrieves dl corresponding to each originating grid
     %cell along the flow path
     %(3) Reshape formulates the dl vector into an array with shape of igrd
-    sCryo.(varDl) = reshape(sum(sCryo.(varIceFdr).*dl, 2), size(sCryo.(varIceDem)));
+    sCryo.(varIgrdDl) = reshape(sum(sCryo.(varIgrdFdr).*dl, 2), size(sCryo.(varIgrdDem)));
 %     sCryo.(varDl)(sCryo.(varDl) == 0) = nan; 
 end
 
 %Calculate multiple flow directions 
 %Note: values in output are fractions that sum to 1. The values are based on magnitude of descent. 
-if ~isfield(sCryo, varIceFdrM)
+if ~isfield(sCryo, varIgrdFdrM)
     %Create storage path:
     dirStore = sMeta.foldstorage;
     if ~exist(dirStore, 'dir')
@@ -100,12 +103,12 @@ if ~isfield(sCryo, varIceFdrM)
         %dramatically, but likely not over ~100 year periods since it 
         %should depend on basal elevation.
         [~, iceFdrM, ~] = ...
-                    wflowacc(sCryo.(varIceLon), sCryo.(varIceLat), sCryo.(varIceDem), ...
+                    wflowacc(sCryo.(varIgrdLon), sCryo.(varIgrdLat), sCryo.(varIgrdDem), ...
                     'type','multi', 'edges','open', 'coord','geographic', 'routeflats', 'yes'); 
         %Find indices where mass balance crosses main grid cells
         [indIgrdF, indIgrdT] = find(iceFdrM ~= 0);
         %Find weighting:
-        [fracMnFTemp, indMnF, indMnT] = ice2main_wgt(sCryo.(varIceLon), sCryo.(varIceLat), ...
+        [fracMnFTemp, indMnF, indMnT] = ice2main_wgt(sCryo.(varIgrdLon), sCryo.(varIgrdLat), ...
             sHydro.(varLon), sHydro.(varLat), sCryo.igrd2main, indIgrdF, indIgrdT);
     
         %Display time that has been taken
@@ -123,47 +126,49 @@ if ~isfield(sCryo, varIceFdrM)
        load(pathStore) 
     end
     
-    sCryo.(varIceFdrM) = iceFdrM; %Multiple flow path of glaciers at igrd (Number of ice grid cells by number of ice grid cells)
-    sCryo.(varIceWgtF) = fracMnF; %Fractional weighting of flow at main (Number of main grid cells by number of main grid cells)
+    sCryo.(varIgrdFdrM) = iceFdrM; %Multiple flow path of glaciers at igrd (Number of ice grid cells by number of ice grid cells)
+    sCryo.(varIgrdWgtF) = fracMnF; %Fractional weighting of flow at main (Number of main grid cells by number of main grid cells)
 end
 
 
 %Find grid cells where velocity exceeds threshold
-indVel = find(sCryo.(varVel) > velThresh);
+indVel = find(sCryo.(varIgrdVel) > velThresh);
 %Calculate lateral transport at both glacier and main grids if any moving
 %ice
 if ~isempty(indVel)
     %%CALCULATE LATERAL MOVEMENT AT ICE GRID
     %Calculate displacement as fraction of grid cell flow distance
-    fracMove = dt*(sCryo.(varVel)(indVel)./sCryo.(varDl)(indVel)); %fractional displacement (unitless)
+    fracMove = dt*(sCryo.(varIgrdVel)(indVel)./sCryo.(varIgrdDl)(indVel)); %fractional displacement (unitless)
     %Set nan values to zero
     fracMove(isnan(fracMove)) = 0;
     fracMove(isinf(fracMove)) = 0;
-    
+
     %Calculate displaced ice:
-    dispIce = sparse(szIce(1), szIce(2));
-    dispIce(indVel) = transpose(fracMove)*sCryo.(varIceWE)(indVel); 
+    dispIce = zeros(szIce(1), szIce(2));
+    dispIce(indVel) = double(full(transpose(fracMove)*sCryo.(varIgrdWE)(indVel)));  
     %Add ice to downslope grid cells:
-    sCryo.(varIceWE)(:) = sCryo.(varIceWE)(:) + transpose(sCryo.(varIceFdrM))*reshape(dispIce, [], 1); %Units of meters
+    sCryo.(varIgrdWE)(:) = sCryo.(varIgrdWE)(:) + transpose(sCryo.(varIgrdFdrM))*sparse(reshape(dispIce, [], 1)); %Units of meters
     %Remove ice from uphill grid cell:
-    sCryo.(varIceWE)(:) = sCryo.(varIceWE)(:) - dispIce(:); %Units of meters
+    sCryo.(varIgrdWE)(:) = sCryo.(varIgrdWE)(:) - dispIce(:); %Units of meters
 
     %Add displaced ice to ice mass balance field (glacier grid):
-    sCryo.(varIceMb)(:) = sCryo.(varIceMb)(:) + full(transpose(sCryo.(varIceFdrM))*reshape(dispIce, [],1) - dispIce(:));
+    sCryo.(varIgrdMb)(:) = sCryo.(varIgrdMb)(:) + full(transpose(sCryo.(varIgrdFdrM))*reshape(dispIce, [],1) - dispIce(:));
     
     %%TRANSLATE MASS BALANCE FROM ICE GRID TO MAIN GRID
     %Initialize movement grid
     sCryo.(varMnLat) = zeros(size(sHydro.dem), 'single');
     %Calculate movement at main grid:
     sCryo.(varMnLat)(:) = ...
-        transpose(sCryo.(varIceWgtF))*double(sCryo.(varMnIceWe)(:)) ...
-        - double(full(sum(sCryo.(varIceWgtF), 2))).*sCryo.(varMnIceWe)(:);
+        transpose(sCryo.(varIgrdWgtF))*double(sCryo.(varMnIceWe)(:)) ...
+        - double(full(sum(sCryo.(varIgrdWgtF), 2))).*sCryo.(varMnIceWe)(:);
 %     %For testing:
 %     figure; imagesc(sCryo.(varMnLat)); colorbar;
 %     figure; imagesc(sCryo.(varMnIcx).*sCryo.(varMnIceWe)); colorbar;
 %     figure; histogram(sCryo.(varMnLat));
     
-    %Add lateral ice movement to ice array:
+    %Add lateral ice movement to ice arrays (main grid):
+    %DO NOT ALTER 'icdwe'. This grid will account only for phase change
+%     sCryo.(varMnIceDwe) = sCryo.(varMnIceDwe) + sCryo.(varMnLat);
     sCryo.(varMnIceWe) = sCryo.(varMnIceWe) + sCryo.(varMnLat);
     %Set any negative values to zero:
     sCryo.(varMnIceWe)(sCryo.(varMnIceWe) < 0) = 0;

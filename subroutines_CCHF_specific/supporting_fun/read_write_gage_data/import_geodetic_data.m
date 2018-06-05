@@ -21,9 +21,9 @@
 function sGageCurr = import_geodetic_data(path, lon, lat, mask, varargin)
 
 %Output is in units of water equivalent
-unitsOut = 'm.w.e.';
+unitsOut = 'meters WE';
 
-varMB = 'icmb';
+varMB = 'geodetic';
 flagWrt = 0;
 
 
@@ -42,7 +42,6 @@ end
 
 
 if ~isempty(mask)
-    szMB = size(mask);
     indNanMask = find(isnan(mask));
 else
     warning('read_gagedata:maskNeeded',['Loading geodetic glacier mass balance data '...
@@ -54,10 +53,8 @@ else
 end
 
 
+%Loading method depends on file type:
 [fold, file, ext] = fileparts(path);
-
-%Loop over all files to load:
-iceDens = nan;
 if regexpbl(ext, {'.asc','.txt','tif'})
     flagWrt = 1;
     %Elevation change or mass change?
@@ -89,10 +86,6 @@ if regexpbl(ext, {'.asc','.txt','tif'})
     
     if regexpbl(ext, {'.asc','.txt'})
         [dataMB,hdrESRI,metaESRI] = read_ESRI(path);
-
-    %     dataMB(dataMB == 0) = nan;
-    %     disp('It is being assumed that the geodetic mass balance data are nan at locations ');
-
         [latMB, lonMB] = ESRI_hdr2geo(hdrESRI,metaESRI);
     elseif regexpbl(ext, 'tif')
         varTemp = 'tempmb';
@@ -102,7 +95,12 @@ if regexpbl(ext, {'.asc','.txt','tif'})
         latMB = sData.('latitude');
         lonMB = sData.('longitude');
     end
-    
+    %Diagnostics:
+%     figure; imagesc(dataMB); colorbar;
+%     figure; histogram(dataMB)
+%     min(dataMB(:))
+%     max(dataMB(:))
+
     if ~isnan(iceDens)
         dataMB = (iceDens/1000)*dataMB;
     end
@@ -179,24 +177,12 @@ if ~isequal(round2(lonMesh,3), round2(lonMeshMB,3)) || ~isequal(round2(latMesh,3
     %NOTE: Set values to 0, then spatially integrate. This is equivalent to
     %the 'sCryo.iclr' field, which multiplies ice melt potential times
     %fractional glacier coverage
-    warning('import_geodetic_data:areaInt', ['The program is preparing ' ...
-        'to use an area weighted interpolation scheme to condition the '...
-        'geodetic mass balance data.' char(10) 'This process takes quite some time. ' ...
-        'The conditioned output will be written to netCDF file to avoid this processing step in future model runs.']);
-    
-%     dataMB(isnan(dataMB)) = 0;
+%     warning('import_geodetic_data:areaInt', ['The program is preparing ' ...
+%         'to use an area weighted interpolation scheme to condition the '...
+%         'geodetic mass balance data.' char(10) 'This process takes quite some time. ' ...
+%         'The conditioned output will be written to netCDF file to avoid this processing step in future model runs.']);
+%     
     dataMBGrid = geodata_area_wgt(lonMeshMB(1,:), latMeshMB(:,1), dataMB, lon, lat, 'nansum');
-%     diffLon = diff(lonMeshMB(1,:));
-%     diffLat = diff(latMeshMB(:,1));
-%     if all(diffLon == diffLon(1)) && all(diffLat == diffLat(1))
-%         warning('off','all');
-%         dataMBGrid = round(PCHIP_2D(lonMeshMB, latMeshMB, single(MODISTemp), lon, lat));
-%     %         dataMODIS(jj,:,:) = round(interp2(lonMODIS,latMODIS,single(MODISTemp),lonInterp, latInterp,'nearest'));
-%         warning('on','all');
-%     else
-%         [lonMesh, latMesh] = meshgrid(lon, lat);
-%         dataMBGrid = single(griddata(lonMeshMB, latMeshMB, double(dataMB), lonMesh, latMesh, 'cubic'));
-%     end
 
 %FOR TESTING:
 %     nDec = 2;
@@ -241,7 +227,7 @@ if regexpbl(strType, {'avg','mean','average'})
      sGageCurr = struct(...
         'lon',  'avg',...
         'lat',  'avg',...
-        varMB, mean2d(dataMB),... %Stands for Covered Area Snow and Ice
+        varMB, mean2d(dataMB),...
         [varMB '_dateStart'], datesMB{1}, ...
         [varMB '_dateEnd'], datesMB{2} ...
         );
@@ -258,7 +244,3 @@ else
    error('import_geodetic_data:unknownInterpretationType', [strType ...
        ' is an unknown geodetic mass balance data interpretation type.']);
 end
-
-% if ~isnan(iceDens)
-%    sGageCurr.iceDens = iceDens; 
-% end

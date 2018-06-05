@@ -97,7 +97,7 @@ else
                         lonCurr = str2double(strtrim(lineCurr(indLab+1:end)));
                         if isnan(lonCurr) && regexpbl(strtrim(lineCurr(indLab+1:end)),{'mean','avg','average'})
                             lonCurr = 'avg';
-                        elseif isnan(lonCurr) && regexpbl(strtrim(lineCurr(indLab+1:end)),'all')
+                        elseif isnan(lonCurr) && regexpbl(strtrim(lineCurr(indLab+1:end)),{'all', 'model grid'})
                             lonCurr = 'all';
                         elseif ~isnumeric(lonCurr)
                             warning('read_CCHF_data:Lon',['The current '...
@@ -108,7 +108,7 @@ else
                         latCurr = str2double(strtrim(lineCurr(indLab+1:end)));
                         if isnan(latCurr) && regexpbl(strtrim(lineCurr(indLab+1:end)),{'mean','avg','average'})
                             latCurr = 'avg';
-                        elseif isnan(latCurr) && regexpbl(strtrim(lineCurr(indLab+1:end)),'all')
+                        elseif isnan(latCurr) && regexpbl(strtrim(lineCurr(indLab+1:end)), {'all', 'model grid'})
                             latCurr = 'all';
                         elseif ~isnumeric(latCurr)
                             warning('read_CCHF_data:Lat',['The current '...
@@ -300,9 +300,6 @@ else
                 end
             end
         end
-
-
-
 
 
         %Add substructure to output structure:

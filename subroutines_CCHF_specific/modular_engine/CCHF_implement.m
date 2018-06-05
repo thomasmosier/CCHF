@@ -332,12 +332,19 @@ if sMeta.useprevrun == 0
             sMeta.region{1} '.\n']), '(Click OK to Proceed)','modal'));
         [fileCoef, foldCoef] = uigetfile({'*.txt'; '*.csv'}, ['Select the set of parameter coefficients for ' ...
             sMeta.region{1}], startPath);
+        if isempty(fileCoef) || isempty(foldCoef)
+            error('CCHF_main:noCoefFile',['No file containing a set of '...
+                'model coefficients has been selected. This is a requirement.' ...
+               ' Therefore the program is aborting.']); 
+        end
+        
         for ii = 1 : nSites
             sPath{ii}.coef = fullfile(foldCoef, fileCoef);
         end
         clear ii
         disp([char(39) sPath{1}.coef char(39) ' has been chosen as the set of parameter coefficients.']);
     end
+    
     
     %LOAD ALL OBSERVATION DATA
     for ii = 1 : nSites
@@ -564,7 +571,8 @@ else %Load output structures saved during previous run
     nSites = numel(sMeta.region(:));
 end
 
-%Create outputs
+
+%Create function outputs
 if nargout > 0
    varargout{1} = sOutput; 
    if nargout > 1
@@ -589,7 +597,6 @@ if ~regexpbl(sMeta.runType,'sim')
         cellStats = [sOpt.fitTest, 'kge', statsExtra];
     end
     
-    keyboard
     if numel(sOutput) == nSites %&& isstruct(sOutput{1})
         for mm = 1 : nSites
             %Create output directory for assessment plots:
@@ -603,7 +610,7 @@ if ~regexpbl(sMeta.runType,'sim')
 
             %Create plots: modeled versus observed
             mod_v_obs_v2(sObs{mm}, sOutput{mm}, sOpt.fitTest, 'plot', dirModObs, 'scatter','grid','combineType', 'lon', sHydro{mm}.(varLon), 'lat', sHydro{mm}.(varLat), 'wrtGridTyp', wrtGrid);
-            mod_v_obs_v2(sObs{mm}, sOutput{mm}, sOpt.fitTest, 'plot', dirModObs,'combineType', 'wrtTyp', sMeta.wrtTyp);
+            mod_v_obs_v2(sObs{mm}, sOutput{mm}, sOpt.fitTest, 'plot', dirModObs, 'combineType', 'wrtTyp', sMeta.wrtTyp);
         end
         clear mm
     else %This is used when validation is run to assess equifinality
@@ -636,15 +643,21 @@ if ~regexpbl(sMeta.runType,'sim')
         %Loop over outer-set (either number of sites or number of parameter
         %sets)
         warning('off', 'MATLAB:mir_warning_maybe_uninitialized_temporary');
-        parfor mm = 1 : numel(sOutput(:))           
-            if strcmpi(typOut, 'struct')
-                nIter = numel(sOutput{mm}(:));
+        
+        if strcmpi(typOut, 'struct')
+            nIter = numel(sOutput{1}(:));
+            parfor mm = 1 : numel(sOutput(:)) 
                 scoreSameTemp = cell(nIter,1);
                 typSameTemp = cell(nIter,1);
                 for nn = 1 : nIter
                     [scoreSameTemp{nn}, typSameTemp{nn}] = report_stats_v2(sObs{nn}, sOutput{mm}{nn}, cellStats, '', sMeta, 'no_disp', 'no_write');
                 end
-            elseif strcmpi(typOut, 'path')
+                            
+                scoreTemp{mm} = scoreSameTemp;
+                obsTypTemp{mm} = typSameTemp;
+            end
+        elseif strcmpi(typOut, 'path')
+            parfor mm = 1 : numel(sOutput(:)) 
                 scoreSameTemp = cell(nSites,1);
                 typSameTemp = cell(nSites,1);
                 for nn = 1 : nSites
@@ -657,10 +670,12 @@ if ~regexpbl(sMeta.runType,'sim')
                         error('CCHFMain:multOutFlds','The output array has an unexpected number of fields.')
                     end
                 end
+                
+                scoreTemp{mm} = scoreSameTemp;
+                obsTypTemp{mm} = typSameTemp;
             end
-            
-            scoreTemp{mm} = scoreSameTemp;
-            obsTypTemp{mm} = typSameTemp;
+        else
+            error('CCHFImplement:unknownOutputType', ['The output type ' class(typOut) ' has not been programmed for.']);
         end
         clear mm
         warning('on', 'MATLAB:mir_warning_maybe_uninitialized_temporary')

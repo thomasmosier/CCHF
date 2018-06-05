@@ -36,17 +36,15 @@ end
 % fConvert = 3.34*10^8/3600; %Latent heat of fusion divided by seconds in hour. Comes from (L_f*density_water)/(1000mm/m * 3600 s/hr)
 % %Units of J-hr-m^{-2}-s^{-1}
 
-szGrid = size(sAtm.rain);
 
-indPos = squeeze(sAtm.tas(sAtm.indtas,:,:)) > 0;
+indNeg = squeeze(sAtm.tas(sAtm.indtas,:,:)) <= 0;
 
 %Calculate equivalent of 'heatflux' using simple degree index model
-sCryo.hfnet = zeros(szGrid, 'single');
-sCryo.hfnet(indPos) = wattperdegS; %units to Watts per m^2
-
+sCryo.hfnet = wattperdegS*squeeze(sAtm.tas(sAtm.indtas,:,:)); %units to Watts per m^2
+sCryo.hfnet(indNeg) = 0;
 %Heat flux for ice
-sCryo.hfneti = zeros(szGrid, 'single');
-sCryo.hfneti(indPos) = wattperdegI;
+sCryo.hfneti = wattperdegI*squeeze(sAtm.tas(sAtm.indtas,:,:)); %units to Watts per m^2
+sCryo.hfneti(indNeg) = 0;
 
 % %For testing the empirical melt function:
 % test = (0:0.2:50);

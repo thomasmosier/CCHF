@@ -48,16 +48,10 @@ end
 
 
 if numel(indGage) == numel(indArea) && ~isempty(indGage)
-    if indTsOutCurr > numel(sModOut.(ptWrtCurr).(nmCurr))
-       keyboard 
-    end
     if isstruct(sData)
-        sModOut.(ptWrtCurr).(nmCurr)(indTsOutCurr) = nansum(sData.(nmCurr)(indGage).*area(indArea))/nansum(area(indArea));
+        sModOut.(ptWrtCurr).(nmCurr)(indTsOutCurr) = nansum(sData.(nmCurr)(indGage(:)).*area(indArea(:)))/nansum(area(indArea(:)));
     elseif isnumeric(sData)
-        if max(indGage(:)) > numel(sData)
-            keyboard
-        end
-        sModOut.(ptWrtCurr).(nmCurr)(indTsOutCurr) = nansum(sData(indGage).*area(indArea))/nansum(area(indArea));
+        sModOut.(ptWrtCurr).(nmCurr)(indTsOutCurr) = nansum(sData(indGage(:)).*area(indArea(:)))/nansum(area(indArea(:)));
     end
 else
     error('printModelPt:indicesDiffSz', ['The gage indice has ' ...

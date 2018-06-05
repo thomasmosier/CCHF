@@ -20,23 +20,14 @@
 
 function write_CCHF_gagedata(path, sObs)
 
-
-varLon = 'longitude';
-varLat = 'latitude';
+varLon = {'longitude','lon'};
+varLat = {'latitude','lat'};
 
 namesPtsWrt = fieldnames(sObs);
 sNum = '%.6g';
 
 [dir, nameInput, ~] = fileparts(path);
-
-% strComb = 'CCHF_format_combined';
-% if ~regexpbl(nameInput, strComb)
-%     nameInput = [nameInput, '_', strComb];
-% end
-
 path = fullfile(dir, [nameInput '.txt']);
-
-%    fid = fopen(path,'w+');
 fid = fopen(path,'wt');
 
 %Write intro string
@@ -52,23 +43,49 @@ for ii = 1 : numel(namesPtsWrt(:))
     namesCurr(strcmpi(namesCurr,'fields')) = [];
     namesCurr(strcmpi(namesCurr,'indGage')) = [];
     
-    if regexpbl(namesCurr, varLon)
-        lonCurr = sObs.(namesPtsWrt{ii}).(varLon);
-        if isnan(lonCurr)
-           lonCurr = 'spatial mean'; 
+    if regexpbl(namesCurr, {varLon{:}, 'all', 'avg'})
+        for zz = 1 : numel(varLon)
+            if any(strcmpi(namesCurr, varLon{zz}))
+                indLon = zz;
+            end
         end
-        namesCurr(strcmpi(namesCurr,varLon)) = [];
+        lonCurr = sObs.(namesPtsWrt{ii}).(varLon{indLon});
+        if ~isnumeric(lonCurr) 
+            if regexpbl(namesPtsWrt{ii}, 'all')
+                lonCurr = 'model grid'; 
+            elseif regexpbl(namesPtsWrt{ii}, 'avg')
+                lonCurr = 'spatial mean'; 
+            else
+                error('writeCCHFData:unknownLonField','The current observation does not appear to have a longitude field.');
+            end
+        end
+        for zz = numel(varLon) : -1 : 1
+            namesCurr(strcmpi(namesCurr,varLon{zz})) = [];
+        end
     else
         error('write_CCHF_data:noLon',[namesPtsWrt{ii} ' does not have'...
             ' a longitude field and therefore cannot be written to file.']);
     end
 
-    if regexpbl(namesCurr,varLat)
-        latCurr = sObs.(namesPtsWrt{ii}).(varLat);
-        if isnan(latCurr)
-           latCurr = 'spatial mean'; 
+    if regexpbl(namesCurr, {varLat{:}, 'all', 'avg'})
+        for zz = 1 : numel(varLat)
+            if any(strcmpi(namesCurr, varLat{zz}))
+                indLat = zz;
+            end
         end
-        namesCurr(strcmpi(namesCurr,varLat)) = [];
+        latCurr = sObs.(namesPtsWrt{ii}).(varLat{indLat});
+        if ~isnumeric(latCurr) 
+            if regexpbl(namesPtsWrt{ii}, 'all')
+                latCurr = 'model grid'; 
+            elseif regexpbl(namesPtsWrt{ii}, 'avg')
+                latCurr = 'spatial mean'; 
+            else
+                error('writeCCHFData:unknownLatField','The current observation does not appear to have a latitude field.');
+            end
+        end
+        for zz = numel(varLat) : -1 : 1
+            namesCurr(strcmpi(namesCurr,varLat{zz})) = [];
+        end
     else
         error('write_CCHF_data:noLat',[namesPtsWrt{ii} ' does not have'...
             ' a latitude field and therefore cannot be written to file.']);
@@ -182,11 +199,11 @@ for ii = 1 : numel(namesPtsWrt(:))
             if ~isempty(indPath)
                 fprintf(fid,'%s\t', 'Path:');
                 fprintf(fid,'%s\n', sObs.(namesPtsWrt{ii}).(nmsTemp{indPath}));
-            else
-                warning('write_CCHF_gagedata:noPath',['The path for ' ...
-                    namesPtsWrt{ii} '.' namesCurr{jj} ' does not exist. ' ...
-                    'Therefore it will not be written to the CCHF '...
-                    'formatted observation data file.']);
+%             else
+%                 warning('write_CCHF_gagedata:noPath',['The path for ' ...
+%                     namesPtsWrt{ii} '.' namesCurr{jj} ' does not exist. ' ...
+%                     'Therefore it will not be written to the CCHF '...
+%                     'formatted observation data file.']);
             end
         else %Write data
             strDataHd = 'Value, ';

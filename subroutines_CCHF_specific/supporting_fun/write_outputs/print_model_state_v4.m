@@ -30,8 +30,12 @@ varLon = 'longitude';
 
 %Mass balance fields are treated differently than other cryosphere fields because they are only recorded once every year.
 fldsmb = {'igrdmb'; 'icmb'}; 
+varGeodetic = 'geodetic';
+varStake = 'stake';
+varCasi = 'casi';
 %Remove mass balance fields from cryosphere
-fldsCryo = setdiff([fieldnames(sCryo); 'casi'; 'stake'; 'geodetic'], fldsmb);
+fldsCryoAll = fieldnames(sCryo);
+fldsCryo = setdiff([fldsCryoAll; varCasi; varStake; varGeodetic], fldsmb);
 fldsAtm  = fieldnames(sAtm);
 fldsLand = fieldnames(sLand);
 
@@ -232,8 +236,8 @@ else
         fldsOut{kk} = sModOut.(locOut{kk}).fields;
     end
     
-    %Indices to be nan:
-    indNan2d = find(isnan(sHydro.dem));
+    %Indices to use:
+    indNNan2d = find(~isnan(sHydro.dem));
 
     %Populate output structure for each of the points:
     for kk = 1 : numel(locOut(:)) %Loop over grid pts to write to
@@ -244,27 +248,27 @@ else
             nmCurr = char(fldsOut{kk}{ll});
                         
             %Indice for 2D area array:
-            indAreaCurr = sModOut.(ptWrtCurr).indGage;
+            indAreaCurr = reshape(sModOut.(ptWrtCurr).indGage, [], 1);
             
             %CALCULATE INDICES AND EXTRACT MODELED DATA
             if any(strcmpi(fldsLand, nmCurr)) %INFORMATION IN "sLand"
                 %Extract information:
                 if strcmpi(ptWrtCurr, 'all') 
                     sModOut = print_model_grid(sModOut, sLand, nmCurr, ptWrtCurr, ...
-                        indTsPrintCurr, sMeta, sHydro.(varLon), sHydro.(varLat), indNan2d);
+                        indTsPrintCurr, sMeta, sHydro.(varLon), sHydro.(varLat));
                 else
                     sModOut = print_model_pt(sModOut, sLand, nmCurr, ptWrtCurr, ...
-                        indTsPrintCurr, sHydro.area, sModOut.(ptWrtCurr).indGage, indAreaCurr, sMeta, indNan2d);
+                        indTsPrintCurr, sHydro.area, sModOut.(ptWrtCurr).indGage, indAreaCurr, sMeta);
                 end
                 
             elseif any(strcmpi(fldsAtm, nmCurr)) %INFORMATION IN "sAtm"
                 %Extract information:
                 if strcmpi(ptWrtCurr, 'all') 
                     sModOut = print_model_grid(sModOut, sAtm, nmCurr, ptWrtCurr, ...
-                        indTsPrintCurr, sMeta, sHydro.(varLon), sHydro.(varLat), indNan2d);
+                        indTsPrintCurr, sMeta, sHydro.(varLon), sHydro.(varLat));
                 else
                     sModOut = print_model_pt(sModOut, sAtm, nmCurr, ptWrtCurr, ...
-                        indTsPrintCurr, sHydro.area, sModOut.(ptWrtCurr).indGage, indAreaCurr, sMeta, indNan2d);
+                        indTsPrintCurr, sHydro.area, sModOut.(ptWrtCurr).indGage, indAreaCurr, sMeta);
                 end
                 
             elseif any(strcmpi(fldsCryo, nmCurr)) %INFORMATION IN "sCryo"
@@ -274,7 +278,7 @@ else
                 %present at current location
                 if regexpbl(nmCurr, 'ic')
                     %Check and record whether there is ice at requested point
-                    indGageCurr = intersect(sModOut.(ptWrtCurr).indGage, find(sCryo.icx ~= 0));
+                    indGageCurr = reshape(intersect(sModOut.(ptWrtCurr).indGage, find(sCryo.icx ~= 0)), [], 1);
                     if ~isempty(indGageCurr)
                         sModOut.(ptWrtCurr).icbl(indTsPrintCurr) = 1;
                     else
@@ -283,24 +287,24 @@ else
                     
                     if iceGrid == 1 %Ice grid seperate and current field is ice variable
                         szGrid = szIce;
-                        indCurr = sModOut.(ptWrtCurr).indIce;
+                        indCurr = reshape(sModOut.(ptWrtCurr).indIce, [], 1);
                     else
                         szGrid = szMain;
-                        indCurr = sModOut.(ptWrtCurr).indGage;
+                        indCurr = reshape(sModOut.(ptWrtCurr).indGage, [], 1);
                     end
                 else
                     szGrid = szMain;
-                    indCurr = sModOut.(ptWrtCurr).indGage;
+                    indCurr = reshape(sModOut.(ptWrtCurr).indGage, [], 1);
                 end
                     
                 %'casi' is not actually a field; therefore, need to check
                 %corresponding fields
                 switch nmCurr
-                    case 'casi'
+                    case varCasi
                         fldCheck = 'scx';
-                    case 'geodetic'
+                    case varGeodetic
                         fldCheck = 'icdwe';
-                    case 'stake' %fieldObsCurr = {'icdwe','sndwe'}
+                    case varStake %fieldObsCurr = {'icdwe','sndwe'}
                         fldCheck = 'sndwe';
                     otherwise
                         fldCheck = nmCurr;
@@ -319,14 +323,14 @@ else
                     end
                     szCurr = size(sCryo.(fldCheck));
                     [gageRow, gageCol] = ind2sub(szGrid, indCurr);
-                    indGageCurr = indInputTsCurr + (gageRow-1)*szCurr(1) + (gageCol-1)*szCurr(2)*szCurr(1);
+                    indGageCurr = reshape(indInputTsCurr + (gageRow-1)*szCurr(1) + (gageCol-1)*szCurr(2)*szCurr(1), [], 1);
                     
                 else %2D array
                     %Special case for ice grids:
                     if any(strcmpi(fldCheck, {'icdwe', 'iclr', 'icbl'})) && ~strcmpi(ptWrtCurr,'all')  
                         %Check and record whethere there is ice at requested point
-                        indGageCurr = intersect(sModOut.(ptWrtCurr).indGage, find(sCryo.icx ~= 0));
-                        indAreaCurr = intersect(indAreaCurr, find(sCryo.icx ~= 0));
+                        indGageCurr = reshape(intersect(sModOut.(ptWrtCurr).indGage, find(sCryo.icx ~= 0)), [], 1);
+                        indAreaCurr = reshape(intersect(indAreaCurr, find(sCryo.icx ~= 0)), [], 1);
                         %Create boolean field to display presence of ice at
                         %gage location:
                         if ~isfield(sModOut.(ptWrtCurr), 'icbl')
@@ -339,123 +343,170 @@ else
                             sModOut.(ptWrtCurr).icbl(indTsPrintCurr) = 0;
                         end
                     else
-                        indGageCurr = indCurr;
+                        indGageCurr = indCurr(:);
                     end
                 end
                   
                 %Extract information:
                 switch nmCurr 
-                    case 'stake' %fieldObsCurr = {'icdwe','sndwe'}
+                    case varStake %fieldObsCurr = {'icdwe','sndwe'}
                         if strcmpi(ptWrtCurr, 'all')
                             warning('print_model_state:stakeAllGrid', 'The glacier stake observations are expected at a single point. An entire grid has not been programmed for.');
                         else
                             sModOut = print_model_pt(sModOut, sCryo.icdwe + sCryo.sndwe, nmCurr, ptWrtCurr, ...
-                                indTsPrintCurr, sHydro.area, indGageCurr, indAreaCurr, sMeta, indNan2d);
+                                indTsPrintCurr, sHydro.area, indGageCurr, indAreaCurr, sMeta);
                         end
-                    case 'casi' %Special case for snow covered area:
+                    case varGeodetic
+                        if strcmpi(ptWrtCurr, 'all')
+                            fldTemp = nan(szMain, 'single');
+                            fldTemp(indNNan2d) = sCryo.icdwe(indNNan2d) + sCryo.sndwe(indNNan2d);
+                            sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:) = fldTemp;
+
+                            if isfield(sModOut.(ptWrtCurr), [char(nmCurr) '_path'])
+                                fileNm = fullfile(sMeta.foldWrtData, nmCurr, [char(file_nm(sMeta.region{sMeta.siteCurr}, nmCurr, sMeta.dateCurr)) '.nc']);
+                                print_grid_NC_v2(fileNm, squeeze(sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:)), nmCurr, sHydro.(varLon), sHydro.(varLat), sMeta.dateCurr, sMeta.dateCurr, 1);
+                            end
+                        else
+                            fldTemp = nan(size(indGageCurr), 'single');
+                            indUse = intersect(indGageCurr, indNNan2d);
+                            indAreaUse = intersect(indAreaCurr, indNNan2d);
+                            fldTemp(indUse) = sCryo.icdwe(indGageCurr(indUse)) + sCryo.sndwe(indGageCurr(indUse));
+                            sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr) ...
+                                = nansum(fldTemp(indUse).*sHydro.area(indAreaUse(:)))...
+                                /nansum(sHydro.area(indAreaUse(:)));
+                        end
+                    case varCasi %Special case for snow covered area:
                         if isfield(sCryo,'icdbr') %There is a debris field
                             optThresh = find_att(sMeta.global,'debris_opt_depth'); 
                             
                             %If debris cover field, only count non-debris covered ice
                             if strcmpi(ptWrtCurr,'all') 
-                                casiTemp = zeros(size(sCryo.scx), 'single');
+                                casiTemp = nan(size(sCryo.scx), 'single');
+                                casiTemp(indNNan2d) = 0;
                                 %Use ice fraction at locations without
                                 %debris
-                                indSca = sCryo.icdbr < optThresh | isnan(sCryo.icdbr);
+                                indSca = ~isnan(casiTemp) & sCryo.icdbr < optThresh | isnan(sCryo.icdbr);
                                 casiTemp(indSca) = sCryo.icx(indSca);
                                 
                                 casiTemp = 100*max(sCryo.scx, casiTemp);
-                                casiTemp(isnan(sCryo.scx)) = nan;
+                                casiTemp(isnan(sCryo.scx) | isnan(sCryo.icx)) = nan;
                                 
-                                sModOut = print_model_grid(sModOut, casiTemp, nmCurr, ptWrtCurr, ...
-                                    indTsPrintCurr, sMeta, sHydro.(varLon), sHydro.(varLat), indNan2d);
-                            else
-                                indGageCurr = indGageCurr(:);
-                                indAreaCurr = indAreaCurr(:);
-                                                    
-                                casiTemp = zeros([numel(indGageCurr), 1], 'single');
+                                sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:) = casiTemp;
+
+                                if isfield(sModOut.(ptWrtCurr), [char(nmCurr) '_path'])
+                                    fileNm = fullfile(sMeta.foldWrtData, nmCurr, [char(file_nm(sMeta.region{sMeta.siteCurr}, nmCurr, sMeta.dateCurr)) '.nc']);
+                                    print_grid_NC_v2(fileNm, squeeze(sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:)), nmCurr, sHydro.(varLon), sHydro.(varLat), sMeta.dateCurr, sMeta.dateCurr, 1);
+                                end
+                            else   
+                                casiTemp = nan(size(indGageCurr), 'single');
+                                indSca = intersect(indGageCurr, indNNan2d);
+                                indAreaUse = intersect(indAreaCurr, indNNan2d);
+                                
+                                casiTemp(indSca) = 0;
                                 
                                 indSca = sCryo.icdbr(indGageCurr) < optThresh | isnan(sCryo.icdbr(indGageCurr));
-                                
+
                                 casiTemp(indSca) = sCryo.icx(indGageCurr(indSca));
                                 casiTemp = 100*max(sCryo.scx(indGageCurr),casiTemp);
                                 
-                                indUse = find(~isnan(sCryo.scx(indGageCurr)));
+                                indUse = find(~isnan(sCryo.scx(indGageCurr)) & ~isnan(sCryo.icx(indGageCurr)) & ~isnan(casiTemp));
                                 
-                                sModOut = print_model_pt(sModOut, casiTemp, nmCurr, ptWrtCurr, ...
-                                    indTsPrintCurr, sHydro.area, indGageCurr(indUse), indAreaCurr(indUse), sMeta, indNan2d);
+                                sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr) ...
+                                    = nansum((casiTemp(indGageCurr(indUse(:))))...
+                                    .*sHydro.area(indAreaUse))/nansum(sHydro.area(indAreaUse));
                             end
                         else %No debris cover field
                             if strcmpi(ptWrtCurr,'all') 
-                                casiTemp = 100*max(sCryo.scx, sCryo.icx);
-                                casiTemp(isnan(sCryo.scx)) = nan;
+                                casiTemp = nan(size(sCryo.scx), 'single');
+                                casiTemp(indNNan2d) = 0;
+                                %Use ice fraction at locations without
+                                %debris
+                                casiTemp(indNNan2d) = 100*max(sCryo.scx(indNNan2d), sCryo.icx(indNNan2d));
+                                casiTemp(isnan(sCryo.scx) | isnan(sCryo.icx)) = nan;
                                 
-                                sModOut = print_model_grid(sModOut, casiTemp, nmCurr, ptWrtCurr, ...
-                                    indTsPrintCurr, sMeta, sHydro.(varLon), sHydro.(varLat), indNan2d);
+                                sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:) = casiTemp;
+
+                                if isfield(sModOut.(ptWrtCurr), [char(nmCurr) '_path'])
+                                    fileNm = fullfile(sMeta.foldWrtData, nmCurr, [char(file_nm(sMeta.region{sMeta.siteCurr}, nmCurr, sMeta.dateCurr)) '.nc']);
+                                    print_grid_NC_v2(fileNm, squeeze(sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:)), nmCurr, sHydro.(varLon), sHydro.(varLat), sMeta.dateCurr, sMeta.dateCurr, 1);
+                                end
                             else
-                                sModOut = print_model_pt(sModOut, 100*max(sCryo.scx,sCryo.icx), nmCurr, ptWrtCurr, ...
-                                    indTsPrintCurr, sHydro.area, indGageCurr, indAreaCurr, sMeta, indNan2d);
+                                casiTemp = nan(size(indGageCurr), 'single');
+                                indSca = intersect(indGageCurr, indNNan2d);
+                                indAreaUse = intersect(indAreaCurr, indNNan2d);
+                                
+                                casiTemp(indSca) = 100*max(sCryo.scx(indGageCurr(indSca)), sCryo.icx(indGageCurr(indSca)));
+                                indUse = find(~isnan(sCryo.scx(indGageCurr)) & ~isnan(sCryo.icx(indGageCurr)) & ~isnan(casiTemp));
+                                
+                                sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr) ...
+                                    = nansum((casiTemp(indGageCurr(indUse(:))))...
+                                    .*sHydro.area(indAreaUse))/nansum(sHydro.area(indAreaUse));
                             end
                         end
                     otherwise
                         if strcmpi(ptWrtCurr, 'all')
                             sModOut = print_model_grid(sModOut, sCryo, nmCurr, ptWrtCurr, ...
-                                indTsPrintCurr, sMeta, sHydro.(varLon), sHydro.(varLat), indNan2d);
+                                indTsPrintCurr, sMeta, sHydro.(varLon), sHydro.(varLat));
                         else
                             sModOut = print_model_pt(sModOut, sCryo, nmCurr, ptWrtCurr, ...
-                                indTsPrintCurr, sHydro.area, indGageCurr, indAreaCurr, sMeta, indNan2d);
+                                indTsPrintCurr, sHydro.area, indGageCurr, indAreaCurr, sMeta);
                         end
                 end
             elseif any(strcmpi(fldsmb, nmCurr)) %MASS BALANCE INFORMATION (stored in "sCryo")
-                %Difference with mass balance fields is that they are only
-                %calculated once per year
-                if regexpbl(nmCurr, 'ic')
-                    fldMb = 'icmb';
-                elseif regexpbl(nmCurr, 'igrd')
-                    fldMb = 'igrdmb';
-                else
-                    error('printModelState:unknownIceFld',['The mass balance field ' nmCurr ' is not recognized.']);
-                end
+                if regexpbl(fldsCryoAll, fldsmb)
+                    %Difference with mass balance fields is that they are only
+                    %calculated once per year
+                    if regexpbl(nmCurr, 'ic')
+                        fldMb = 'icmb';
+                    elseif regexpbl(nmCurr, 'igrd')
+                        fldMb = 'igrdmb';
+                    else
+                        error('printModelState:unknownIceFld',['The mass balance field ' nmCurr ' is not recognized.']);
+                    end
 
-                if isfield(sMeta, 'dateGlac') 
-                    %Find date to write to:
-                    varMbDateStrt = [fldMb '_dateStart'];
-                    varMbDateEnd  = [fldMb   '_dateEnd'];
-                    %Record mass balance if date corresponds to last day of
-                    %mass balance year
-                    if isequal(sMeta.dateCurr(2:end), sMeta.dateGlac) && any(sMeta.dateCurr(1) == sModOut.all.(varMbDateEnd)(:,1))
-                        %Find current output mb indice
-                        indMbCurr = find(ismember(sModOut.(ptWrtCurr).(varMbDateEnd), sMeta.dateCurr, 'rows'));
-                        if ~isempty(indMbCurr)
-                            if strcmpi(ptWrtCurr, 'all')
-                                sModOut.(ptWrtCurr).(nmCurr)(indMbCurr,:,:) = sCryo.(fldMb);
+                    if isfield(sMeta, 'dateGlac') 
+                        %Find date to write to:
+                        varMbDateStrt = [fldMb '_dateStart'];
+                        varMbDateEnd  = [fldMb   '_dateEnd'];
+                        %Record mass balance if date corresponds to last day of
+                        %mass balance year
+                        if isequal(sMeta.dateCurr(2:end), sMeta.dateGlac) && any(sMeta.dateCurr(1) == sModOut.all.(varMbDateEnd)(:,1))
+                            %Find current output mb indice
+                            indMbCurr = find(ismember(sModOut.(ptWrtCurr).(varMbDateEnd), sMeta.dateCurr, 'rows'));
+                            if ~isempty(indMbCurr)
+                                if strcmpi(ptWrtCurr, 'all')
+                                    fldTemp = nan(szMain, 'single');
+                                    fldTemp(indNNan2d) = sCryo.(fldMb)(indNNan2d);
+                                    sModOut.(ptWrtCurr).(nmCurr)(indMbCurr,:,:) = fldTemp;
 
-                                %Set indices outside domain to nan:
-                                sModOut.(ptWrtCurr).(nmCurr) = array_time_slice_nan(sModOut.(ptWrtCurr).(nmCurr), indMbCurr, indNan2d);
+                                    %Set indices outside domain to nan:
+                                    %sModOut.(ptWrtCurr).(nmCurr) = array_time_slice_nan(sModOut.(ptWrtCurr).(nmCurr), indMbCurr);
 
-                                %Write to file
-                                if isfield(sModOut.(ptWrtCurr), [char(fldMb) '_path'])
-                                    dateBndsMb = [sModOut.(ptWrtCurr).(varMbDateStrt)(indMbCurr,:); sModOut.(ptWrtCurr).(varMbDateEnd)(indMbCurr,:)];
-                                    fileNm = fullfile(sMeta.foldWrtData, fldMb, [char(file_nm(sMeta.region{sMeta.siteCurr}, sModOut.(ptWrtCurr).fields{ll}, sModOut.(ptWrtCurr).date(indDate,:))) '.nc']);
-                                    print_grid_NC_v2(fileNm, squeeze(sModOut.(ptWrtCurr).(nmCurr)(indMbCurr,:,:)), fldMb, sHydro.(varLon), sHydro.(varLat), dateBndsMb(end,:), dateBndsMb, 1, 'm.w.e./year');
-                                end
-                            else
-                                if strcmpi(fldMb, 'igrdmb')
-                                    error('printModelState:igrdNotYetProgrammed', ...
-                                        ['Printing mb at specific indices of igrd ' ...
-                                        '(high-res grid used for ice) has not been programmed. ' ...
-                                        'This requires finding the correct spatial indices']);
+                                    %Write to file
+                                    if isfield(sModOut.(ptWrtCurr), [char(fldMb) '_path'])
+                                        dateBndsMb = [sModOut.(ptWrtCurr).(varMbDateStrt)(indMbCurr,:); sModOut.(ptWrtCurr).(varMbDateEnd)(indMbCurr,:)];
+                                        fileNm = fullfile(sMeta.foldWrtData, fldMb, [char(file_nm(sMeta.region{sMeta.siteCurr}, sModOut.(ptWrtCurr).fields{ll}, sModOut.(ptWrtCurr).date(indDate,:))) '.nc']);
+                                        print_grid_NC_v2(fileNm, squeeze(sModOut.(ptWrtCurr).(nmCurr)(indMbCurr,:,:)), fldMb, sHydro.(varLon), sHydro.(varLat), dateBndsMb(end,:), dateBndsMb, 1, 'm.w.e./year');
+                                    end
                                 else
-                                    sModOut = print_model_pt(sModOut, sCryo.(fldMb), nmCurr, ptWrtCurr, indTsPrintCurr, sHydro.area, indGageCurr, indAreaCurr, sMeta, indNan2d);
+                                    if strcmpi(fldMb, 'igrdmb')
+                                        error('printModelState:igrdNotYetProgrammed', ...
+                                            ['Printing mb at specific indices of igrd ' ...
+                                            '(high-res grid used for ice) has not been programmed. ' ...
+                                            'This requires finding the correct spatial indices']);
+                                    else
+                                        sModOut = print_model_pt(sModOut, sCryo.(fldMb), nmCurr, ptWrtCurr, indTsPrintCurr, sHydro.area, indGageCurr, indAreaCurr, sMeta);
+                                    end
                                 end
                             end
                         end
                     end
-                else
-                    error('printModelState:noGlacierMbDate', ['No glacier date processing field is present. '...
-                        'This field is required because glacier processes are only calculated once per year.']);
+                else %MB FIELD NOT FOUND
+                    if indTsPrintCurr == 1
+                        warning('backbone:noMbField', ['No mass balance '...
+                            'field was found in the cryosphere structure.']);
+                    end
                 end
-                
             else %FIELD NOT FOUND
                 if indTsPrintCurr == 1
                     warning('backbone:unknownOutput', ['Output for ' ...

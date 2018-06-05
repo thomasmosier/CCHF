@@ -57,10 +57,18 @@ varVel = 'igrdvel';
 
 %Calculate angle of slope from rise/run
 if ~isfield(sCryo, varAngle)
-    sCryo.(varAngle) = real(atand(sCryo.(varRiseRun)));
+    mnAng = 1.5; %degrees
+    sCryo.(varAngle) = single(full(real(atand(sCryo.(varRiseRun)))));
     %Set minimal angle to 1.5 degrees to ensure no stagnant ice (based on Shea et al.)
-    sCryo.(varAngle)(sCryo.(varAngle) > -1.5 & sCryo.(varAngle) < 0) = -1.5; 
-    sCryo.(varAngle)(sCryo.(varAngle) >= 0 & sCryo.(varAngle) <= 1.5) = 1.5;
+    if any(sCryo.(varAngle)(:) < 0)
+        sCryo.(varAngle)(sCryo.(varAngle) > -mnAng & sCryo.(varAngle) < 0) = -mnAng; 
+    end
+    if any(sCryo.(varAngle)(:) > 0)
+        sCryo.(varAngle)(sCryo.(varAngle) < mnAng & sCryo.(varAngle) > 0) = mnAng;
+    end
+    if numel(find(sCryo.(varAngle) < 0)) > numel(find(sCryo.(varAngle) > 0))
+        sCryo.(varAngle)(sCryo.(varAngle) == 0) = mnAng;
+    end
 end
 
 if ~isfield(sCryo, varSineAngle)
@@ -72,7 +80,7 @@ end
 %Calculate the shear stress on the glaicer:
 %Sheer stress = rho_ice x g x thickness_ice x sin(slope_degrees)
 %             = rho_water X g x ice_water_equivalent x sin(slope_degrees)
-tau = sparse(max(0, rhoW*g*sCryo.igrdwe.*sCryo.(varSineAngle) - tauNaught)); 
+tau = sparse(double(max(0, rhoW*g*(full(sCryo.igrdwe).*sCryo.(varSineAngle)) - tauNaught))); 
 
 sCryo.(varVel) = (tau./(R*nu^2)).^((n+1)/2); %Units are m/s
 
