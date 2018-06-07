@@ -122,6 +122,9 @@ iMData = 3;
 iODate = 4;
 iOData = 5;
 
+%Set calendar properties:
+calUse = 'gregorian';
+dateRef = [1981, 1, 1];
 
 %%FIND ALL DATA FIELDS PRESENT IN OBSERVATION DATA:
 obsTypes = cell(0,1);
@@ -261,9 +264,17 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
             dataAll{cntrObs,iMDate} = cell(2,1);
             dataAll{cntrObs,iMDate}{1} = sMod.(ptsMod{indCurr}).(fldModDateStrt); 
             dataAll{cntrObs,iMDate}{2} = sMod.(ptsMod{indCurr}).(fldModDateEnd);
+            
+            daysMod = cell(2,1);
+            daysMod{1} = days_since(dateRef, dataAll{cntrObs,iMDate}{1}, calUse);
+            daysMod{2} = days_since(dateRef, dataAll{cntrObs,iMDate}{2}, calUse);
+            
             tResMod = numel(dataAll{cntrObs,iMDate}{1}(1,:));   
         elseif isfield(sMod.(ptsMod{indCurr}), 'date') %Dates same as model time step
             dataAll{cntrObs,iMDate} = sMod.(ptsMod{indCurr}).date; %Modelled date is always '.date' except mass balance
+            
+            daysMod = days_since(dateRef, dataAll{cntrObs,iMDate}, calUse);
+            
             tResMod = numel(dataAll{cntrObs,iMDate}(1,:));
         else
             error('modVObs:noDateFieldMod',['No date field has been identified for the model field ' fldsCurrMod{indField(1)} '.']);
@@ -333,6 +344,7 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
         
         if isfield(sObs.(ptsObs{ii}), [fldCurrObs{kk} '_date']) %Observations occur at single point in time
             dataAll{cntrObs,iODate} = sObs.(ptsObs{ii}).([fldCurrObs{kk} '_date']);
+        
             tResObs = numel(dataAll{cntrObs,iODate}(1,:));
 
             %If temporal resolution doesn't match, convert (e.g. 
@@ -370,20 +382,15 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
             end
 
             %Find dates common to both modelled and observed data
-            [~, dateUseObs, dateUseMod] = intersect(dataAll{cntrObs,iODate}, dataAll{cntrObs,iMDate},'rows');
-            
-%             if (sum(~isnan(dateUseObs)) < 0.7*sum(~isnan(dataAll{cntrObs,indObsData}))) || (numel(dateUseObs) < 0.7*numel(dataAll{cntrObs,indObsData}))
-%                 warning('mod_v_obs:unusedObs',...
-%                     [num2str(sum(~isnan(dateUseObs))) ' of the ' ...
-%                     num2str(sum(~isnan(dataAll{cntrObs,indObsData}))) ...
-%                     ' observations for ' char(nmDataCurrObs) ' are being '...
-%                     'used.  Consider adapting the model '...
-%                     'run time accordingly.']);
-%             end
+            daysObs = days_since(dateRef, dataAll{cntrObs,iODate}, calUse);
+                        
+            [~, dateUseObs, dateUseMod] = intersect(daysObs, daysMod,'rows');
             
             dataAll{cntrObs,iMDate} = dataAll{cntrObs,iMDate}( dateUseMod,:);
+            daysMod = daysMod(dateUseMod);
             dataAll{cntrObs,iMData} = dataAll{cntrObs,iMData}( dateUseMod,:);
             dataAll{cntrObs,iODate} = dataAll{cntrObs,iODate}( dateUseObs,:);
+            daysObs = daysObs(dateUseObs);
             dataAll{cntrObs,iOData} = dataAll{cntrObs,iOData}( dateUseObs,:);
                        
             if isempty(dateUseObs) || isempty(dateUseMod)
@@ -399,8 +406,12 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
             dataAll{cntrObs,iODate} = cell(2,1);
             dataAll{cntrObs,iODate}{1} = sObs.(ptsObs{ii}).([fldCurrObs{kk} '_dateStart']); 
             dataAll{cntrObs,iODate}{2} = sObs.(ptsObs{ii}).([fldCurrObs{kk} '_dateEnd']);
-            tResObs = numel(dataAll{cntrObs,iODate}{1}(1,:));
-
+            
+            daysObs = cell(2,1);
+            daysObs{1} = days_since(dateRef, dataAll{cntrObs,iODate}{1}, calUse);
+            daysObs{2} = days_since(dateRef, dataAll{cntrObs,iODate}{2}, calUse);
+            
+            tResObs = numel(dataAll{cntrObs,iODate}{1}(1,:));  
 
             %Match observation and modelled dates differently
             %depending on resolutions:             
@@ -410,7 +421,7 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
                     %and extract for same dates present in
                     %observations
 
-                    datesTempModInterp = date_vec_fill([dataAll{cntrObs,iMDate}(1,:),1],[dataAll{cntrObs,iMDate}(end,:),eomday(dataAll{cntrObs,iMDate}(end,1), dataAll{cntrObs,iMDate}(end,2))],'gregorian');
+                    datesTempModInterp = date_vec_fill([dataAll{cntrObs,iMDate}(1,:),1],[dataAll{cntrObs,iMDate}(end,:),eomday(dataAll{cntrObs,iMDate}(end,1), dataAll{cntrObs,iMDate}(end,2))],calUse);
 
                     warning('off', 'all'); %Warning caused if all modelled data are NaN
                     dataAll{cntrObs,iMData} = interp_month2day(dataAll{cntrObs,iMDate}, dataAll{cntrObs,iMData}, datesTempModInterp, 'pchip', 1);
@@ -429,103 +440,95 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
                 end
             end
 
-
-            %Extract modelled data for time-series present in observations:
-            if numel(size(dataAll{cntrObs,iOData})) == 2 && any(size(dataAll{cntrObs,iOData}) == 1) %Pt data
-                dataTempMod2Obs = nan(numel(dataAll{cntrObs,iOData}),1);
-                for ll = 1 : numel(dataAll{cntrObs,iOData})
-                    indModStrt = find(ismember(dataAll{cntrObs,iMDate}, dataAll{cntrObs,iODate}{1}(ll,:), 'rows') == 1);
-                    indModEnd = find(ismember(dataAll{cntrObs,iMDate}, dataAll{cntrObs,iODate}{2}(ll,:), 'rows') == 1);
-
-                    if ~isempty(indModStrt) && ~isempty(indModEnd) && indModEnd >= indModStrt %If start and end dates of observation present in model, copy data
-                        if regexpbl(evalType, 'sum')
-                            dataTempMod2Obs(ll) = nansum(dataAll{cntrObs,iMData}(indModStrt:indModEnd));
-                        elseif regexpbl(evalType, 'mean')
-                            dataTempMod2Obs(ll) = nanmean(dataAll{cntrObs,iMData}(indModStrt:indModEnd));
-                        elseif regexpbl(evalType, 'max')
-                            dataTempMod2Obs(ll) = nanmax(dataAll{cntrObs,iMData}(indModStrt:indModEnd));
-                        else
-                            error('mod_v_obs:unknownEvalType', [evalType ...
-                                ' is an unknown evaluation type and a '...
-                                'case has not been programmed for it.']);
-                        end
-                    else
-                        dataAll{cntrObs,iOData}(ll) = nan;
-                    end
-                end
-            elseif numel(size(dataAll{cntrObs,iOData})) == 3 || ~any(size(dataAll{cntrObs,iOData}) == 1) %gridded data
-                if numel(size(dataAll{cntrObs,iOData})) == 3 %Observations have 3 dimensions
-                    nTsObs = numel(dataAll{cntrObs,iOData}(:,1,1));
-                    dataTempMod2Obs = nan(size(dataAll{cntrObs,iOData}),'single');             
-                else
-                    nTsObs = 1;
-                    dataTempMod2Obs = nan([1,size(dataAll{cntrObs,iOData})],'single'); 
-                end
-
-                for ll = 1 : nTsObs
-                    if isnumeric(dataAll{cntrObs,iMDate}) || (iscell(dataAll{cntrObs,iMDate}) && numel(dataAll{cntrObs,iMDate}) == 1) %Date field at model time step
-                        indModStrt = find(ismember(dataAll{cntrObs,iMDate}, dataAll{cntrObs,iODate}{1}(ll,:), 'rows') == 1);
-                        indModEnd = find(ismember(dataAll{cntrObs,iMDate}, dataAll{cntrObs,iODate}{2}(ll,:), 'rows') == 1);
-                        
-                        if ~isempty(indModStrt) && ~isempty(indModEnd) && indModEnd >= indModStrt %If start and end dates of observation present in model, copy data
+            
+            %Switch between types of model dates (continuous versus
+            %start&end
+            if isnumeric(dataAll{cntrObs,iMDate})
+                %Get dates scaling between mod and obs:
+                [nDaysMod, nDaysObs, indModStrt, indModEnd] ...
+                    = days_mod_2_obs(daysMod, daysMod, daysObs{1}, daysObs{2});
+                scl = (nDaysObs./nDaysMod);
+                nTsObs = numel(nDaysMod);
+                
+                %Extract modelled data for time-series present in observations:
+                if numel(size(dataAll{cntrObs,iOData})) == 2 && any(size(dataAll{cntrObs,iOData}) == 1) %Pt data
+                    dataTempMod2Obs = nan(nTsObs,1);
+                    for ll = 1 : numel(dataAll{cntrObs,iOData})
+                        if ~isempty(indModStrt) && ~isempty(indModEnd) && indModEnd(ll) >= indModStrt(ll) %If start and end dates of observation present in model, copy data
                             if regexpbl(evalType, 'sum')
-                                dataTempMod2Obs(ll,:,:) = squeeze(nansum(dataAll{cntrObs,iMData}(indModStrt:indModEnd,:,:), 1));
+                                dataTempMod2Obs(ll) = scl(ll)*nansum(dataAll{cntrObs,iMData}(indModStrt:indModEnd));
                             elseif regexpbl(evalType, 'mean')
-                                dataTempMod2Obs(ll,:,:) = squeeze(nanmean(dataAll{cntrObs,iMData}(indModStrt:indModEnd,:,:), 1));
+                                dataTempMod2Obs(ll) = scl(ll)*nanmean(dataAll{cntrObs,iMData}(indModStrt:indModEnd));
                             elseif regexpbl(evalType, 'max')
-                                dataTempMod2Obs(ll,:,:) = squeeze(nanmax(dataAll{cntrObs,iMData}(indModStrt:indModEnd,:,:), 1));
+                                dataTempMod2Obs(ll) = scl(ll)*nanmax(dataAll{cntrObs,iMData}(indModStrt:indModEnd));
                             else
                                 error('mod_v_obs:unknownEvalType', [evalType ...
                                     ' is an unknown evaluation type and a '...
                                     'case has not been programmed for it.']);
                             end
                         else
-                            dataAll{cntrObs,iOData}(ll,:,:) = nan;
+                            error('modVObs:noModInd',['No model indice was found for observation type ' fldCurrObs{kk} '.']);
                         end
-                    elseif iscell(dataAll{cntrObs,iMDate}) && numel(dataAll{cntrObs,iMDate}(:)) == 2 %Start and end dates for model field
-                        %Geodetic observations are gridded and span two points
-                        %in time (typically many years). Observation time 
-                        %interval may not overlap perfectly with modelled 
-                        %time-series.
-                        nDatesMod = numel(dataAll{cntrObs,iMDate}{1}(:,1));
-                        
-                        %Find days seperating mod and obs
-                        daysStrtTemp = nan(nDatesMod,1);
-                        daysEndTemp = daysStrtTemp;
-                        for zz = 1 : nDatesMod
-                            daysStrtTemp(zz) = days_since(dataAll{cntrObs,iODate}{1}(ll,:), dataAll{cntrObs,iMDate}{1}(zz,:), 'gregorian');
-                            daysEndTemp(zz)  = days_since(dataAll{cntrObs,iMDate}{2}(zz,:), dataAll{cntrObs,iODate}{2}(ll,:), 'gregorian');
-                        end
-                        
-                        %Find indices of model that best include
-                        %observations (going over if necessary)
-                        %For start:
-                        if any(daysStrtTemp <= 0)
-                            indModStrt = find(daysStrtTemp <= 0, 1, 'last');
+                    end %End of observation loop
+                elseif numel(size(dataAll{cntrObs,iOData})) == 3 || ~any(size(dataAll{cntrObs,iOData}) == 1) %gridded data
+                    if numel(size(dataAll{cntrObs,iOData})) == 3 %Observations have 3 dimensions
+                        dataTempMod2Obs = nan(size(dataAll{cntrObs,iOData}),'single');             
+                    else
+                        dataTempMod2Obs = nan([1,size(dataAll{cntrObs,iOData})],'single'); 
+                    end
+
+                    for ll = 1 : nTsObs
+                        if isnumeric(dataAll{cntrObs,iMDate}) || (iscell(dataAll{cntrObs,iMDate}) && numel(dataAll{cntrObs,iMDate}) == 1) %Date field at model time step
+                            if ~isempty(indModStrt) && ~isempty(indModEnd) && indModEnd(ll) >= indModStrt(ll) %If start and end dates of observation present in model, copy data
+                                if regexpbl(evalType, 'sum')
+                                    dataTempMod2Obs(ll,:,:) = scl(ll)*squeeze(nansum(dataAll{cntrObs,iMData}(indModStrt:indModEnd,:,:), 1));
+                                elseif regexpbl(evalType, 'mean')
+                                    dataTempMod2Obs(ll,:,:) = scl(ll)*squeeze(nanmean(dataAll{cntrObs,iMData}(indModStrt:indModEnd,:,:), 1));
+                                elseif regexpbl(evalType, 'max')
+                                    dataTempMod2Obs(ll,:,:) = scl(ll)*squeeze(nanmax(dataAll{cntrObs,iMData}(indModStrt:indModEnd,:,:), 1));
+                                else
+                                    error('mod_v_obs:unknownEvalType', [evalType ...
+                                        ' is an unknown evaluation type and a '...
+                                        'case has not been programmed for it.']);
+                                end
+                            else
+                                error('modVObs:noModInd',['No model indice was found for observation type ' fldCurrObs{kk} '.']);
+    %                             dataAll{cntrObs,iOData}(ll,:,:) = nan;
+                            end
                         else
-                            indModStrt = 1;
+                            error('modVObs:unknownDateFormat',['The model date is of class ' class(dataAll{cntrObs,iMDate}) ' and has ' num2str(numel(dataAll{cntrObs,iMDate})) ' elements. This has not been programmed for.']);
                         end
-                        %For end:
-                        if any(daysEndTemp <= 0)
-                            indModEnd = find(daysEndTemp <= 0, 1, 'first');
-                        else
-                            indModEnd = numel(daysEndTemp);
-                        end
-                        
-                        %Interpolate model to observation dates:
-                        nDaysMod = days_since(dataAll{cntrObs,iMDate}{1}(indModStrt,:), dataAll{cntrObs,iMDate}{2}(indModEnd,:), 'gregorian');
-                        nDaysObs = days_since(dataAll{cntrObs,iODate}{1}(ll,:), dataAll{cntrObs,iODate}{2}(ll,:), 'gregorian');
-                        dataTempMod2Obs(ll,:,:) = (nDaysObs/nDaysMod)*squeeze(sum(dataAll{cntrObs,iMData}(indModStrt:indModEnd,:,:), 1));
+                    end %End of loop over observations
+                else
+                    error('mod_v_obs:errDim', ['The current variable has ' ...
+                        num2str(numel(size(numel(dataAll{cntrObs,iOData})))) ...
+                        ' dimensions, which has not been programmed for.']);
+                end
+            elseif iscell(dataAll{cntrObs,iMDate}) && numel(dataAll{cntrObs,iMDate}(:)) == 2 %Start and end dates for model field
+                %Geodetic observations are gridded and span two points
+                %in time (typically many years). Observation time 
+                %interval may not overlap perfectly with modelled 
+                %time-series.
+                
+                %Get dates scaling between mod and obs:
+                [nDaysMod, nDaysObs, indModStrt, indModEnd] ...
+                    = days_mod_2_obs(daysMod{1}, daysMod{2}, daysObs{1}, daysObs{2});
+                scl = (nDaysObs./nDaysMod);
+                nTsObs = numel(nDaysMod);
+                
+                if numel(size(dataAll{cntrObs,iOData})) == 3 || ~any(size(dataAll{cntrObs,iOData}) == 1) %gridded data
+                    for ll = 1 : nTsObs
+                        dataTempMod2Obs(ll,:,:) = scl(ll)*squeeze(sum(dataAll{cntrObs,iMData}(indModStrt(ll):indModEnd(ll),:,:), 1));
                         %For testing:
                         %figure; imagesc(squeeze(dataTempMod2Obs(ll,:,:))); colorbar;
-                    else
-                        error('modVObs:unknownDateFormat',['The model date is of class ' class(dataAll{cntrObs,iMDate}) ' and has ' num2str(numel(dataAll{cntrObs,iMDate})) ' elements. This has not been programmed for.']);
                     end
-                end %End of loop over observations
+                else
+                    error('modVObs:unknownDateFormat',['The model date is of class ' ...
+                        class(dataAll{cntrObs,iMDate}) ' and has ' num2str(numel(dataAll{cntrObs,iMDate})) ...
+                        ' elements. It is probably point data, but this specific clause has not been programmed for.']);
+                end
             else
-                error('mod_v_obs:errDim', ['The current variable has ' ...
-                    num2str(numel(size(numel(dataAll{cntrObs,iOData})))) ...
-                    ' dimensions, which has not been programmed for.']);
+                
             end
 
             %Copy aggregated model data to data array:
@@ -545,6 +548,7 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
             %Set model output dates to be same as observation (because
             %model output has been aggregated to observation time elements)
             dataAll{cntrObs,iMDate} = dataAll{cntrObs,iODate}; %Model start date
+            daysMod = daysObs;
         else
             error('mod_v_obs:noDate',['No time field appears to be present for ' sObs.(ptsObs{ii}) ' observation data.'])
         end
@@ -552,40 +556,16 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
 
         %Save time signature as reference date and "days_since" instead of
         %date:
-        dateRef = nan(tResMod, 1);
-        if iscell(dataAll{cntrObs,iMDate}) && iscell(dataAll{cntrObs,iODate})
-            if ~isempty(dataAll{cntrObs,iMDate}{1}) && numel(dataAll{cntrObs,iMDate}{1}(1,:)) > 1 && ~isempty(dataAll{cntrObs,iODate}{1}) && numel(dataAll{cntrObs,iODate}{1}(1,:)) > 1
-                dateRef = dataAll{cntrObs,iMDate}{1}(1,:);
-                for ll = 1 : numel(dataAll{cntrObs,iMDate})
-                    dataAll{cntrObs,iMDate}{ll} = days_since(dateRef, dataAll{cntrObs,iMDate}{ll}, 'gregorian');
-                    dataAll{cntrObs,iODate}{ll} = days_since(dateRef, dataAll{cntrObs,iODate}{ll}, 'gregorian');
-                end
-            end
-        elseif iscell(dataAll{cntrObs,iMDate})
-            if ~isempty(dataAll{cntrObs,iMDate}{1}) && numel(dataAll{cntrObs,iMDate}{1}(1,:)) > 1
-                dateRef = dataAll{cntrObs,iMDate}{1}(1,:);
-                for ll = 1 : numel(dataAll{cntrObs,iMDate})
-                    dataAll{cntrObs,iMDate}{ll} = days_since(dateRef, dataAll{cntrObs,iMDate}{ll}, 'gregorian');
-                end
-            end
-            dataAll{cntrObs,iODate} = days_since(dateRef, dataAll{cntrObs,iODate}, 'gregorian');
-        elseif iscell(dataAll{cntrObs,iODate})
-            if ~isempty(dataAll{cntrObs,iODate}{1}) && numel(dataAll{cntrObs,iODate}{1}(1,:)) > 1
-                dateRef = dataAll{cntrObs,iODate}{1}(1,:);
-                for ll = 1 : numel(dataAll{cntrObs,iODate})
-                    dataAll{cntrObs,iODate}{ll} = days_since(dateRef, dataAll{cntrObs,iODate}{ll}, 'gregorian');
-                end
-            end
-            dataAll{cntrObs,iMDate} = days_since(dateRef, dataAll{cntrObs,iMDate}, 'gregorian');
+        if iscell(daysMod)
+            dateRefCurr = dataAll{cntrObs,iMDate}{1}(1,:);
         else
-            if ~isempty(dataAll{cntrObs,iMDate}) && numel(dataAll{cntrObs,iMDate}(1,:)) > 1
-                dateRef = dataAll{cntrObs,iMDate}(1,:);
-                dataAll{cntrObs,iMDate} = days_since(dateRef, dataAll{cntrObs,iMDate}, 'gregorian');
-                dataAll{cntrObs,iODate} = days_since(dateRef, dataAll{cntrObs,iODate}, 'gregorian');
-            end
+            dateRefCurr = dataAll{cntrObs,iMDate}(1,:);
         end
+        dataAll{cntrObs,iMDate} = daysMod;
+        dataAll{cntrObs,iODate} = daysObs;
+
         
-        if all(isnan(dateRef))
+        if all(isnan(dateRefCurr))
            warning('mod_v_obs:noRefDate',...
                     ['The reference date for ' char(fldCurrObs) ...
                     ' could not be found. This variable is therefore '...
@@ -598,7 +578,7 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
             % {Measurement Type; reference date dateRef; [lon, lat]; evalulation metric ; evalulation type (sum, max, mean, ...)};
         %This could be defined within the ii loop, but by having it in the
         %kk loop it will be empty if no datafield found.
-        dataAll{cntrObs,iMeta}(1:3) = {fldCurrObs{kk}; dateRef; [sObs.(ptsObs{ii}).lon, sObs.(ptsObs{ii}).lat]};
+        dataAll{cntrObs,iMeta}(1:3) = {fldCurrObs{kk}; dateRefCurr; [sObs.(ptsObs{ii}).lon, sObs.(ptsObs{ii}).lat]};
         dataAll{cntrObs,iMeta}{5} = intrpType;
         %Diagnostics:
         %max(dataAll{cntrObs,iMData}(:))
@@ -728,9 +708,12 @@ for ii = 1 : numel(dataAll(:,1))
             evalCurr{jj} = evalCurr{jj}(1:end-1);
         end
         if regexpbl(evalCurr{jj}, '_')
-            warning('modVObs:evalMethodUnderscoe',['The evaluation metric for ' ...
+            warning('modVObs:evalMethodUnderscore', ['The evaluation metric for ' ...
                 obsCurr ' is ' evalCurr{jj} '. It is not expected for there ' ...
-                'to be an underscore in the method name.'])
+                'to be an underscore in the method name.']);
+        elseif isempty(evalCurr{jj})
+            error('modVObs:evalMethodEmpty', ['There is no remaining evaluation metric for ' ...
+                obsCurr '.']);
         end
     end %End of loop over metrics
     
@@ -1213,14 +1196,14 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                 
 
                 %%Write evaluation grids to file:
-                dateRef = dataAll{indCurrType{ll}(1),iMeta}{2};
+                dateRefCurr = dataAll{indCurrType{ll}(1),iMeta}{2};
                 %Get dates and Estimate time bounds:
                 if  dateTyp == 2
                     daysBndsOut = [dataAll{indCurrType{ll}(1),iMDate}{1}(:), dataAll{indCurrType{ll}(1),iMDate}{2}(:)];
                     
                     daysUse = nanmean(daysBndsOut, 2);
-                    dateOut = days_2_date_v2(daysUse, dateRef, 'gregorian');
-                    dateWrtOut = [{days_2_date_v2(daysBndsOut(:,1), dateRef, 'gregorian')}, {days_2_date_v2(daysBndsOut(:,2), dateRef, 'gregorian')}];
+                    dateOut = days_2_date_v2(daysUse, dateRefCurr, calUse);
+                    dateWrtOut = [{days_2_date_v2(daysBndsOut(:,1), dateRefCurr, calUse)}, {days_2_date_v2(daysBndsOut(:,2), dateRefCurr, calUse)}];
                 elseif dateTyp == 1
                     daysOut = dataAll{indCurrType{ll}(1),iMDate};
                     
@@ -1237,7 +1220,7 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                         daysBndsOut = [dataAll{indCurrType{ll}(1),iMDate}{1}(1,:); dataAll{indCurrType{ll}(1),iMDate}{2}(1,:)];
                     end
                     
-                    dateOut = days_2_date(daysOut, dateRef, 'gregorian');
+                    dateOut = days_2_date(daysOut, dateRefCurr, calUse);
                     dateWrtOut = {dateOut};
                 else
                     error('modVObs:unknownDateType',['The date type with ' num2str(dateTyp) ' has not been programmed for.'])
@@ -1250,7 +1233,7 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                 if regexpbl(wrtGridTyp, {'nc', 'netcdf'})
                     extWrt = 'nc';
                     
-                    dateBndsOut = days_2_date(daysBndsOut, dateRef, 'gregorian');
+                    dateBndsOut = days_2_date(daysBndsOut, dateRefCurr, calUse);
                 elseif regexpbl(wrtGridTyp, 'asc')
                     extWrt = 'asc';
                 else
@@ -1602,7 +1585,7 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                 %EDIT X-TICK LABELS:
                 xMin = max(xMin, 1);
                 %Create dates for x-axis:
-                strDates = date2str(unique(days_2_date_v2((xMin:xMax),dataAll{indCurrType{ll}(indCurr),iMeta}{2}(1,:),'gregorian'),'rows'),'m/d/y');
+                strDates = date2str(unique(days_2_date_v2((xMin:xMax),dataAll{indCurrType{ll}(indCurr),iMeta}{2}(1,:),calUse),'rows'),'m/d/y');
                 %Set labels
                 if ischar(strDates)
                     nXTicks = 1;

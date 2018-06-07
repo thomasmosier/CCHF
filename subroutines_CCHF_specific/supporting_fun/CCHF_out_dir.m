@@ -101,7 +101,7 @@ else
         end
     end
     
-    dirOutput = fullfile(dirTS, dirCCHF, dirExt);
+    dirOutput = fullfile(dirTS, dirExt, dirCCHF);
     %Create output directory
     if ~exist(dirOutput, 'dir')
         mkdir(dirOutput);

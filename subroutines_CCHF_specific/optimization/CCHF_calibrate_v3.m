@@ -636,7 +636,8 @@ for ss = indStgStrt : nStage
             else
                 sModTemp = CCHF_engine_v4(sPath, sHydro, sMeta, 'cf', prmCurr(jj,:)');
                 for mm = 1 : nSites
-                    fitCurrSites(mm) = nanmean(cell2mat(mod_v_obs_v2(obsCurr{mm}, sModTemp{mm}, fitTest, 'combineType')));
+                    fitTemp = cell2mat(mod_v_obs_v2(obsCurr{mm}, sModTemp{mm}, fitTest, 'combineType'));
+                    fitCurrSites(mm) = nanmean(fitTemp);
                 end
             end
             

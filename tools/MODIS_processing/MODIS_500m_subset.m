@@ -9,16 +9,16 @@ cntr = 1;
 pathRefGrid = cell(0,1);
 nmReg = cell(0,1);
 
-pathRefGrid{cntr} = '/Volumes/Himalayan_glaciers/test_sites/Karora/Karora_dem.asc';
-nmReg{cntr} = 'karora';
+pathRefGrid{cntr} = '/Volumes/Himalayan_glaciers/test_sites/Baspa/SRTM_30s_inputs/baspa_srtm_fill_dem.asc';
+nmReg{cntr} = 'Baspa30s';
 cntr = cntr + 1;
 
-pathRefGrid{cntr} = '/Volumes/Himalayan_glaciers/test_sites/Donyian/donyian_dem.asc';
-nmReg{cntr} = 'Donyian';
+pathRefGrid{cntr} = '/Volumes/Himalayan_glaciers/test_sites/langtang/langtang_dem.asc';
+nmReg{cntr} = 'langtang';
 cntr = cntr + 1;
 
-pathRefGrid{cntr} = '/Volumes/Himalayan_glaciers/test_sites/Naltar/naltar_dem.asc';
-nmReg{cntr} = 'naltar';
+pathRefGrid{cntr} = '/Volumes/Himalayan_glaciers/test_sites/Baspa/ASTER_3s_inputs/baspa_dem_aster3_fill.asc';
+nmReg{cntr} = 'Baspa3s';
 cntr = cntr + 1;
 
 
@@ -37,6 +37,9 @@ crd = [-155, -145, 59, 65]; %[W, E, S, N];
 %Name of output variable
 varOut = 'sca';
     
+varLat = 'latitude';
+varLon = 'longitude';
+
 %If dataset is 8-day 500 m (MOD10A2):
 varMod = 'MOD_Grid_Snow_500m';
 fieldMod = 'Maximum_Snow_Extent'; %'Maximum_Snow_Extent', 'Eight_Day_Snow_Cover'
@@ -48,6 +51,8 @@ valSnow = [100, 200]; %'lake ice', 'snow'
 valNSnow = 25; %'no snow'
 
 for zz = 1 : numel(nmReg(:))
+    disp(['On region ' num2str(zz) ' of ' num2str(numel(nmReg(:))) '.']);
+    
     if regexpbl(strOutType, 'nearest')
         cldThresh = 1; 
         nmInterp = [nmReg{zz} '_org_values'];
@@ -70,16 +75,16 @@ for zz = 1 : numel(nmReg(:))
 
     %Load reference file:
     if exist(pathRefGrid{zz}, 'file')
-        sMeta = struct;
-        sRefGrid = read_geodata(pathRefGrid{zz}, sMeta, 'no_disp');
+        %Load reference grid (only uses lat and lon coordinates)
+        sRefGrid = read_geodata_v2(pathRefGrid{zz}, 'ref', nan(1,2), nan(1,2), nan(1,2), 0, 'out', 'no_disp', 'onefile');
 
-        [lonTemp, latTemp] = meshgrid(sRefGrid.lon, sRefGrid.lat);
+        [lonTemp, latTemp] = meshgrid(sRefGrid.(varLon), sRefGrid.(varLat));
 
         lonOut = reshape(lonTemp, [], 1);
         latOut = reshape(latTemp, [], 1);
 
-        lonEdg = box_edg(sRefGrid.lon);
-        latEdg = box_edg(sRefGrid.lat);
+        lonEdg = box_edg(sRefGrid.(varLon));
+        latEdg = box_edg(sRefGrid.(varLat));
         crd = [lonEdg(1), lonEdg(end), latEdg(end), latEdg(1)];
         disp('Output grid loaded from reference file');
     else
@@ -374,13 +379,13 @@ for zz = 1 : numel(nmReg(:))
             lonInReg = double((min2d( lonIn)-5*dxy :  dxy : max2d( lonIn)+5*dxy));
             dataInReg = griddata(lonIn, latIn, dataIn, lonInReg, latInReg, 'linear');
 
-            dataOut = 100*geodata_area_wgt(lonInReg, latInReg, dataInReg, sRefGrid.lon, sRefGrid.lat, 'sum');
+            dataOut = 100*geodata_area_wgt(lonInReg, latInReg, dataInReg, sRefGrid.(varLon), sRefGrid.(varLat), 'sum');
                 dataOut(dataOut > 100) = nan;
                 dataOut(dataOut <   0) = nan;
         else
             error('MODIS500msubset:interpMethodUnknown', [strOutTyp ' is an unknown method.'])
         end
-        dataOut = reshape(dataOut, numel(sRefGrid.lat), numel(sRefGrid.lon));
+        dataOut = reshape(dataOut, numel(sRefGrid.(varLat)), numel(sRefGrid.(varLon)));
 
         %Write output as NetCDF:
         if tileDates{1}(ii,2) < 10 
@@ -396,13 +401,13 @@ for zz = 1 : numel(nmReg(:))
            delete(pathCurr); 
         end
 
-        dateStrt = days_2_date(tileDates{1}(ii,2)-1, [tileDates{1}(ii,1), 1, 1], 'gregorian');
-        dateEnd  = days_2_date(tileDates{1}(ii,2)+7, [tileDates{1}(ii,1), 1, 1], 'gregorian');
+        dateStrt = days_2_date_v2(tileDates{1}(ii,2)-1, [tileDates{1}(ii,1), 1, 1], 'gregorian');
+        dateEnd  = days_2_date_v2(tileDates{1}(ii,2)+7, [tileDates{1}(ii,1), 1, 1], 'gregorian');
         dateBnds = [dateStrt; dateEnd];
                 
-        dateMid = days_2_date(tileDates{1}(ii,2)+3, [tileDates{1}(ii,1), 1, 1], 'gregorian');
+        dateMid = days_2_date_v2(tileDates{1}(ii,2)+3, [tileDates{1}(ii,1), 1, 1], 'gregorian');
 
-        print_grid_NC_v2(pathCurr, dataOut, varOut, sRefGrid.lon, sRefGrid.lat, dateMid, dateBnds, -1);
+        print_grid_NC_v2(pathCurr, dataOut, varOut, sRefGrid.(varLon), sRefGrid.(varLat), dateMid, dateBnds, -1);
     end
 end
 
