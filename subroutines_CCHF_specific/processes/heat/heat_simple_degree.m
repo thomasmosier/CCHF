@@ -44,7 +44,6 @@ end
 
 %Calculate equivalent of 'heatflux' using simple degree index model
 sCryo.hfnet = wattperdegS*(squeeze(sAtm.tas(sAtm.indtas,:,:)) - tasOffset); %units to Watts per m^2
-
 sCryo.hfneti = wattperdegI*(squeeze(sAtm.tas(sAtm.indtas,:,:)) - tasOffset); %units to Watts per m^2
 
 % %Heat flux for ice

@@ -48,22 +48,28 @@ end
 densW = find_att(sMeta.global,'density_water'); 
 cLate = densW*find_att(sMeta.global,'latent_water');  %Density water * Latent heat fusion ice; %Units = J/m^3
 
-%Initialize release field:
-sCryo.lhsnme = zeros(size(sCryo.snw),'single');
-
+%Initialize liquid water field (on first iteration):
 if ~isfield(sCryo, 'snlw')
     sCryo.snlw = zeros(size(sCryo.snw),'single');
+    sCryo.snlw(isnan(sCryo.snw)) = nan;
 end
+%Initialize cold content field )on first iteration):
 if ~isfield(sCryo, 'sncc')
     sCryo.sncc = zeros(size(sCryo.snw),'single');
+    sCryo.snlw(isnan(sCryo.snw)) = nan;
 end
+%Reset cold content if no snow:
+sCryo.sncc(sCryo.sncc ~= 0 & sCryo.snw == 0) = 0;
 
-if isfield(sCryo,'hfsnc')
-   error('mass_cc:conduct', ['The CC conservation of energy and mass '...
-       'formulation cannot be used with a heat formulation that '...
-       'includes snowpack heat conduction because it assumes the snow '...
-       'is isothermal.']); 
-end
+%Initialize melt field (every iteration):
+sCryo.lhsnme = zeros(size(sCryo.snw),'single');
+
+% if isfield(sCryo,'hfsnc')
+%    error('mass_cc:conduct', ['The CC conservation of energy and mass '...
+%        'formulation cannot be used with a heat formulation that '...
+%        'includes snowpack heat conduction because it assumes the snow '...
+%        'is isothermal.']); 
+% end
 
 % if isequal(sMeta.dateCurr, [2003,5]) || isequal(sMeta.dateCurr, [2003,6]) 
 %    keyboard 
@@ -73,14 +79,14 @@ end
 sCryo.lhpme = time2sec(1,sMeta.dt,sMeta.dateCurr)*sCryo.hfnet/cLate;
 
 
-%Update cold-conent:
-%Add thermal inertia to the cold-content parameter:
+%Increase cold-conent if negative energy input:
 indNegEn = find(sCryo.lhpme < 0);
 if ~isempty(indNegEn)
    sCryo.sncc(indNegEn) = sCryo.sncc(indNegEn) - 10^(ccPwr)*sCryo.lhpme(indNegEn);
 end
 
-%Remove cold-content and melt energy:
+
+%Decrease cold-content if positive energy input:
 indPosEn = find(sCryo.lhpme > 0 & sCryo.sncc > 0);
 if ~isempty(indPosEn)
     tempDcc = sCryo.sncc(indPosEn) - sCryo.lhpme(indPosEn);
@@ -97,17 +103,10 @@ if ~isempty(indPosEn)
 end
 
 
-%Reset cold content if no snow:
-sCryo.sncc(sCryo.sncc ~= 0 & sCryo.snw == 0) = 0;
-
-
-
-%
-%Refreeze liquid in snow; if snow contains liquid and there is
-%rain, release rain, otherwise hold in snowpack
+%Refreeze liquid in snow if cold-content positive
 indLiqFrz = find(sCryo.sncc > 0 & sCryo.snlw > 0 & sCryo.snw > 0); %Indices where there is positive cold content and there is liquid water in snow
 if ~isempty(indLiqFrz)
-    %Indices where there's more liquid water than energy to freeze
+    %Indices where there's not sufficient energy to freeze all liquid water
     indFrzMax = find(sCryo.snlw(indLiqFrz) > sCryo.sncc(indLiqFrz) );
     if ~isempty(indFrzMax)
         sCryo.snw(indLiqFrz(indFrzMax)) = sCryo.snw(indLiqFrz(indFrzMax)) + sCryo.sncc(indLiqFrz(indFrzMax));
@@ -115,7 +114,7 @@ if ~isempty(indLiqFrz)
         sCryo.sncc(indLiqFrz(indFrzMax)) = 0;
     end
     
-    %Indices where there's sufficient energy to freeze all liquid:
+    %Indices where there is sufficient energy to freeze all liquid:
     if isempty(indFrzMax)
         indFrzNMax = indLiqFrz;
     else
@@ -127,6 +126,12 @@ if ~isempty(indLiqFrz)
         sCryo.snlw(indFrzNMax) = 0;
     end
 end
+
+%Rain on snow?
+%
+%Editing here
+%
+%rain, release rain, otherwise hold in snowpack
 
 
 % %Freeze Rain if cold content > 0
@@ -156,8 +161,8 @@ end
 % end
 
 
-%Melt potential all goes into melting snow but is limited by amount of snow
-%available
+%The remaining melt potential goes into melting snow
+%(is limited by amount of snow available)
 indMelt = find( sCryo.lhpme > 0 & sCryo.sncc <= 0);
 if ~isempty(indMelt)
     sCryo.lhsnme(indMelt) = sCryo.lhpme(indMelt);
@@ -169,7 +174,6 @@ if ~isempty(indMelt)
     sCryo.snlw(indMelt) = sCryo.snlw(indMelt) + sCryo.lhsnme(indMelt);
     sCryo.snw(indMelt) = sCryo.snw(indMelt) - sCryo.lhsnme(indMelt);
 end
-
 
 
 %Set negative cold content values to 0:

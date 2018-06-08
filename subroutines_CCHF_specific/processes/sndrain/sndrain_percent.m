@@ -31,21 +31,19 @@ if isempty(varargin(:))
     varargout{1} = cat(1,varargout{1}, {'sn_hold', 0,   .1,    0.077, 'sndrain_percent','cryo'}); %Units of depth melt
     return
 else
-    holdCap = find_att(varargin{1}.coef,'sn_hold','no_warning'); 
-%     if isempty(holdCap)
-%        holdCap = 0; 
-%     end
-%     a = 0.03;  
+    holdCap = find_att(varargin{1}.coef,'sn_hold');  
 end
 
 
-%Initialize melt release array:
+%Initialize snowmelt release array:
 sCryo.snlr = zeros(size(sCryo.snw),'single');
 
-%%Release liquid in excess of snow holding capacity:
+
 %Find holding capacity (percentage of solid snow):
 sCryo.snlh = holdCap*sCryo.snw;
-%Find indices where it's exceeded:
+
+
+%Release snowpack liquid in excess of snowpack holding capacity:
 indRelease = find(sCryo.snlw > sCryo.snlh);
 if ~isempty(indRelease)
     %Amount of release equals exceedance of liquid water holding capacity:

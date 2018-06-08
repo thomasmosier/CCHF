@@ -2,9 +2,9 @@ function sModOut = print_model_pt(sModOut, sData, nmCurr, ptWrtCurr, indTsOutCur
 
 %Set indices outside domain to nan:
 if ~isempty(varargin(:))
-    indNan2d = varargin{1};
-    indArea = setdiff(indArea(:), indNan2d(:));
-    indGage = setdiff(indGage(:), indNan2d(:));
+    indInModel2d = varargin{1};
+    indArea = intersect(indArea(:), indInModel2d(:));
+    indGage = intersect(indGage(:), indInModel2d(:));
 end
 
 if isstruct(sData)

@@ -250,6 +250,23 @@ if sMeta.useprevrun == 0
             %Load climate variables:
             sPath{ii} = clm_path_ui(sPath{ii}, sMeta, sMeta.region{ii});
         end %End inputs UIs
+        
+
+        %Create unique 'main' output directory based upon inputs:
+        if ii == 1   
+            if isfield(sPath{ii},'resume')
+                foldOutputMain = sPath{ii}.resume;
+                [~, sMeta.strModule] = CCHF_out_dir(sPath{ii}, sMeta);
+            else
+                [foldOutputMain, sMeta.strModule] = CCHF_out_dir(sPath{ii}, sMeta);
+            end
+            
+            if~exist(foldOutputMain, 'dir')
+               mkdir(foldOutputMain); 
+            end
+        end
+        sPath{ii}.outputMain = foldOutputMain;
+        sPath{ii}.output = fullfile(sPath{ii}.outputMain, sMeta.region{ii});
 
 
         %Load DEM and calculate watershed geometry fields:
@@ -288,24 +305,6 @@ if sMeta.useprevrun == 0
         elseif ~regexpbl(sMeta.runType,{'calibrat','validat','default'}) && ~isempty(sMeta.pathinputs)
             pathGage{ii} = cell(0,1);
         end
-
-        %Create unique 'main' output directory based upon inputs:
-        if ii == 1 
-            if isfield(sPath{ii},'resume')
-    %             sPath{ii}.output = sPath{ii}.resume;
-                foldOutputMain = sPath{ii}.resume;
-                [~, sMeta.strModule] = CCHF_out_dir(sPath{ii}, sMeta);
-            else
-                [foldOutputMain, sMeta.strModule] = CCHF_out_dir(sPath{ii}, sMeta);
-            end
-            
-            if~exist(foldOutputMain, 'dir')
-               mkdir(foldOutputMain); 
-            end
-        end
-
-        sPath{ii}.outputMain = foldOutputMain;
-        sPath{ii}.output = fullfile(sPath{ii}.outputMain, sMeta.region{ii});
     end %End of loop to select sites 
     clear ii
 
@@ -456,6 +455,7 @@ if sMeta.useprevrun == 0
     end
     clear ii
 
+    %Save input paths in file for possible future use
     if isempty(sMeta.pathinputs)
         [dirInputs, ~, ~] = fileparts(sMeta.rtDir{1});
         fileInputs = 'CCHF_saved_input_paths_4';
@@ -468,6 +468,7 @@ if sMeta.useprevrun == 0
         save(pathInputs, 'sPath', 'pathGage');
         disp(['Paths of all input data used saved to ' pathInputs char(10) 'This path can be set in main script to supress UI for loading inputs. You can customize the file name and location.'])
     end
+    
     
     %%RUN THE HYDROLOGIC MODEL:
     tStrt = now;
@@ -817,6 +818,7 @@ end
 
 
 %MAKE PLOTS OF MODEL OUTPUT
+warning('off','MATLAB:MKDIR:DirectoryExists');
 if sMeta.blDispOut == 1
     strDispOut = '';
 elseif sMeta.blDispOut == 0
@@ -830,26 +832,27 @@ if numel(sOutput) == nSites
 
         %Plot output
         plot_CCHF(sOutput{mm}, {'flow'}, sMeta, [pathOutRt '_flow'], strDispOut);
-        % plot_CCHF(sOutput, {'et','pet'}, sMeta, [pathOutRt '_ET'], strDispOut);
+        % plot_CCHF(sOutput{mm}, {'et','pet'}, sMeta, [pathOutRt '_ET'], strDispOut);
         plot_CCHF(sOutput{mm}, {'hfnet','hfrs', 'hfrl', 'hft','hfcp', 'hfgc', 'hfsnc'}, sMeta, [pathOutRt '_heat_components'],'avg', strDispOut);
-        % plot_CCHF(sOutput, {'prsn','rain','et','mrro'}, sMeta, [pathOutRt '_inVsOut'],'avg', strDispOut);  
-        % plot_CCHF(sOutput, {'prsn','swe','sndwe','rain','mrro','icdwe'}, sMeta, [pathOutRt '_inVsOut'],'avg', strDispOut);
+        % plot_CCHF(sOutput{mm}, {'prsn','rain','et','mrro'}, sMeta, [pathOutRt '_inVsOut'],'avg', strDispOut);  
+        % plot_CCHF(sOutput{mm}, {'prsn','swe','sndwe','rain','mrro','icdwe'}, sMeta, [pathOutRt '_inVsOut'],'avg', strDispOut);
 %         plot_CCHF(sOutput{mm}, {'rain','snlr','iclr'}, sMeta, [pathOutRt '_inVsOut'],'avg', strDispOut);
         plot_CCHF(sOutput{mm}, {'snlr','rnrf','iclr'}, sMeta, [pathOutRt '_water_release'],'avg', strDispOut);
-        % plot_CCHF(sOutput, {'sndwe','icdwe'}, sMeta, [pathOutRt '_cryoChange'], strDispOut);
-        % plot_CCHF(sOutput, {'swe'}, sMeta, [pathOutRt '_dSnowTmp'], strDispOut);
-        plot_CCHF(sOutput{mm}, {'sncc'}, sMeta, [pathOutRt '_snowcoldcontent'], strDispOut);
-        % plot_CCHF(sOutput, {'icdwe'}, sMeta, [pathOutRt '_dIce'], strDispOut);
-        % plot_CCHF(sOutput, {'snw'}, sMeta, [pathOutRt '_snowpack'], strDispOut);
-        % plot_CCHF(sOutput, {'swe','lwsnl','snlh','snlr','iclr','lhpme','rnrf'}, sMeta, [pathOutRt '_snowpack'],'avg', strDispOut);
+        % plot_CCHF(sOutput{mm}, {'sndwe','icdwe'}, sMeta, [pathOutRt '_cryoChange'], strDispOut);
+        plot_CCHF(sOutput{mm}, {'snw','snlw','sndwe'}, sMeta, [pathOutRt '_snw'], strDispOut);
+        plot_CCHF(sOutput{mm}, {'snw','sncc'}, sMeta, [pathOutRt '_snow_coldcontent'], strDispOut);
+        % plot_CCHF(sOutput{mm}, {'icdwe'}, sMeta, [pathOutRt '_dIce'], strDispOut);
+        % plot_CCHF(sOutput{mm}, {'snw'}, sMeta, [pathOutRt '_snowpack'], strDispOut);
+        % plot_CCHF(sOutput{mm}, {'sww','lwsnl','snlh','snlr','iclr','lhpme','rnrf'}, sMeta, [pathOutRt '_snowpack'],'avg', strDispOut);
         plot_CCHF(sOutput{mm}, {'lwsnl','snlh','snlr','iclr','lhpme','sndwe'}, sMeta, [pathOutRt '_snowpack'],'avg', strDispOut);
         plot_CCHF(sOutput{mm}, {'tas','tsis','tsn'}, sMeta, [pathOutRt '_temperature'], strDispOut);
         plot_CCHF(sOutput{mm}, {'prsn','rain'}, sMeta, [pathOutRt '_rain'], strDispOut);
-        % plot_CCHF(sOutput, {'albedoS', 'albedoI'}, sMeta, [pathOutRt '_albedo'], strDispOut);
-        % plot_CCHF(sOutput, 'flow', sMeta, [pathOutRt '_flowrate'], strDispOut);
+        % plot_CCHF(sOutput{mm}, {'albedoS', 'albedoI'}, sMeta, [pathOutRt '_albedo'], strDispOut);
+        % plot_CCHF(sOutput{mm}, 'flow', sMeta, [pathOutRt '_flowrate'], strDispOut);
     end
     clear mm
 end
+warning('on','MATLAB:MKDIR:DirectoryExists');
 
 
 %Display message that processing complete and turn off diary:

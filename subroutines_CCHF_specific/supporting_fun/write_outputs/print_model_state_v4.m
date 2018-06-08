@@ -59,6 +59,9 @@ else
     
     sMeta.foldWrtData = fullfile(pathOut, 'model_output_grids');
         
+    %Indices in 2d model domain:
+    indNNan2d = find(~isnan(sHydro.dem));
+    
     %On first iteration, create output structure array:
     if indTsPrintCurr == 1 || isempty(sModOut)
         sModOut = struct;
@@ -91,7 +94,7 @@ else
                             sModOut.avg.(varLon) = nan;
                             sModOut.avg.(varLat) = nan;
                             sModOut.avg.date = outDate;
-                            sModOut.avg.indGage = (1:numel(sHydro.dem));
+                            sModOut.avg.indGage = indNNan2d;
                             sModOut.avg.fields = cell(0,1);
 %                         sModOut.avg = struct('lon', nan, 'lat', nan, ...
 %                             'date', outDate, 'indGage', (1:numel(sHydro.dem)), 'fields', cell(0,1));
@@ -105,7 +108,7 @@ else
                             sModOut.all.(varLon) = sHydro.(varLon);
                             sModOut.all.(varLat) = sHydro.(varLat);
                             sModOut.all.date = outDate;
-                            sModOut.all.indGage = (1:numel(sHydro.dem));
+                            sModOut.all.indGage = indNNan2d;
                             sModOut.all.fields = cell(0,1);
 %                         sModOut.all = struct('lon', sHydro.(varLon), 'lat', sHydro.(varLat), ...
 %                             'date', outDate, 'indGage', (1:numel(sHydro.dem)), 'fields', cell(0,1));
@@ -138,7 +141,6 @@ else
                         sModOut.all.(varMbDateStrt) = sMeta.dateRun(indMbStrt,:);
                         sModOut.all.(varMbDateEnd) = sMeta.dateRun(indMbEnd,:);
                         
-                        
                         %Initialize output:
                         sModOut.all.(varCurr) = nan([numel(indMbEnd), szInit3d(2:3)], 'single');
                     else
@@ -170,7 +172,7 @@ else
                                 sModOut.(ptWrtCurr).(varLon) = sHydro.(varLon)(c);
                                 sModOut.(ptWrtCurr).(varLat) = sHydro.(varLat)(r);
                                 sModOut.(ptWrtCurr).date = outDate;
-                                sModOut.(ptWrtCurr).indGage = ptCurr;
+                                sModOut.(ptWrtCurr).indGage = intersect(ptCurr, indNNan2d);
                                 sModOut.(ptWrtCurr).fields = cell(0,1);
 %                             sModOut.(ptWrt) ...
 %                                 = struct('lon', sHydro.(varLon)(c), 'lat', sHydro.(varLat)(r), ...
@@ -236,8 +238,6 @@ else
         fldsOut{kk} = sModOut.(locOut{kk}).fields;
     end
     
-    %Indices to use:
-    indNNan2d = find(~isnan(sHydro.dem));
 
     %Populate output structure for each of the points:
     for kk = 1 : numel(locOut(:)) %Loop over grid pts to write to
@@ -255,7 +255,7 @@ else
                 %Extract information:
                 if strcmpi(ptWrtCurr, 'all') 
                     sModOut = print_model_grid(sModOut, sLand, nmCurr, ptWrtCurr, ...
-                        indTsPrintCurr, sMeta, sHydro.(varLon), sHydro.(varLat));
+                        indTsPrintCurr, sMeta, sHydro.(varLon), sHydro.(varLat), indNNan2d);
                 else
                     sModOut = print_model_pt(sModOut, sLand, nmCurr, ptWrtCurr, ...
                         indTsPrintCurr, sHydro.area, sModOut.(ptWrtCurr).indGage, indAreaCurr, sMeta);
@@ -265,7 +265,7 @@ else
                 %Extract information:
                 if strcmpi(ptWrtCurr, 'all') 
                     sModOut = print_model_grid(sModOut, sAtm, nmCurr, ptWrtCurr, ...
-                        indTsPrintCurr, sMeta, sHydro.(varLon), sHydro.(varLat));
+                        indTsPrintCurr, sMeta, sHydro.(varLon), sHydro.(varLat), indNNan2d);
                 else
                     sModOut = print_model_pt(sModOut, sAtm, nmCurr, ptWrtCurr, ...
                         indTsPrintCurr, sHydro.area, sModOut.(ptWrtCurr).indGage, indAreaCurr, sMeta);
@@ -385,7 +385,7 @@ else
                                 casiTemp(indNNan2d) = 0;
                                 %Use ice fraction at locations without
                                 %debris
-                                indSca = ~isnan(casiTemp) & sCryo.icdbr < optThresh | isnan(sCryo.icdbr);
+                                indSca = ~isnan(casiTemp) & (sCryo.icdbr < optThresh | isnan(sCryo.icdbr));
                                 casiTemp(indSca) = sCryo.icx(indSca);
                                 
                                 casiTemp = 100*max(sCryo.scx, casiTemp);
@@ -398,21 +398,20 @@ else
                                     print_grid_NC_v2(fileNm, squeeze(sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:)), nmCurr, sHydro.(varLon), sHydro.(varLat), sMeta.dateCurr, sMeta.dateCurr, 1);
                                 end
                             else   
-                                casiTemp = nan(size(indGageCurr), 'single');
-                                indSca = intersect(indGageCurr, indNNan2d);
-                                indAreaUse = intersect(indAreaCurr, indNNan2d);
-                                
-                                casiTemp(indSca) = 0;
+                                casiTemp = zeros(size(indGageCurr), 'single');
+                                indAreaUse = indAreaCurr;
+%                                 casiTemp = nan(size(indGageCurr), 'single');
+%                                 indSca = intersect(indGageCurr, indNNan2d);
+%                                 indAreaUse = intersect(indAreaCurr, indNNan2d);
+%                                 casiTemp(indSca) = 0;
                                 
                                 indSca = sCryo.icdbr(indGageCurr) < optThresh | isnan(sCryo.icdbr(indGageCurr));
 
                                 casiTemp(indSca) = sCryo.icx(indGageCurr(indSca));
                                 casiTemp = 100*max(sCryo.scx(indGageCurr),casiTemp);
-                                
-                                indUse = find(~isnan(sCryo.scx(indGageCurr)) & ~isnan(sCryo.icx(indGageCurr)) & ~isnan(casiTemp));
-                                
+                               
                                 sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr) ...
-                                    = nansum((casiTemp(indGageCurr(indUse(:))))...
+                                    = nansum((casiTemp)...
                                     .*sHydro.area(indAreaUse))/nansum(sHydro.area(indAreaUse));
                             end
                         else %No debris cover field
@@ -431,25 +430,21 @@ else
                                     print_grid_NC_v2(fileNm, squeeze(sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:)), nmCurr, sHydro.(varLon), sHydro.(varLat), sMeta.dateCurr, sMeta.dateCurr, 1);
                                 end
                             else
-                                casiTemp = nan(size(indGageCurr), 'single');
-                                indSca = intersect(indGageCurr, indNNan2d);
-                                indAreaUse = intersect(indAreaCurr, indNNan2d);
-                                
-                                casiTemp(indSca) = 100*max(sCryo.scx(indGageCurr(indSca)), sCryo.icx(indGageCurr(indSca)));
-                                indUse = find(~isnan(sCryo.scx(indGageCurr)) & ~isnan(sCryo.icx(indGageCurr)) & ~isnan(casiTemp));
+                                casiTemp = 100*max(sCryo.scx(indGageCurr),sCryo.icx(indGageCurr));
+                                indAreaUse = indAreaCurr;
                                 
                                 sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr) ...
-                                    = nansum((casiTemp(indGageCurr(indUse(:))))...
+                                    = nansum((casiTemp)...
                                     .*sHydro.area(indAreaUse))/nansum(sHydro.area(indAreaUse));
                             end
                         end
                     otherwise
                         if strcmpi(ptWrtCurr, 'all')
                             sModOut = print_model_grid(sModOut, sCryo, nmCurr, ptWrtCurr, ...
-                                indTsPrintCurr, sMeta, sHydro.(varLon), sHydro.(varLat));
+                                indTsPrintCurr, sMeta, sHydro.(varLon), sHydro.(varLat), indNNan2d);
                         else
                             sModOut = print_model_pt(sModOut, sCryo, nmCurr, ptWrtCurr, ...
-                                indTsPrintCurr, sHydro.area, indGageCurr, indAreaCurr, sMeta);
+                                indTsPrintCurr, sHydro.area, indGageCurr, indAreaCurr, sMeta, indNNan2d);
                         end
                 end
             elseif any(strcmpi(fldsmb, nmCurr)) %MASS BALANCE INFORMATION (stored in "sCryo")
@@ -507,13 +502,13 @@ else
                             'field was found in the cryosphere structure.']);
                     end
                 end
-            else %FIELD NOT FOUND
-                if indTsPrintCurr == 1
-                    warning('backbone:unknownOutput', ['Output for ' ...
-                        char(39) char(sModOut.(ptWrtCurr).fields{ll}) char(39) ...
-                        'has been requested, but this is not a known output '...
-                        'type for the current model configuration.']);
-                end
+%             else %FIELD NOT FOUND
+%                 if indTsPrintCurr == 1
+%                     warning('backbone:unknownOutput', ['Output for ' ...
+%                         char(39) char(sModOut.(ptWrtCurr).fields{ll}) char(39) ...
+%                         'has been requested, but this is not a known output '...
+%                         'type for the current model configuration.']);
+%                 end
             end
         end
         

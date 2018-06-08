@@ -37,6 +37,7 @@ else
     error('downscale:noData','It appears no input data were selected.');
 end
 
+
 %Get module string from sMeta, then edit and write
 strModules = blanks(0);
 for ii = 1 : numel(sMeta.module(:,1))
@@ -89,19 +90,19 @@ if isfield(sPath, 'resume') && strcmpi(dirTS, sPath.resume)
 	disp(['The output path is ' char(39) dirOutput char(39) '.' char(10) ...
 	'This existing path is being used because CCHF is resuming a previous run.']);
 else
+    dirOutput = fullfile(dirTS, dirExt, dirCCHF);
+        
     cntrDir = 0;
-    indSep = regexpi(dirTS,filesep);
-    while exist(fullfile(dirTS, dirCCHF),'dir')
+    while exist(dirOutput, 'dir')
         cntrDir = cntrDir + 1;
         if cntrDir == 1
-            dirCCHF = [dirCCHF,'_' num2str(cntrDir)];
+            dirOutput = [dirOutput,'_' num2str(cntrDir)];
         else
-            indC = regexpi(dirCCHF,'_');
-            dirCCHF = [dirCCHF(1:indC(end)), num2str(cntrDir)];
+            indC = regexpi(dirOutput,'_');
+            dirOutput = [dirOutput(1:indC(end)), num2str(cntrDir)];
         end
     end
     
-    dirOutput = fullfile(dirTS, dirExt, dirCCHF);
     %Create output directory
     if ~exist(dirOutput, 'dir')
         mkdir(dirOutput);

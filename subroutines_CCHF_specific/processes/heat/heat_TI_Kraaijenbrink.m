@@ -20,7 +20,7 @@ global sCryo sAtm
 if isempty(varargin(:))
     varargout{1} = cell(0,6);
     varargout{1} = cat(1,varargout{1}, {'watt_per_deg_snow', 10, 30, 20, 'heat_TI_Kraaijenbrink','cryo'});
-    varargout{1} = cat(1,varargout{1}, {'watt_per_deg_ice',  20, 50, 40, 'heat_TI_Kraaijenbrink','cryo'}); %Units of depth melt
+    varargout{1} = cat(1,varargout{1}, {'watt_per_deg_ice',  20, 60, 40, 'heat_TI_Kraaijenbrink','cryo'}); %Units of depth melt
 
     %The degree index factor here is approx 3.9 times degree-day factors
     %with units of mm / C / day. Shea et al., 2015 find snow DD factor of
@@ -28,7 +28,7 @@ if isempty(varargin(:))
     %factor of 9.7, which is 40 (range in their paper is 1 SD)
     return
 else
-    wattperdegS = find_att(varargin{1}.coef,'watt_per_deg_snow');
+    wattperdegS = find_att(varargin{1}.coef, 'watt_per_deg_snow');
     wattperdegI = find_att(varargin{1}.coef, 'watt_per_deg_ice');
 end
 
@@ -37,14 +37,15 @@ end
 % %Units of J-hr-m^{-2}-s^{-1}
 
 
-indNeg = squeeze(sAtm.tas(sAtm.indtas,:,:)) <= 0;
-
 %Calculate equivalent of 'heatflux' using simple degree index model
 sCryo.hfnet = wattperdegS*squeeze(sAtm.tas(sAtm.indtas,:,:)); %units to Watts per m^2
-sCryo.hfnet(indNeg) = 0;
 %Heat flux for ice
 sCryo.hfneti = wattperdegI*squeeze(sAtm.tas(sAtm.indtas,:,:)); %units to Watts per m^2
-sCryo.hfneti(indNeg) = 0;
+
+% %Set negatives to 0:
+% indNeg = squeeze(sAtm.tas(sAtm.indtas,:,:)) <= 0;
+% sCryo.hfnet(indNeg) = 0;
+% sCryo.hfneti(indNeg) = 0;
 
 % %For testing the empirical melt function:
 % test = (0:0.2:50);
