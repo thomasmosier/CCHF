@@ -52,7 +52,7 @@ if ~regexpbl(sMeta.mode,'parameter') && sMeta.indCurr == 1
 end
 
 
-%PARTITION RAIN AND SNOWFALL:
+%PARTITION PRECIPITATION INTO RAIN AND SNOWFALL:
 partMod = find_att(sMeta.module, 'partition');
 if regexpbl(partMod, 'ramp') 
     if regexpbl(sMeta.mode,'parameter')

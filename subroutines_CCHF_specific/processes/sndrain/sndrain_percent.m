@@ -28,7 +28,9 @@ global sCryo
 %WITHOUT HOLDING CAPACITY
 if isempty(varargin(:))
 	varargout{1} = cell(0,6);
-    varargout{1} = cat(1,varargout{1}, {'sn_hold', 0,   .1,    0.077, 'sndrain_percent','cryo'}); %Units of depth melt
+    varargout{1} = cat(1,varargout{1}, {'sn_hold', 0,   .1,    0.077, 'sndrain_percent','land'}); %Units of depth melt
+    %Calibrate with 'land' routines because it is more sensitive to runoff
+    %generation and flow than cryosphere
     return
 else
     holdCap = find_att(varargin{1}.coef,'sn_hold');  
@@ -48,7 +50,7 @@ indRelease = find(sCryo.snlw > sCryo.snlh);
 if ~isempty(indRelease)
     %Amount of release equals exceedance of liquid water holding capacity:
     sCryo.snlr(indRelease) = sCryo.snlw(indRelease) - sCryo.snlh(indRelease);
-    sCryo.sndwe(indRelease) = sCryo.sndwe(indRelease) - sCryo.snlr(indRelease);
+
     %Remove drained water from snowpack liquid water content:
     sCryo.snlw(indRelease) = sCryo.snlh(indRelease);
 end

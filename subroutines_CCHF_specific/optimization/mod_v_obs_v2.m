@@ -520,7 +520,7 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
                     for ll = 1 : nTsObs
                         dataTempMod2Obs(ll,:,:) = scl(ll)*squeeze(sum(dataAll{cntrObs,iMData}(indModStrt(ll):indModEnd(ll),:,:), 1));
                         %For testing:
-                        %figure; imagesc(squeeze(dataTempMod2Obs(ll,:,:))); colorbar;
+                        %figure; imagesc(squeeze(dataTempMod2Obs(ll,:,:)), 'alphaData', ~isnan(squeeze(dataTempMod2Obs(ll,:,:))); colorbar;
                     end
                 else
                     error('modVObs:unknownDateFormat',['The model date is of class ' ...
@@ -939,9 +939,9 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
 %                     0.7, 0.7, 0.7]; %Gray 
                 
                 %Initialize arrays:
-                gridObsCurr = nan([nDtCurr, szCurr(end-1:end)], 'single');
-                gridModCurr = nan([nDtCurr, szCurr(end-1:end)], 'single');
-                dataErrCurr = nan([nDtCurr, szCurr(end-1:end)], 'single');
+                gridObsCurr  = nan([nDtCurr, szCurr(end-1:end)], 'single');
+                gridModCurr  = nan([nDtCurr, szCurr(end-1:end)], 'single');
+                dataErrCurr  = nan([nDtCurr, szCurr(end-1:end)], 'single');
                 dataMapeCurr = nan([nDtCurr, szCurr(end-1:end)], 'single');
                 
                 %loop over all iterations of the observations
@@ -977,29 +977,28 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
 %                         dataErrCurr(indNan3d) = nan;
 %                         datMapeCurr(indNan3d) = nan;
 %                     end
-                    
+
                     if nDtCurr <= 10 %Only make output figures if there are 10 or fewer observations
                         %Plot observed grid:
                         hFig = figure('Units','in','Position',[2 2 szFrame],'paperunits','in','paperposition',[2 2 szFrame], 'Color',[1 1 1]);
-
+                        set(gca, 'color', [0.8 0.8 0.8]);
+                        set(gcf,'color','w');
                         %Remove any "nan border" caused by different
                         %geographic domains:
-                        [gridObsPlot, latPlot, lonPlot] = rm_nan_border(squeeze(gridObsCurr(kk,:,:)), lat, lon);
+                        [gridObsPlot,       ~,       ~] = rm_nan_border(squeeze(gridObsCurr(kk,:,:)), lat, lon);
                         [gridModPlot, latPlot, lonPlot] = rm_nan_border(squeeze(gridModCurr(kk,:,:)), lat, lon);
                         
                         cLim = max([max2d(abs(gridModPlot)), max2d(abs(gridObsPlot))]);
                         
 %                         gridObsCurr(isnan(gridObsCurr)) = cLim + 0.1*cLim;
                         if all(~isnan(lon)) && all(~isnan(lat))
-                            imagesc(lonPlot, latPlot, gridObsPlot);
+                            imagesc(lonPlot, latPlot, gridObsPlot, 'alphaData', ~isnan(gridObsPlot));
                             xlim([min(lonPlot), max(lonPlot)]);
                             ylim([min(latPlot), max(latPlot)]);
                         else   
-                            imagesc(gridObsPlot);
+                            hGrid = imagesc(gridObsPlot, 'alphaData', ~isnan(gridObsPlot));
                         end
-                        whitebg([0.6,0.6,0.6]);
-                        set(hFig, 'color', 'white');
-%                         set(gca,'Color',[0.8 0.8 0.8]);
+                        
                         shading flat; 
                         colormap(custClrMap);
                         caxis([-cLim cLim]);
@@ -1030,22 +1029,23 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                         end
 
                         savefig(hFig, [pathWrite '.fig']);
-                        print(hFig, [pathWrite '.eps'],'-depsc2');
-                        print(hFig, [pathWrite '.png'],'-dpng','-r600');
+                        print(  hFig, [pathWrite '.eps'],'-depsc2');
+                        print(  hFig, [pathWrite '.png'],'-dpng','-r600');
                         
                         
                         %Plot modelled grid:
                         hFig = figure('Units','in','Position',[2 2 szFrame],'paperunits','in','paperposition',[2 2 szFrame], 'Color',[1 1 1]);
-
+                        set(gca, 'color', [0.8 0.8 0.8]);
+                        set(gcf,'color','w');
 %                         gridModCurr(isnan(gridModCurr)) = cLim + 0.1*cLim;
                         if all(~isnan(lon)) && all(~isnan(lat))
-                            imagesc(lonPlot, latPlot, gridModPlot);
+                            imagesc(lonPlot, latPlot, gridModPlot, 'alphaData', ~isnan(gridModPlot));
                             xlim([min(lonPlot), max(lonPlot)]);
                             ylim([min(latPlot), max(latPlot)]);
                         else   
-                            imagesc(gridModPlot);
+                            imagesc(gridModPlot, 'alphaData', ~isnan(gridModPlot));
                         end
-                        whitebg([0.6,0.6,0.6]);
+
                         set(hFig, 'color', 'white');
 %                         set(gca,'Color',[0.8 0.8 0.8]);
                         shading flat; 
@@ -1084,7 +1084,8 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                         
                         %PLOT LEVEL ERROR
                         hFig = figure('Units','in','Position',[2 2 szFrame],'paperunits','in','paperposition',[2 2 szFrame], 'Color',[1 1 1]);
-
+                        set(gca, 'color', [0.8 0.8 0.8]);
+                        set(gcf,'color','w');
                         %Remove any "nan border" caused by different
                         %geographic domains:
                         [dataPlot, latPlot, lonPlot] = rm_nan_border(squeeze(dataErrCurr(kk,:,:)), lat, lon);
@@ -1092,13 +1093,13 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                         cLim = max2d(abs(dataPlot));
 %                         dataPlot(isnan(dataPlot)) = cLim + 0.1*cLim;
                         if all(~isnan(lon)) && all(~isnan(lat))
-                            imagesc(lonPlot, latPlot, dataPlot);
+                            imagesc(lonPlot, latPlot, dataPlot, 'alphaData', ~isnan(dataPlot));
                             xlim([min(lonPlot), max(lonPlot)]);
                             ylim([min(latPlot), max(latPlot)]);
                         else   
-                            imagesc(dataPlot);
+                            imagesc(dataPlot, 'alphaData', ~isnan(dataPlot));
                         end
-                        whitebg([0.6,0.6,0.6]);
+
                         set(hFig, 'color', 'white');
 %                         set(gca,'Color',[0.8 0.8 0.8]);
                         shading flat; 
@@ -1137,7 +1138,8 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
 
                         %PLOT PERCENT ERROR:
                         hFig = figure('Units','in','Position',[2 2 szFrame],'paperunits','in','paperposition',[2 2 szFrame], 'Color',[1 1 1]);
-
+                        set(gca, 'color', [0.8 0.8 0.8]);
+                        set(gcf,'color','w');
                         %Remove any "nan border" caused by different
                         %geographic domains:
                         [dataPlot, latPlot, lonPlot] = rm_nan_border(squeeze(dataMapeCurr(kk,:,:)), lat, lon);
@@ -1149,13 +1151,13 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                         
 %                         dataPlot(isnan(dataPlot)) = cLim + 0.1*cLim;
                         if all(~isnan(lon)) && all(~isnan(lat))
-                            imagesc(lonPlot, latPlot, dataPlot);
+                            imagesc(lonPlot, latPlot, dataPlot, 'alphaData', ~isnan(dataPlot));
                             xlim([min(lonPlot), max(lonPlot)]);
                             ylim([min(latPlot), max(latPlot)]);
                         else   
-                            imagesc(dataPlot);
+                            imagesc(dataPlot, 'alphaData', ~isnan(dataPlot));
                         end
-                        whitebg([0.6,0.6,0.6]);
+%                         whitebg([0.6,0.6,0.6]);
                         set(hFig, 'color', 'white');
 %                         set(gca,'Color',[0.8 0.8 0.8]);
                         shading flat; 
@@ -1367,12 +1369,13 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
             end %End of grid analysis
             
 
-            %Time-series/Scatter plots (even of gridded data)
+            %Time-series or scatter plots (even for gridded data)
             nSeries = numel(indCurrType{ll});
 
-            hFig = figure('Units','in','Position',[2 2 szFrame],'paperunits','in','paperposition',[2 2 szFrame]);
-            whitebg([1,1,1]);
-            set(hFig, 'color', 'white');
+            hFig = figure('Units','in','Position',[2 2 szFrame],'paperunits','in','paperposition',[2 2 szFrame], 'Color',[1 1 1]);
+            set(gca, 'color', 'white');
+            set(gcf,'color','w');
+            alpha(0)
             hold on
             if flagScatter
                 hTs = nan(nSeries,1);
@@ -1397,26 +1400,27 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
             for indCurr = 1 : nSeries
                 if flagScatter %Display data as scatter plot, otherwise make time-series
                     if numel(size(dataAll{indCurrType{ll}(indCurr),iMData})) == 2
-                        plotModData  = dataAll{indCurrType{ll}(indCurr),iMData};
+                        plotModData = dataAll{indCurrType{ll}(indCurr),iMData};
                     elseif numel(size(dataAll{indCurrType{ll}(indCurr),iMData})) == 3
                         plotModData = nan(numel(dataAll{indCurrType{ll}(indCurr),iMData}(:,1,1)),1);
                         for mm = 1 : numel(dataAll{indCurrType{ll}(indCurr),iMData}(:,1,1))
-                            plotModData(mm)  = mean2d(squeeze(dataAll{indCurrType{ll}(indCurr),iMData}(mm,:,:)));
+                            plotModData(mm) = mean2d(squeeze(dataAll{indCurrType{ll}(indCurr),iMData}(mm,:,:)));
                         end
                     end
                     if numel(size(dataAll{indCurrType{ll}(indCurr),iOData})) == 2
-                        plotObsData  = dataAll{indCurrType{ll}(indCurr),iOData};
+                        plotObsData = dataAll{indCurrType{ll}(indCurr),iOData};
                     elseif numel(size(dataAll{indCurrType{ll}(indCurr),iOData})) == 3
                         plotObsData = nan(numel(dataAll{indCurrType{ll}(indCurr),iOData}(:,1,1)),1);
                         for mm = 1 : numel(dataAll{indCurrType{ll}(indCurr),iOData}(:,1,1))
-                            plotObsData(mm)  = mean2d(squeeze(dataAll{indCurrType{ll}(indCurr),iOData}(mm,:,:)));
+                            plotObsData(mm) = mean2d(squeeze(dataAll{indCurrType{ll}(indCurr),iOData}(mm,:,:)));
                         end
                     end
+                    
+                    xMin = min(real([plotModData(:); plotObsData(:); xMin]));
+                    xMax = max(real([plotModData(:); plotObsData(:); xMax]));
 
                     hTs(indCurr) = scatter(plotObsData,plotModData, ...
                         2*ftSz, 'MarkerEdgeColor',[0 0 0], 'MarkerFaceColor',colorsUse(mod(indCurr-1, nSeries)+1,:));
-                    xMin = min(min(real([dataAll{indCurrType{ll}(indCurr),iMData}(:); dataAll{indCurrType{ll}(indCurr),iOData}(:)])), xMin);
-                    xMax = max(max(real([dataAll{indCurrType{ll}(indCurr),iMData}(:); dataAll{indCurrType{ll}(indCurr),iOData}(:)])), xMax);
 
                     %Create legend entries:
                     lgdCurr = dataAll{indCurrType{ll}(indCurr),iMeta}{3};
@@ -1455,13 +1459,13 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
 
                         end
 
-                        hTs(cntrTs)= plot(plotDates, plotModData, 'x', plotDates, plotObsData, 'o'); 
+                        hTs(cntrTs) = plot(plotDates, plotModData, 'x', plotDates, plotObsData, 'o'); 
 
                         %Find min and max dates:
                         xMin = min(min(plotDates), xMin);
                         xMax = max(max(plotDates), xMax);
                     else %Regular time-series
-                        hTs(cntrTs)= plot(dataAll{indCurrType{ll}(indCurr),iMDate}, dataAll{indCurrType{ll}(indCurr),iMData}, '-x', dataAll{indCurrType{ll}(indCurr),iODate}, dataAll{indCurrType{ll}(indCurr),iOData}, '-o'); 
+                        hTs(cntrTs) = plot(dataAll{indCurrType{ll}(indCurr),iMDate}, dataAll{indCurrType{ll}(indCurr),iMData}, '-x', dataAll{indCurrType{ll}(indCurr),iODate}, dataAll{indCurrType{ll}(indCurr),iOData}, '-o'); 
 
                         %Find min and max dates:
                         xMin = min(dataAll{indCurrType{ll}(indCurr),iMDate}(1), xMin);
@@ -1514,6 +1518,14 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                        yMax = max([yMax,ydata{zz}(indNInf)]); 
                     end
                 end
+            end
+
+%             if strcmpi(obsTypes{ii}, 'geodetic')
+%                keyboard 
+%             end
+            if isequal(xMin, xMax)
+                xMin = xMin - 0.2*xMin;
+                xMax = xMax + 0.2*xMax;
             end
 
             if flagScatter
@@ -1573,11 +1585,18 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
 
                 set(gca, 'XTickLabel', round2(ptsTicks,1), 'XTick', ptsTicks);
                 set(gca, 'YTickLabel', round2(ptsTicks,1), 'YTick', ptsTicks);
-
-
             else
                 hRef = line([xMin xMax],[0 0]);
 
+                yMin = ylim;
+                    yMax = yMin(2);
+                    yMin = yMin(1);
+                if isequal(yMin, yMax)
+                    yMin = yMin - 0.2*yMin;
+                    yMax = yMax + 0.2*yMax;
+                end
+                ylim([yMin, yMax]);
+                
                 %Set Labels:
                 hXLab = xlabel('Date');
                 hYLab = ylabel([varCurr ' (' unitCurr ')']);

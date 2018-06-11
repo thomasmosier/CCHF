@@ -44,7 +44,6 @@ sCryo.sndwe = sCryo.sndwe + sAtm.prsn;
 indSnow = find(sCryo.snw > 0);
 if~isempty(indSnow)
     sCryo.snlw(indSnow)  = sCryo.snlw(indSnow) + sAtm.rain(indSnow);
-    sCryo.sndwe(indSnow) = sCryo.sndwe(indSnow) + sAtm.rain(indSnow);
 end
 indNoSnow = find(sCryo.snw <= 0);
 if~isempty(indNoSnow)

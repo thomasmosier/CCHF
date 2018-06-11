@@ -28,7 +28,9 @@ global sCryo
 %WITHOUT HOLDING CAPACITY
 if isempty(varargin(:))
 	varargout{1} = cell(0,6);
-    varargout{1} = cat(1,varargout{1}, {'sn_hold_density', 0,   900,    550, 'sndrain_density','cryo'}); %Units of depth melt
+    varargout{1} = cat(1,varargout{1}, {'sn_hold_density', 0,   900,    550, 'sndrain_density','land'}); %Units of depth melt
+    %Calibrate with 'land' routines because it is more sensitive to runoff
+    %generation and flow than cryosphere
     return
 else
     holdRho = find_att(varargin{1}.coef,'sn_hold_density','no_warning'); 
@@ -52,8 +54,8 @@ end
 indRelease = find(sCryo.rhosn > holdRho);
 
 if ~isempty(indRelease)
-    %Fraction of water to drain (based on density):
-    frac = 
+%     %Fraction of water to drain (based on density):
+%     frac = 
     %Amount of release equals exceedance of liquid water holding capacity:
     sCryo.snlr(indRelease) = frac.*sCryo.snlw(indRelease);
     sCryo.sndwe(indRelease) = sCryo.sndwe(indRelease) - sCryo.snlr(indRelease);

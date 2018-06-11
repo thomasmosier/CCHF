@@ -59,7 +59,7 @@ if ~isfield(sCryo, 'sncc')
     sCryo.snlw(isnan(sCryo.snw)) = nan;
 end
 %Reset cold content if no snow:
-sCryo.sncc(sCryo.sncc ~= 0 & sCryo.snw == 0) = 0;
+sCryo.sncc(~isnan(sCryo.sncc) & sCryo.sncc ~= 0 & sCryo.snw == 0) = 0;
 
 %Initialize melt field (every iteration):
 sCryo.lhsnme = zeros(size(sCryo.snw),'single');
@@ -79,7 +79,7 @@ sCryo.lhsnme = zeros(size(sCryo.snw),'single');
 sCryo.lhpme = time2sec(1,sMeta.dt,sMeta.dateCurr)*sCryo.hfnet/cLate;
 
 
-%Increase cold-conent if negative energy input:
+%Increase cold-conent if negative heat energy input:
 indNegEn = find(sCryo.lhpme < 0);
 if ~isempty(indNegEn)
    sCryo.sncc(indNegEn) = sCryo.sncc(indNegEn) - 10^(ccPwr)*sCryo.lhpme(indNegEn);
@@ -89,12 +89,16 @@ end
 %Decrease cold-content if positive energy input:
 indPosEn = find(sCryo.lhpme > 0 & sCryo.sncc > 0);
 if ~isempty(indPosEn)
+    %Calculate difference between cold content (energy) and heat input
     tempDcc = sCryo.sncc(indPosEn) - sCryo.lhpme(indPosEn);
+    %Balance cold content and energy where energy input is greater than
+    %cold content
     indMaxCC = find(tempDcc < 0);
     if ~isempty(indMaxCC)
         sCryo.lhpme(indPosEn(indMaxCC)) = -tempDcc(indMaxCC);
         sCryo.sncc(indPosEn(indMaxCC)) = 0;
     end
+    %Edit cold content and energy where CC is greater than energy input
     indNMaxCC = setdiff((1:numel(indPosEn)),indMaxCC);
     if ~isempty(indNMaxCC)
         sCryo.sncc(indPosEn(indNMaxCC)) = tempDcc(indNMaxCC);
@@ -103,15 +107,17 @@ if ~isempty(indPosEn)
 end
 
 
-%Refreeze liquid in snow if cold-content positive
-indLiqFrz = find(sCryo.sncc > 0 & sCryo.snlw > 0 & sCryo.snw > 0); %Indices where there is positive cold content and there is liquid water in snow
+%Refreeze liquid water in snow if cold-content positive
+%Find indices where there is positive cold content and liquid water in snow
+indLiqFrz = find(sCryo.sncc > 0 & sCryo.snlw > 0 & sCryo.snw > 0); 
 if ~isempty(indLiqFrz)
     %Indices where there's not sufficient energy to freeze all liquid water
     indFrzMax = find(sCryo.snlw(indLiqFrz) > sCryo.sncc(indLiqFrz) );
     if ~isempty(indFrzMax)
-        sCryo.snw(indLiqFrz(indFrzMax)) = sCryo.snw(indLiqFrz(indFrzMax)) + sCryo.sncc(indLiqFrz(indFrzMax));
-        sCryo.snlw(indLiqFrz(indFrzMax)) = sCryo.snlw(indLiqFrz(indFrzMax)) - sCryo.sncc(indLiqFrz(indFrzMax));
-        sCryo.sncc(indLiqFrz(indFrzMax)) = 0;
+        sCryo.snw(  indLiqFrz(indFrzMax)) =   sCryo.snw(indLiqFrz(indFrzMax)) + sCryo.sncc(indLiqFrz(indFrzMax));
+        sCryo.snlw( indLiqFrz(indFrzMax)) =  sCryo.snlw(indLiqFrz(indFrzMax)) - sCryo.sncc(indLiqFrz(indFrzMax));
+        sCryo.sndwe(indLiqFrz(indFrzMax)) = sCryo.sndwe(indLiqFrz(indFrzMax)) + sCryo.sncc(indLiqFrz(indFrzMax));
+        sCryo.sncc( indLiqFrz(indFrzMax)) = 0;
     end
     
     %Indices where there is sufficient energy to freeze all liquid:
@@ -121,61 +127,40 @@ if ~isempty(indLiqFrz)
         indFrzNMax = setdiff(indLiqFrz, indLiqFrz(indFrzMax));
     end
     if ~isempty(indFrzNMax)
-        sCryo.snw(indFrzNMax) = sCryo.snw(indFrzNMax) + sCryo.snlw(indFrzNMax);
-        sCryo.sncc(indFrzNMax) = sCryo.sncc(indFrzNMax) - sCryo.snlw(indFrzNMax);
+        sCryo.snw(  indFrzNMax) =   sCryo.snw(indFrzNMax) + sCryo.snlw(indFrzNMax);
+        sCryo.sncc( indFrzNMax) =  sCryo.sncc(indFrzNMax) - sCryo.snlw(indFrzNMax);
+        sCryo.sndwe(indFrzNMax) = sCryo.sndwe(indFrzNMax) + sCryo.snlw(indFrzNMax);
         sCryo.snlw(indFrzNMax) = 0;
     end
 end
 
-%Rain on snow?
-%
-%Editing here
-%
-%rain, release rain, otherwise hold in snowpack
 
-
-% %Freeze Rain if cold content > 0
-% indRainFrz = find(sAtm.rain > 0 & sCryo.sncc > 0);
-% if ~isempty(indRainFrz)
-%     indFrzMax = find(sAtm.rain(indRainFrz) > sCryo.sncc(indRainFrz));
-%     if ~isempty(indFrzMax)
-%         sCryo.snw(indRainFrz(indFrzMax)) = sCryo.snw(indRainFrz(indFrzMax)) + sCryo.sncc(indRainFrz(indFrzMax));
-%         sCryo.rFrz(indRainFrz(indFrzMax)) = sCryo.sncc(indRainFrz(indFrzMax));
-%         sAtm.rain(indRainFrz(indFrzMax)) = sAtm.rain(indRainFrz(indFrzMax)) - sCryo.rFrz(indRainFrz(indFrzMax));
-%         %Must occur last:
-%         sCryo.sncc(indRainFrz(indFrzMax)) = 0;
-%     end
-%     
-%     %Indices where there's sufficient energy to freeze all liquid:
-%     if isempty(indFrzMax)
-%         indFrzNMax = indRainFrz;
-%     else
-%         indFrzNMax = setdiff(indRainFrz, indRainFrz(indFrzMax));
-%     end
-%     if ~isempty(indFrzNMax)
-%         sCryo.rFrz(indFrzNMax) = sAtm.rain(indFrzNMax);
-%         sCryo.snw(indFrzNMax) = sCryo.snw(indFrzNMax) + sCryo.rFrz(indFrzNMax);
-%         sCryo.sncc(indFrzNMax) = sCryo.sncc(indFrzNMax) - sCryo.rFrz(indFrzNMax);
-%         sAtm.rain(indFrzNMax) = 0;
-%     end
-% end
-
-
-%The remaining melt potential goes into melting snow
-%(is limited by amount of snow available)
+%The remaining input heat energy goes into melting snow
 indMelt = find( sCryo.lhpme > 0 & sCryo.sncc <= 0);
 if ~isempty(indMelt)
-    sCryo.lhsnme(indMelt) = sCryo.lhpme(indMelt);
-    indMaxSnow = find(sCryo.lhsnme(indMelt) > sCryo.snw(indMelt));
-    sCryo.lhsnme(indMelt(indMaxSnow)) = sCryo.snw(indMelt(indMaxSnow));
-    sCryo.lhpme(indMelt) = sCryo.lhpme(indMelt) - sCryo.lhsnme(indMelt);
+    %Grid cells where melt is limited by amount of snow
+    indMeltAll = find(sCryo.lhpme(indMelt) >= sCryo.snw(indMelt));
+    sCryo.lhsnme(indMelt(indMeltAll)) = sCryo.snw(indMelt(indMeltAll));
     
-    %Add melted snow to 'release' field and remove from 'solid':
-    sCryo.snlw(indMelt) = sCryo.snlw(indMelt) + sCryo.lhsnme(indMelt);
-    sCryo.snw(indMelt) = sCryo.snw(indMelt) - sCryo.lhsnme(indMelt);
+    %Grid cells where melt is limited by energy
+    if isempty(indMeltAll)
+        indMeltSome = indMelt;
+    else
+        indMeltSome = setdiff(indMelt, indMelt(indMeltAll));
+    end
+    if ~isempty(indMeltSome)
+        sCryo.lhsnme(indMeltSome) = sCryo.lhpme(indMeltSome);
+    end
+    
+    %Balance values (including adding melted snow to liquid water content):
+    sCryo.lhpme(indMelt) = sCryo.lhpme(indMelt) - sCryo.lhsnme(indMelt);
+    sCryo.snlw( indMelt) = sCryo.snlw( indMelt) + sCryo.lhsnme(indMelt);
+    sCryo.snw(  indMelt) = sCryo.snw(  indMelt) - sCryo.lhsnme(indMelt);
+    sCryo.sndwe(indMelt) = sCryo.sndwe(indMelt) - sCryo.lhsnme(indMelt);
 end
 
 
+%%Enforce physical constraints:
 %Set negative cold content values to 0:
 sCryo.sncc(sCryo.sncc < 0) = 0;
 %Set netagive solid snow values to 0:
