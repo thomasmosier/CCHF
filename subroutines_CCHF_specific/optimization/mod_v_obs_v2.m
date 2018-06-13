@@ -342,9 +342,12 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
         end
 
         
+        %Get and process dates (various formats)
+        %The initial switching is between formats of observation dates
         if isfield(sObs.(ptsObs{ii}), [fldCurrObs{kk} '_date']) %Observations occur at single point in time
+            %Get observation date:
             dataAll{cntrObs,iODate} = sObs.(ptsObs{ii}).([fldCurrObs{kk} '_date']);
-        
+            %Time resolution of observation:
             tResObs = numel(dataAll{cntrObs,iODate}(1,:));
 
             %If temporal resolution doesn't match, convert (e.g. 
@@ -382,10 +385,10 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
             end
 
             %Find dates common to both modelled and observed data
-            daysObs = days_since(dateRef, dataAll{cntrObs,iODate}, calUse);
-                        
+            daysObs = days_since(dateRef, dataAll{cntrObs,iODate}, calUse);   
             [~, dateUseObs, dateUseMod] = intersect(daysObs, daysMod,'rows');
             
+            %Keep only common data and dates
             dataAll{cntrObs,iMDate} = dataAll{cntrObs,iMDate}( dateUseMod,:);
             daysMod = daysMod(dateUseMod);
             dataAll{cntrObs,iMData} = dataAll{cntrObs,iMData}( dateUseMod,:);
@@ -401,7 +404,6 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
                     'run time accordingly.']);
                 continue
             end
-
         elseif isfield(sObs.(ptsObs{ii}), [fldCurrObs{kk} '_dateStart']) && isfield(sObs.(ptsObs{ii}), [fldCurrObs{kk} '_dateEnd'])
             dataAll{cntrObs,iODate} = cell(2,1);
             dataAll{cntrObs,iODate}{1} = sObs.(ptsObs{ii}).([fldCurrObs{kk} '_dateStart']); 
@@ -442,7 +444,7 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
 
             
             %Switch between types of model dates (continuous versus
-            %start&end
+            %start & end)
             if isnumeric(dataAll{cntrObs,iMDate})
                 %Get dates scaling between mod and obs:
                 [nDaysMod, nDaysObs, indModStrt, indModEnd] ...
@@ -453,14 +455,14 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
                 %Extract modelled data for time-series present in observations:
                 if numel(size(dataAll{cntrObs,iOData})) == 2 && any(size(dataAll{cntrObs,iOData}) == 1) %Pt data
                     dataTempMod2Obs = nan(nTsObs,1);
-                    for ll = 1 : numel(dataAll{cntrObs,iOData})
+                    for ll = 1 : nTsObs
                         if ~isempty(indModStrt) && ~isempty(indModEnd) && indModEnd(ll) >= indModStrt(ll) %If start and end dates of observation present in model, copy data
                             if regexpbl(evalType, 'sum')
-                                dataTempMod2Obs(ll) = scl(ll)*nansum(dataAll{cntrObs,iMData}(indModStrt:indModEnd));
+                                dataTempMod2Obs(ll) = scl(ll)*nansum(dataAll{cntrObs,iMData}(indModStrt(ll):indModEnd(ll)));
                             elseif regexpbl(evalType, 'mean')
-                                dataTempMod2Obs(ll) = scl(ll)*nanmean(dataAll{cntrObs,iMData}(indModStrt:indModEnd));
+                                dataTempMod2Obs(ll) = scl(ll)*nanmean(dataAll{cntrObs,iMData}(indModStrt(ll):indModEnd(ll)));
                             elseif regexpbl(evalType, 'max')
-                                dataTempMod2Obs(ll) = scl(ll)*nanmax(dataAll{cntrObs,iMData}(indModStrt:indModEnd));
+                                dataTempMod2Obs(ll) = scl(ll)*nanmax(dataAll{cntrObs,iMData}(indModStrt(ll):indModEnd(ll)));
                             else
                                 error('mod_v_obs:unknownEvalType', [evalType ...
                                     ' is an unknown evaluation type and a '...
@@ -481,11 +483,11 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
                         if isnumeric(dataAll{cntrObs,iMDate}) || (iscell(dataAll{cntrObs,iMDate}) && numel(dataAll{cntrObs,iMDate}) == 1) %Date field at model time step
                             if ~isempty(indModStrt) && ~isempty(indModEnd) && indModEnd(ll) >= indModStrt(ll) %If start and end dates of observation present in model, copy data
                                 if regexpbl(evalType, 'sum')
-                                    dataTempMod2Obs(ll,:,:) = scl(ll)*squeeze(nansum(dataAll{cntrObs,iMData}(indModStrt:indModEnd,:,:), 1));
+                                    dataTempMod2Obs(ll,:,:) = scl(ll)*squeeze(nansum(dataAll{cntrObs,iMData}(indModStrt(ll):indModEnd(ll),:,:), 1));
                                 elseif regexpbl(evalType, 'mean')
-                                    dataTempMod2Obs(ll,:,:) = scl(ll)*squeeze(nanmean(dataAll{cntrObs,iMData}(indModStrt:indModEnd,:,:), 1));
+                                    dataTempMod2Obs(ll,:,:) = scl(ll)*squeeze(nanmean(dataAll{cntrObs,iMData}(indModStrt(ll):indModEnd(ll),:,:), 1));
                                 elseif regexpbl(evalType, 'max')
-                                    dataTempMod2Obs(ll,:,:) = scl(ll)*squeeze(nanmax(dataAll{cntrObs,iMData}(indModStrt:indModEnd,:,:), 1));
+                                    dataTempMod2Obs(ll,:,:) = scl(ll)*squeeze(nanmax(dataAll{cntrObs,iMData}(indModStrt(ll):indModEnd(ll),:,:), 1));
                                 else
                                     error('mod_v_obs:unknownEvalType', [evalType ...
                                         ' is an unknown evaluation type and a '...
