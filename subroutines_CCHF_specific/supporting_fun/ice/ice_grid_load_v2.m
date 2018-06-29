@@ -380,88 +380,15 @@ else %In this case, ice grid same as main grid
     sIceInit.icx = zeros(szMain,'single');
 end
 
-szIce = size(sIceInit.igrddem);
+
+%Calculate grid sizes
 szMain = size(sHydro.dem);
-
-%Load debris thickness grid (if present):
-if isfield(sPath, 'icdbr')
-    [foldDbrSv, fildDbrSv, ~] = fileparts(sPath.icdbr);
-    
-    pathDbrSv = fullfile(foldDbrSv, ...
-        [fildDbrSv, '_', sMeta.region{sMeta.siteCurr}, '_', num2str(szMain(1)) , 'x', num2str(szMain(2)), '.mat']);
-    
-    if exist(pathDbrSv, 'file')
-        load(pathDbrSv);
-    else
-        sDebris = read_geodata_v2(sPath.icdbr, 'data', nan(1,2), nan(1,2), nan(1,2), 0, 'out', 'none','no_disp', 'onefile');
-            sDebris.data = squeeze(sDebris.data);
-        if ~isequal(size(sDebris.data), size(sIceInit.igrddem))
-            resDebris = [mean(abs(diff(sDebris.(varLat)))), mean(abs(diff(sDebris.(varLon))))];
-            resMain = [mean(abs(diff(sHydro.(varLat)))), mean(abs(diff(sHydro.(varLon))))];
-            resIceGrd = [mean(abs(diff(sIceInit.igrdlat))), mean(abs(diff(sIceInit.igrdlon)))];
-
-            prec = -order(min(resDebris))+1;
-            if isequal(round2(resDebris, prec), round2(resIceGrd, prec)) || isequal(round2(resDebris, prec), round2(resMain, prec)) || all(resDebris < resMain)
-                sDebris.data = geodata_area_wgt(sDebris.(varLon), sDebris.(varLat), sDebris.data, sHydro.(varLon), sHydro.(varLat), 'nansum');
-            else
-                error('iceGridLoaded:mismatchIceDebris', ...
-                    'The ice and debris cover grids are not the same size.');
-            end
-        end
-        
-        save(pathDbrSv, 'sDebris');
-    end
-
-    sIceInit.icdbr = sDebris.data;
-%     sIceInit.icdbr = sparse(szIce(1),szIce(2));
-%     sIceInit.icdbr(indIce) = sDebris.data(indIce);
-    
-
-    disp(['Debris cover thickness grid loaded from ' sPath.icdbr '. This grid uses the main hydrologic grid.']);
-%     warning('ice_grid_init:debrisCover',['Debris cover thickness grid loaded. Ensure this '...
-%         'is used in the ice processs representations '...
-%         '(including heat calculation).']);
+if isfield(sIceInit, 'igrddem')
+    szIce = size(sIceInit.igrddem);
+else
+    szIce = szMain;
 end
 
-%Load glacier lake fraction grid (if present)
-if isfield(sPath, 'icpndx')
-    [foldPndSv, fildPndSv, ~] = fileparts(sPath.icpndx);
-    
-    pathPndSv = fullfile(foldPndSv, ...
-        [fildPndSv, '_', sMeta.region{sMeta.siteCurr}, '_', num2str(szMain(1)) , 'x', num2str(szMain(2)), '.mat']);
-    
-    if exist(pathPndSv, 'file')
-        load(pathPndSv);
-    else  
-        sPond = read_geodata_v2(sPath.icpndx, 'data', nan(1,2), nan(1,2), nan(1,2), 0, 'out', 'none','no_disp', 'onefile');
-            sPond.data = squeeze(sPond.data);
-        if ~isequal(size(sPond.data), size(sIceInit.igrddem))
-            resPndx = [mean(abs(diff(sPond.(varLat)))), mean(abs(diff(sPond.(varLon))))];
-            resMain = [mean(abs(diff(sHydro.(varLat)))), mean(abs(diff(sHydro.(varLon))))];
-            resIceGrd = [mean(abs(diff(sIceInit.igrdlat))), mean(abs(diff(sIceInit.igrdlon)))];
-
-            prec = -order(min(resPndx))+1;
-            if isequal(round2(resPndx, prec), round2(resIceGrd, prec)) || isequal(round2(resPndx, prec), round2(resMain, prec)) || all(resPndx < resMain)
-                sPond.data = geodata_area_wgt(sPond.(varLon), sPond.(varLat), sPond.data, sHydro.(varLon), sHydro.(varLat), 'nansum');
-            else
-                error('CCHF_backbone:mismatchIcePond', ...
-                    'The ice and pond fraction grids are not the same size.');
-            end
-        end
-        
-        save(pathPndSv, 'sPond');
-    end
-
-    sIceInit.icpndx = sPond.data;
-    sIceInit.icpndx(isnan(sIceInit.icpndx)) = 0;
-%     sIceInit.icdbr = sparse(szIce(1),szIce(2));
-%     sIceInit.icdbr(indIce) = sDebris.data(indIce);
-
-    disp(['Ice pond fraction loaded from ' sPath.icpndx '. This grid uses the main hydrologic grid.']);
-%     warning('ice_grid_init:icPond',['Ice pond fraction loaded. Ensure this '...
-%         'is actually used in the ice processs representations '...
-%         '(including heat calculation).'])
-end
 
 %Load ice thickness (water equivalent) grid (if present)
 if isfield(sPath, 'icwe')
@@ -533,5 +460,88 @@ if isfield(sPath, 'icwe')
 %         'is actually used in the ice processs representations '...
 %         '(including heat calculation).'])
 end
+
+
+%Load debris thickness grid (if present):
+if isfield(sPath, 'icdbr')
+    [foldDbrSv, fildDbrSv, ~] = fileparts(sPath.icdbr);
+    
+    pathDbrSv = fullfile(foldDbrSv, ...
+        [fildDbrSv, '_', sMeta.region{sMeta.siteCurr}, '_', num2str(szMain(1)) , 'x', num2str(szMain(2)), '.mat']);
+    
+    if exist(pathDbrSv, 'file')
+        load(pathDbrSv);
+    else
+        sDebris = read_geodata_v2(sPath.icdbr, 'data', nan(1,2), nan(1,2), nan(1,2), 0, 'out', 'none','no_disp', 'onefile');
+            sDebris.data = squeeze(sDebris.data);
+        if ~isequal(size(sDebris.data), size(sIceInit.igrddem))
+            resDebris = [mean(abs(diff(sDebris.(varLat)))), mean(abs(diff(sDebris.(varLon))))];
+            resMain = [mean(abs(diff(sHydro.(varLat)))), mean(abs(diff(sHydro.(varLon))))];
+            resIceGrd = [mean(abs(diff(sIceInit.igrdlat))), mean(abs(diff(sIceInit.igrdlon)))];
+
+            prec = -order(min(resDebris))+1;
+            if isequal(round2(resDebris, prec), round2(resIceGrd, prec)) || isequal(round2(resDebris, prec), round2(resMain, prec)) || all(resDebris < resMain)
+                sDebris.data = geodata_area_wgt(sDebris.(varLon), sDebris.(varLat), sDebris.data, sHydro.(varLon), sHydro.(varLat), 'nansum');
+            else
+                error('iceGridLoaded:mismatchIceDebris', ...
+                    'The ice and debris cover grids are not the same size.');
+            end
+        end
+        
+        save(pathDbrSv, 'sDebris');
+    end
+
+    sIceInit.icdbr = sDebris.data;
+%     sIceInit.icdbr = sparse(szIce(1),szIce(2));
+%     sIceInit.icdbr(indIce) = sDebris.data(indIce);
+    
+
+    disp(['Debris cover thickness grid loaded from ' sPath.icdbr '. This grid uses the main hydrologic grid.']);
+%     warning('ice_grid_init:debrisCover',['Debris cover thickness grid loaded. Ensure this '...
+%         'is used in the ice processs representations '...
+%         '(including heat calculation).']);
+end
+
+
+%Load glacier lake fraction grid (if present)
+if isfield(sPath, 'icpndx')
+    [foldPndSv, fildPndSv, ~] = fileparts(sPath.icpndx);
+    
+    pathPndSv = fullfile(foldPndSv, ...
+        [fildPndSv, '_', sMeta.region{sMeta.siteCurr}, '_', num2str(szMain(1)) , 'x', num2str(szMain(2)), '.mat']);
+    
+    if exist(pathPndSv, 'file')
+        load(pathPndSv);
+    else  
+        sPond = read_geodata_v2(sPath.icpndx, 'data', nan(1,2), nan(1,2), nan(1,2), 0, 'out', 'none','no_disp', 'onefile');
+            sPond.data = squeeze(sPond.data);
+        if ~isequal(size(sPond.data), size(sIceInit.igrddem))
+            resPndx = [mean(abs(diff(sPond.(varLat)))), mean(abs(diff(sPond.(varLon))))];
+            resMain = [mean(abs(diff(sHydro.(varLat)))), mean(abs(diff(sHydro.(varLon))))];
+            resIceGrd = [mean(abs(diff(sIceInit.igrdlat))), mean(abs(diff(sIceInit.igrdlon)))];
+
+            prec = -order(min(resPndx))+1;
+            if isequal(round2(resPndx, prec), round2(resIceGrd, prec)) || isequal(round2(resPndx, prec), round2(resMain, prec)) || all(resPndx < resMain)
+                sPond.data = geodata_area_wgt(sPond.(varLon), sPond.(varLat), sPond.data, sHydro.(varLon), sHydro.(varLat), 'nansum');
+            else
+                error('CCHF_backbone:mismatchIcePond', ...
+                    'The ice and pond fraction grids are not the same size.');
+            end
+        end
+        
+        save(pathPndSv, 'sPond');
+    end
+
+    sIceInit.icpndx = sPond.data;
+    sIceInit.icpndx(isnan(sIceInit.icpndx)) = 0;
+%     sIceInit.icdbr = sparse(szIce(1),szIce(2));
+%     sIceInit.icdbr(indIce) = sDebris.data(indIce);
+
+    disp(['Ice pond fraction loaded from ' sPath.icpndx '. This grid uses the main hydrologic grid.']);
+%     warning('ice_grid_init:icPond',['Ice pond fraction loaded. Ensure this '...
+%         'is actually used in the ice processs representations '...
+%         '(including heat calculation).'])
+end
+
 
 disp('Finished ice grid initialization');

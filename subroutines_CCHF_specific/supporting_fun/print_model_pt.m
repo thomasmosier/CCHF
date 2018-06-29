@@ -53,6 +53,12 @@ if numel(indGage) == numel(indArea) && ~isempty(indGage)
     elseif isnumeric(sData)
         sModOut.(ptWrtCurr).(nmCurr)(indTsOutCurr) = nansum(sData(indGage(:)).*area(indArea(:)))/nansum(area(indArea(:)));
     end
+elseif numel(indGage) == numel(indArea) && numel(indGage) == 0
+    if isstruct(sData)
+        sModOut.(ptWrtCurr).(nmCurr)(indTsOutCurr) = nan;
+    elseif isnumeric(sData)
+        sModOut.(ptWrtCurr).(nmCurr)(indTsOutCurr) = nan;
+    end
 else
     error('printModelPt:indicesDiffSz', ['The gage indice has ' ...
         num2str(numel(indGage)) ' elements and the area indice has ' ...

@@ -35,20 +35,22 @@ end
 
 %Initialize ice thickness on first iteration:
 if ~regexpbl(sMeta.mode,'parameter') && sMeta.indCurr == 1
-    iceWEMod = find_att(sMeta.module, 'glacier0');
-    if regexpbl(iceWEMod, 'Shea')
-        %Estimate thickness (force balance based on equilibrium
-        %assumption from Shea et al. 2015)
-        glacier0_Shea(sMeta);
-    elseif regexpbl(iceWEMod, 'Chen')
-        %Estimate thickness (empirical surface area scaling based on Chen and Ohmura, 1990)
-        glacier0_Chen(sHydro, sMeta);
-    elseif regexpbl(iceWEMod, 'external')
-        %Set ice thickness using data from file
-        glacier0_external(sHydro, sMeta);
-    else
-        error('cchfModules:iceWE', ['The ice water equivalent initialization ' iceWEMod ' is not recognized.']);
-    end 
+    if ~strcmpi(sMeta.iceGrid, 'none') 
+        iceWEMod = find_att(sMeta.module, 'glacier0');
+        if regexpbl(iceWEMod, 'Shea')
+            %Estimate thickness (force balance based on equilibrium
+            %assumption from Shea et al. 2015)
+            glacier0_Shea(sMeta);
+        elseif regexpbl(iceWEMod, 'Chen')
+            %Estimate thickness (empirical surface area scaling based on Chen and Ohmura, 1990)
+            glacier0_Chen(sHydro, sMeta);
+        elseif regexpbl(iceWEMod, 'external')
+            %Set ice thickness using data from file
+            glacier0_external(sHydro, sMeta);
+        else
+            error('cchfModules:iceWE', ['The ice water equivalent initialization ' iceWEMod ' is not recognized.']);
+        end 
+    end
 end
 
 
@@ -403,15 +405,17 @@ end
 
 
 %FIRN COMPACTION (SNOW BECOMES ICE):
-firnMod = find_att(sMeta.module,'firn', 'no_warning');
-if regexpbl(firnMod, 'threshold')
-    if regexpbl(sMeta.mode,'parameter') 
-        coef = cat(1,coef, firn_threshold());
-    else
-        firn_threshold(sMeta);
+if ~strcmpi(sMeta.iceGrid, 'none') 
+    firnMod = find_att(sMeta.module,'firn', 'no_warning');
+    if regexpbl(firnMod, 'threshold')
+        if regexpbl(sMeta.mode,'parameter') 
+            coef = cat(1,coef, firn_threshold());
+        else
+            firn_threshold(sMeta);
+        end
+    elseif ~regexpbl(firnMod, {'none', 'static'})
+        error('cchfModules:flowUnknown', ['The flow routing representation ' firnMod ' not recognized.']);
     end
-elseif ~regexpbl(firnMod, {'none', 'static'})
-    error('cchfModules:flowUnknown', ['The flow routing representation ' firnMod ' not recognized.']);
 end
 
 
@@ -514,7 +518,7 @@ end
 
 %GLACIER PROCESSES (INCLUDES GLACIER DYNAMICS OPTIONS): 
 %FUNCTIONS TO ONLY BE IMPLEMENTED IF GLACIER OUTLINES PRESENT
-if isfield(sCryo,'icx') && any2d(sCryo.icx > 0) && sMeta.glacierDynamics == 1
+if ~strcmpi(sMeta.iceGrid, 'none') && sMeta.glacierDynamics == 1
     glacMoveMod = find_att(sMeta.module,'glaciermove', 'no_warning');
     
     %Initialize grid to track glacier mass balance:

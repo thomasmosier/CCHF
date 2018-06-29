@@ -389,12 +389,12 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
             [~, dateUseObs, dateUseMod] = intersect(daysObs, daysMod,'rows');
             
             %Keep only common data and dates
-            dataAll{cntrObs,iMDate} = dataAll{cntrObs,iMDate}( dateUseMod,:);
+            dataAll{cntrObs,iMDate} = dataAll{cntrObs,iMDate}(dateUseMod,:);
             daysMod = daysMod(dateUseMod);
-            dataAll{cntrObs,iMData} = dataAll{cntrObs,iMData}( dateUseMod,:);
-            dataAll{cntrObs,iODate} = dataAll{cntrObs,iODate}( dateUseObs,:);
+            dataAll{cntrObs,iMData} = dataAll{cntrObs,iMData}(dateUseMod,:);
+            dataAll{cntrObs,iODate} = dataAll{cntrObs,iODate}(dateUseObs,:);
             daysObs = daysObs(dateUseObs);
-            dataAll{cntrObs,iOData} = dataAll{cntrObs,iOData}( dateUseObs,:);
+            dataAll{cntrObs,iOData} = dataAll{cntrObs,iOData}(dateUseObs,:);
                        
             if isempty(dateUseObs) || isempty(dateUseMod)
                 warning('mod_v_obs:noOverlapObs',...
@@ -925,20 +925,33 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                     [dirWrite, fileWrite, ~] = fileparts(outputPath);
                 end
                 
-                %Use imagesc to plot data:
-                custClrMap = ... 
-                    [0,0,1; ... %blue
-                    0.2,0.2,1; ...
-                    0.4,0.4,1; ...
-                    0.6,0.6,1; ...
-                    0.8,0.8,1; ...
-                    1, 1, 1; ... %white
-                    1, 0.8, 0.8; ...
-                    1, 0.6, 0.6; ...
-                    1, 0.4, 0.4; ...
-                    1, 0.2, 0.2; ...
-                    1, 0, 0]; %red
-%                     0.7, 0.7, 0.7]; %Gray 
+                %Use custom colormap with imagesc to plot spatial data:
+%                 custClrMap = ... 
+%                     [0,0,1; ... %blue
+%                     0.2,0.2,1; ...
+%                     0.4,0.4,1; ...
+%                     0.6,0.6,1; ...
+%                     0.8,0.8,1; ...
+%                     1, 1, 1; ... %white
+%                     1, 0.8, 0.8; ...
+%                     1, 0.6, 0.6; ...
+%                     1, 0.4, 0.4; ...
+%                     1, 0.2, 0.2; ...
+%                     1, 0, 0]; %red
+                
+                custClrMap = ...
+                    [ 1,   0,   0; ... %red
+                      1, 0.2, 0.2; ...
+                      1, 0.4, 0.4; ...
+                      1, 0.6, 0.6; ...
+                      1, 0.8, 0.8; ...
+                      1,   1,   1; ... %white
+                    0.8, 0.8,   1; ...
+                    0.6, 0.6,   1; ...
+                    0.4, 0.4,   1; ...
+                    0.2, 0.2,   1; ...
+                      0,   0,  1];     %blue
+                    
                 
                 %Initialize arrays:
                 gridObsCurr  = nan([nDtCurr, szCurr(end-1:end)], 'single');
@@ -1224,7 +1237,7 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                         daysBndsOut = [dataAll{indCurrType{ll}(1),iMDate}{1}(1,:); dataAll{indCurrType{ll}(1),iMDate}{2}(1,:)];
                     end
                     
-                    dateOut = days_2_date(daysOut, dateRefCurr, calUse);
+                    dateOut = days_2_date_v2(daysOut, dateRefCurr, calUse);
                     dateWrtOut = {dateOut};
                 else
                     error('modVObs:unknownDateType',['The date type with ' num2str(dateTyp) ' has not been programmed for.'])
@@ -1237,7 +1250,13 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                 if regexpbl(wrtGridTyp, {'nc', 'netcdf'})
                     extWrt = 'nc';
                     
-                    dateBndsOut = days_2_date(daysBndsOut, dateRefCurr, calUse);
+                    daysBndsTemp = nan(numel(daysBndsOut), 1);
+                    cntr = 1;
+                    for zz = 1 : numel(daysBndsOut(:,1))
+                        daysBndsTemp(cntr:cntr+1) = daysBndsOut(zz,:);
+                        cntr = cntr + 2;
+                    end
+                    dateBndsOut = days_2_date_v2(daysBndsTemp, dateRefCurr, calUse);
                 elseif regexpbl(wrtGridTyp, 'asc')
                     extWrt = 'asc';
                 else
@@ -1522,9 +1541,7 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                 end
             end
 
-%             if strcmpi(obsTypes{ii}, 'geodetic')
-%                keyboard 
-%             end
+
             if isequal(xMin, xMax)
                 xMin = xMin - 0.2*xMin;
                 xMax = xMax + 0.2*xMax;

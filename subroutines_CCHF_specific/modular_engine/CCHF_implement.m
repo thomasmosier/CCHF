@@ -6,7 +6,7 @@ elseif ischar(sMeta.region)
     nSites = 1;
     sMeta.region = {sMeta.region};
 else
-    error('CCHF_main:nmRegions',['The model dies not recognize the '...
+    error('CCHF_main:nmRegions',['The model does not recognize the '...
         'format of the region input variable.']);
 end
 
@@ -178,22 +178,6 @@ if sMeta.useprevrun == 0
             end
 
 
-            %Load debris cover grid (if single value, assumed uniform thickness):
-            if sMeta.blDebris && ~regexpbl(sMeta.iceGrid, 'none')
-                uiwait(msgbox(sprintf(['Select the debris cover thickness grid (meters depth) for ' ...
-                    sMeta.region{ii} '.\n']), '(Click OK to Proceed)','modal'));
-                [fileDeb, foldDeb] = uigetfile({'*.asc';'*.txt'},['Select the debris cover thickness grid for ' ...
-                    sMeta.region{ii}], startPath);
-                sPath{ii}.icdbr = fullfile(foldDeb, fileDeb);
-                disp([char(39) sPath{ii}.icdbr char(39) ' has been chosen as the debris cover thickness grid.']);
-
-                if isempty(fileDeb) || isequal(fileDeb, 0)
-                   error('CCHF_main:noDebris',['No glacier debris cover thickness grid '...
-                       'has been selected, even though the option was chosen.' ...
-                       ' Therefore, the program is aborting.']); 
-                end
-            end
-
             %UI to locate ice thickness grid (if specified)
             iceWEMod = find_att(sMeta.module, 'glacier0');
             if strcmpi(iceWEMod, 'external') && ~regexpbl(sMeta.iceGrid, 'none')
@@ -210,8 +194,24 @@ if sMeta.useprevrun == 0
                        ' Therefore, the program is aborting.']); 
                 end
             end
+            
+            %Load debris cover thickness grid (if single value, assumed uniform thickness):
+            if sMeta.blDebris && ~regexpbl(sMeta.iceGrid, 'none')
+                uiwait(msgbox(sprintf(['Select the debris cover thickness grid (meters depth) for ' ...
+                    sMeta.region{ii} '.\n']), '(Click OK to Proceed)','modal'));
+                [fileDeb, foldDeb] = uigetfile({'*.asc';'*.txt'},['Select the debris cover thickness grid for ' ...
+                    sMeta.region{ii}], startPath);
+                sPath{ii}.icdbr = fullfile(foldDeb, fileDeb);
+                disp([char(39) sPath{ii}.icdbr char(39) ' has been chosen as the debris cover thickness grid.']);
 
-            %Load ice lake fraction
+                if isempty(fileDeb) || isequal(fileDeb, 0)
+                   error('CCHF_main:noDebris',['No glacier debris cover thickness grid '...
+                       'has been selected, even though the option was chosen.' ...
+                       ' Therefore, the program is aborting.']); 
+                end
+            end
+
+            %Load ice pond fraction
             if sMeta.blIcePond == 1  && ~regexpbl(sMeta.iceGrid, 'none')
                 uiwait(msgbox(sprintf(['Select the glacier pond fraction grid (range = 0 to 1) for ' ...
                     sMeta.region{ii} '.\n']), '(Click OK to Proceed)','modal'));
@@ -290,17 +290,27 @@ if sMeta.useprevrun == 0
             %Calibration/validation data required:
             uiwait(msgbox(sprintf(['Select the file(s) with observation data for ' ...
                 sMeta.region{ii} '.  If data does not include information such as location, you will '...
-                'be required to enter that in the main panel.']), ...
+                'be required to enter that in the main panel. You may select cancel in the file manager '...
+                'if you do not wish to select an observation.']), ...
                 '(Click OK to Proceed)','modal'));
 
             pathGage{ii} = cell(sMeta.nGage,1);
+            foldGage = 0;
             for jj = 1 : sMeta.nGage
+                %Define start path for observation data GUI:
+                if isnumeric(foldGage) || isempty(foldGage)
+                    startPathObs = startPath;
+                else
+                    [startPathObs, ~, ~] = fileparts(foldGage);
+                end
+                %Open GUI:
                 [fileGage, foldGage] = uigetfile({'*.*'}, ...
                     ['Select observation data ' num2str(jj) ' of ' ...
-                    num2str(sMeta.nGage) ' for ' sMeta.region{ii}], startPath);
+                    num2str(sMeta.nGage) ' for ' sMeta.region{ii}], startPathObs);
                 pathGage{ii}{jj} = fullfile(foldGage, fileGage);
 
-                disp([pathGage{ii}{jj} ' has been selected as observation data file ' num2str(jj) ' of ' num2str(sMeta.nGage) ' for ' sMeta.region{ii} '.']);
+                disp([pathGage{ii}{jj} ' has been selected as observation data file ' ...
+                    num2str(jj) ' of ' num2str(sMeta.nGage) ' for ' sMeta.region{ii} '.']);
             end
         elseif ~regexpbl(sMeta.runType,{'calibrat','validat','default'}) && ~isempty(sMeta.pathinputs)
             pathGage{ii} = cell(0,1);
@@ -344,7 +354,7 @@ if sMeta.useprevrun == 0
         disp([char(39) sPath{1}.coef char(39) ' has been chosen as the set of parameter coefficients.']);
     end
     
-    
+
     %LOAD ALL OBSERVATION DATA
     for ii = 1 : nSites
         sMeta.siteCurr = ii;
@@ -355,7 +365,7 @@ if sMeta.useprevrun == 0
             end  
             
             %Remove any duplicate or empty elements:
-            pathGage{ii} = unique(pathGage{ii}(~cellfun('isempty',pathGage{ii})));  
+            pathGage{ii} = unique(pathGage{ii}(~cellfun('isempty',pathGage{ii})), 'stable');  
             
             for zz = numel(pathGage{ii}(:)) : -1 : 1
                 if isnumeric(pathGage{ii}{zz}) || isempty(regexpi(pathGage{ii}{zz}, '[a-z]'))
@@ -575,10 +585,16 @@ end
 
 %Create function outputs
 if nargout > 0
-   varargout{1} = sOutput; 
-   if nargout > 1
+ 	varargout{1} = sOutput; 
+    if nargout > 1
        varargout{2} = sObs; 
-   end
+    end
+    if nargout > 2
+       varargout{3} = sPath; 
+    end
+    if nargout > 3
+       varargout{4} = sHydro; 
+    end
 end
 
 

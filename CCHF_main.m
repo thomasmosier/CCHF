@@ -111,8 +111,10 @@ moduleSet = { ...
     'sndrain', 'percent'; ... %snow holding capacity representation
     'sca', 'max'; ... %Snow covered area representation
     'sublimate', 'Lutz'; ... %Sublimation representation
-    'firn', 'static'; ... %firn compaction representation
-	'glaciermove', 'static'; ... %glacier movement representation
+    'firn', 'threshold'; ... %firn compaction representation
+    'glaciervel', 'sheer'; ... %glacier movement representation
+	'glaciermove', 'slide'; ... %glacier movement representation
+    'avalanche', 'angle' %snow avalanching (can be 'none')
     };
 
 %Boolean value to toggle on all glacier processes. If off, glaciers can

@@ -57,6 +57,12 @@ if ~isempty(fieldsPlot(:))
     end
     
     fldsData = fieldnames(sData);
+    for ii = numel(fldsData) : -1 : 1
+        if strcmpi(fldsData{ii}, 'all')
+            fldsData(ii) = [];
+        end
+    end
+    clear ii
     
     %Varargin can be used to specify sub-structures to plot or not to disp output:
     if ~isempty(varargin)
@@ -74,7 +80,7 @@ if ~isempty(fieldsPlot(:))
         end
     end
     
-    
+
     indFieldsPlot = cell(numel(fieldsPlot),1);
     for ii = 1 : numel(fieldsPlot)
         cntrData = 0;
@@ -106,7 +112,6 @@ if flagDataExists == 0
     warning('plot_CCHF:noData',['plot_CCHF is terminating without producing a plot because no data were found for the fields ' fldErr '.']);
     return
 end
-
 
 
 %%CREATE DATES FOR X-AXIS:
@@ -213,7 +218,7 @@ for ii = 1 : numel(indFieldsPlot)
             if any(~isnan(coordCurr))
                 strSeries{indPlot} = [fieldsPlot{ii} ' (' num2str(coordCurr(1)), ', ' num2str(coordCurr(2)) ')'];
             else
-                strSeries{indPlot} = [fieldsPlot{ii} ' (Domain Avg)'];
+                strSeries{indPlot} = [fieldsPlot{ii} ' (Domain average)'];
             end
        end
 
