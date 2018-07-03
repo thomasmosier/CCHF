@@ -28,7 +28,7 @@ global sCryo
 %WITHOUT HOLDING CAPACITY
 if isempty(varargin(:))
 	varargout{1} = cell(0,6);
-    varargout{1} = cat(1,varargout{1}, {'sn_hold', 0,   .1,    0.077, 'sndrain_percent','land'}); %Units of depth melt
+    varargout{1} = cat(1,varargout{1}, {'sn_hold', 0,   .1,    0.077, 'sndrain_percent', 'cryo'}); %Units of depth melt
     %Calibrate with 'land' routines because it is more sensitive to runoff
     %generation and flow than cryosphere
     return

@@ -19,8 +19,8 @@ global sCryo sAtm
 
 if isempty(varargin(:))
     varargout{1} = cell(0,6);
-    varargout{1} = cat(1,varargout{1}, {'watt_per_deg_snow', 10, 30, 20, 'heat_TI_Kraaijenbrink','cryo'});
-    varargout{1} = cat(1,varargout{1}, {'watt_per_deg_ice',  20, 60, 40, 'heat_TI_Kraaijenbrink','cryo'}); %Units of depth melt
+    varargout{1} = cat(1,varargout{1}, {'watt_per_deg_snow', 5, 35, 20, 'heat_TI_Kraaijenbrink','cryo'});
+    varargout{1} = cat(1,varargout{1}, {'watt_per_deg_ice',  25, 55, 40, 'heat_TI_Kraaijenbrink','cryo'}); %Units of depth melt
 
     %The degree index factor here is approx 3.9 times degree-day factors
     %with units of mm / C / day. Shea et al., 2015 find snow DD factor of
