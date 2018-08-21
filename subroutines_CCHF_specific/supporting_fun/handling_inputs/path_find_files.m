@@ -23,6 +23,17 @@ function sPath = path_find_files(sPath, sMeta)
 disp('Finding files to load during model runs. This may take several minutes (depends on number of files in directory).');
 
 gcmRefP = [-1,-1,-1]; dateStartP = [-1,-1,-1]; dateEndP = [-1,-1,-1];
+
+datesUse = sMeta.dateRun;
+if iscell(datesUse)
+    if isfield(sMeta, 'siteCurr')
+        datesUse = datesUse{sMeta.siteCurr};
+    else
+        error('pathFindFiles:noSiteCurr', ['The date field is a cellarray. '...
+            'This requires the presence of a siteCurr field to determine which index to use.']);
+    end
+end
+
 %Loop over each of the variables to load
 for ll = 1 : numel(sMeta.varLd)
     %Skip if path not present
@@ -52,7 +63,7 @@ for ll = 1 : numel(sMeta.varLd)
 
     %Files are in format that can be read by 'CMIP5_time':
     if sum(isnan(testNc(1,:))) <= 1
-            indTest = numel(sMeta.dateRun(1,:));
+            indTest = numel(datesUse(1,:));
         testDate = CMIP5_time(fileNcTemp{1});
             testDate = testDate(:,~isnan(testDate(1,:)));
             indTest = min(numel(testDate(1,:)),indTest); 
@@ -74,7 +85,7 @@ for ll = 1 : numel(sMeta.varLd)
             cal =  NC_cal(attTime);
 
             if ll == 1 || ~isequal(gcmRef, gcmRefP)
-                daysModRun  = days_since(gcmRef, sMeta.dateRun, cal);
+                daysModRun  = days_since(gcmRef, datesUse, cal);
             end
             if ll == 1 || ~isequal(dateStart, dateStartP) || ~isequal(dateEnd, dateEndP)
                 daysStart = days_since(gcmRef, dateStart, cal);
@@ -96,10 +107,10 @@ for ll = 1 : numel(sMeta.varLd)
 
             daysStart   = days_since(gcmRef, dateStart, cal);
             daysEnd     = days_since(gcmRef,   dateEnd, cal);
-            daysModRun  = days_since(gcmRef, sMeta.dateRun, cal);
+            daysModRun  = days_since(gcmRef, datesUse, cal);
         end
         
-        sPath.([sMeta.varLd{ll} 'File']) = cell(numel(sMeta.dateRun(:,1)),1);
+        sPath.([sMeta.varLd{ll} 'File']) = cell(numel(datesUse(:,1)),1);
         for kk = 1 : numel(daysModRun)
             indUse = intersect(find(daysModRun(kk) >= daysStart), find(daysModRun(kk) <= daysEnd));
             if numel(indUse) == 1
@@ -107,11 +118,11 @@ for ll = 1 : numel(sMeta.varLd)
             elseif numel(indUse) == 0
                 sPath.([sMeta.varLd{ll} 'File']){kk} = blanks(0);
                 error('path_file_find:nofile',['No climate file found for ' ...
-                    num2str(sMeta.dateRun(kk,1)) '-' num2str(sMeta.dateRun(kk,2)) ...
+                    num2str(datesUse(kk,1)) '-' num2str(datesUse(kk,2)) ...
                     '. May need to change start or end times.']);
             else
                 error('path_file_find:multfile',['Multiple climate files found for ' ...
-                    num2str(sMeta.dateRun(kk,1)) '-' num2str(sMeta.dateRun(kk,2)) '.' ]);
+                    num2str(datesUse(kk,1)) '-' num2str(datesUse(kk,2)) '.' ]);
             end
         end
         
@@ -165,20 +176,20 @@ for ll = 1 : numel(sMeta.varLd)
             end
             
             
-            sPath.([sMeta.varLd{ll} 'File']) = cell(numel(sMeta.dateRun(:,1)),1);
-            for kk = 1 : numel( sMeta.dateRun(:,1))
-                indUse = find(ismember(dateFiles, sMeta.dateRun(kk,:),'rows') == 1);
+            sPath.([sMeta.varLd{ll} 'File']) = cell(numel(datesUse(:,1)),1);
+            for kk = 1 : numel( datesUse(:,1))
+                indUse = find(ismember(dateFiles, datesUse(kk,:),'rows') == 1);
                 
                 if numel(indUse) == 1
                     sPath.([sMeta.varLd{ll} 'File']){kk} = fullfile(sPath.(sMeta.varLd{ll}), fileNcTemp{indUse});
                 elseif numel(indUse) == 0
                     sPath.([sMeta.varLd{ll} 'File']){kk} = blanks(0);
                     error('path_file_find:nofile',['No climate file found for ' ...
-                        num2str(sMeta.dateRun(kk,1)) '-' num2str(sMeta.dateRun(kk,2)) ...
+                        num2str(datesUse(kk,1)) '-' num2str(datesUse(kk,2)) ...
                         '. May need to change start or end times.']);
                 else
                     error('path_file_find:multfile',['Multiple climate files found for ' ...
-                        num2str(sMeta.dateRun(kk,1)) '-' num2str(sMeta.dateRun(kk,2)) '.' ]);
+                        num2str(datesUse(kk,1)) '-' num2str(datesUse(kk,2)) '.' ]);
                 end
             end
             %Put special indicator stating resolution of file:

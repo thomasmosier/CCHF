@@ -47,6 +47,18 @@ szFrame = [12,7];
 varLon = 'longitude';
 varLat = 'latitude';
 
+%Set current model run dates (used for solar raad and PET)
+dateStart = sMeta.dateStart;
+if iscell(dateStart)
+    if isfield(sMeta, 'siteCurr')
+        dateStart = dateStart{sMeta.siteCurr};
+    else
+        error('CchfModules:noSiteCurr', ['The date field is a cellarray. '...
+            'This requires the presence of a siteCurr field to determine which index to use.']);
+    end
+end
+
+
 %%RETRIEVE DATA FROM INPUT
 flagDataExists = 0;
 flagNoDisp = 0;
@@ -126,8 +138,8 @@ end
 if regexpbl(sMeta.dt, {'day','daily'})
     vecTsPts = (0:nTsPts-1);
 elseif regexpbl(sMeta.dt, 'month')
-    yearCurr = sMeta.dateStart(1);
-    mnthCurr = sMeta.dateStart(2);
+    yearCurr = dateStart(1);
+    mnthCurr = dateStart(2);
     
     vecTsPts = nan(nTsPts,1);
     vecTsPts(1) = 0;
@@ -246,11 +258,12 @@ end
 hLgd = legend(hTs, strSeries);
 %Change Axis Labels:
 hXLab = xlabel('Date');
-if regexpbl(sMeta.dt,{'day','daily'}) && numel(sMeta.dateStart) == 2
-    sMeta.dateStart = [sMeta.dateStart 1];
+if regexpbl(sMeta.dt,{'day','daily'}) && numel(dateStart) == 2
+    dateStart = [dateStart 1];
 end
 
-strDates = date2str(days_2_date_v2(vecTsPts, sMeta.dateStart, 'gregorian'), 'm/d/y');
+
+strDates = date2str(days_2_date_v2(vecTsPts, dateStart, 'gregorian'), 'm/d/y');
 nXTicks = round(linspace(1,nTsPts,10));
 set(gca, 'XTickLabel',strDates(nXTicks), 'XTick',(nXTicks))
 set(gca, 'XTickLabelRotation', 45);

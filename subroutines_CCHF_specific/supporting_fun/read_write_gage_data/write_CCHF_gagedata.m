@@ -26,8 +26,14 @@ varLat = {'latitude','lat'};
 namesPtsWrt = fieldnames(sObs);
 sNum = '%.6g';
 
-[dir, nameInput, ~] = fileparts(path);
-path = fullfile(dir, [nameInput '.txt']);
+[fold, nameInput, ~] = fileparts(path);
+if ~exist(fold, 'dir')
+    fold = pwd;
+    warning('writeCchfGagedata:unknownDir',['The output directory is' fold ...
+        ', which does not exist. Therefore, you will be prompted to enter the desired output directory.']);
+    fold = input(['Enter the folder path for where to write ' nameInput ':' char(10)],'s');
+end
+path = fullfile(fold, [nameInput '.txt']);
 fid = fopen(path,'wt');
 
 %Write intro string

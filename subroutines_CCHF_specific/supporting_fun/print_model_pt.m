@@ -7,6 +7,7 @@ if ~isempty(varargin(:))
     indGage = intersect(indGage(:), indInModel2d(:));
 end
 
+
 if isstruct(sData)
     szInput = size(sData.(nmCurr));
 elseif isnumeric(sData)
@@ -14,6 +15,7 @@ elseif isnumeric(sData)
 else
     error('printModelPt:unknownType',['The input is of type ' class(sData) ', which has not been programmed for. Struct or numeric is expected.']);
 end
+
 
 if numel(szInput) == 3 %3D array
     if isstruct(sData)

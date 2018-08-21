@@ -63,6 +63,7 @@ filesMODIS = dir([foldNm, filesep, fileNm(1:indPer) '*', ext]);
 datesMODIS = cell(2,1); %First cell is start date and second is end date
 [datesMODIS{:}] = deal(nan(numel(filesMODIS(:)), 3));
 
+
 for jj = 1 : numel(filesMODIS(:)) 
     indPer = regexpi(filesMODIS{jj},'\.');
     if numel(indPer) == 1 %Some scripts I have written to interpolate MODIS replace the periods with underscores...
