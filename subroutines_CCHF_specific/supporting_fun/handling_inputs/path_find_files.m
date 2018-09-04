@@ -56,7 +56,7 @@ for ll = 1 : numel(sMeta.varLd)
     end
     
     %Extract field:
-    fileNcTemp = extractfield(fileNcTemp, 'name');
+    fileNcTemp = extract_field(fileNcTemp, 'name');
 
     %Test if function can read file name (based on CMIP5 convention):
     testNc = CMIP5_time(fileNcTemp{1});
