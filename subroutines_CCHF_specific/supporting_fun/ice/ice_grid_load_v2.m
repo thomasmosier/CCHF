@@ -102,22 +102,20 @@ if isfield(sPath, 'ice') %&& ~regexpbl(sMeta.mode, 'parameter')
             sIceDem.dem = squeeze(sHydro.dem);
             sIceDem.(varLon) = sHydro.(varLon);
             sIceDem.(varLat) = sHydro.(varLat);
-            
-            nRefin = 1;
         else
             error('CCHF_vackbone:unknownIceGridType', ['The ice '...
                 'grid method is ' iceGrid ', which is not known.']);
         end
 
-
-        %Populate ice presence grid (at main resolution):
+        %Get dimensions of ice grid:
         szIce = size(sIceDem.dem);
         
         %Initialize ice structure array output:
         sIceInit = struct;
+        
 
-
-        %Define grid that is finer than main grid for estimating fractional glacier extent within each main grid cell
+        %Define grid that is finer than main grid for estimating fractional 
+        %glacier extent within each main grid cell
         if regexpbl(sMeta.iceGrid, 'fine')
             [lonMnSub, latMnSub] = meshgrid(sIceDem.(varLon), sIceDem.(varLat));
         else
@@ -125,6 +123,8 @@ if isfield(sPath, 'ice') %&& ~regexpbl(sMeta.mode, 'parameter')
             [lonMnSub, latMnSub] = grid_refine(edgeLonMain, edgeLatMain, nScl, 'edge');
         end
 
+        
+        %Load ice presence file (shp or grid)
 %         disp('Interpolating ice shapefile to finer mesh in order to estimate fractional ice area in main grid.');
         if regexpbl(sPath.ice,'.shp')
             %Read ice shapefile:
@@ -261,17 +261,18 @@ if isfield(sPath, 'ice') %&& ~regexpbl(sMeta.mode, 'parameter')
         %Check which of main grid cell the centroid of the glacier
         %grid cell is contained within
 
-        %Initialize two gris:
+        %Initialize two grids:
         %sparse grid = tracks which main grid cells contain 
             %glaciers 
         %cell array = Dim. of main grid; each non-empty cell-array
             %index contains the indices of the glacier-grid
             %centroids (including frame) contained with that main 
             %grid cell
-
         sIceInit.main2igrd = cell(szMain);
         sIceInit.igrd2main = nan(szIce(1),szIce(2), 'single');
 
+        %Populate arrays containing correspondance between main and ice
+        %grids
         for ll = 1 : numel(sHydro.dem)
             [rC, cC] = ind2sub(szMain, ll);
 
@@ -315,21 +316,27 @@ if isfield(sPath, 'ice') %&& ~regexpbl(sMeta.mode, 'parameter')
 
         %Initialize arrays to track changes in ice depth
         sIceInit.icdwe = sparse(szMain(1),szMain(2));
-        sIceInit.icdwe = sparse( szIce(1), szIce(2));
+        sIceInit.igrddwe = sparse( szIce(1), szIce(2));
         
         save(pathIceStruct, 'sIceInit');
     end
 else %In this case, ice grid same as main grid
-    sIceInit.igrdwe  = sparse(szMain(1),szMain(2));
-    sIceInit.icdwe   = sparse(szMain(1),szMain(2));
-    sIceInit.icx     =  zeros(szMain,'single');
+    sIceInit.igrddem = sHydro.dem; %Ice grid DEM
+    sIceInit.igrdlat = sHydro.(varLat);
+    sIceInit.igrdlon = sHydro.(varLon);
+    sIceInit.igrdfdr      = sHydro.fdr;
+    sIceInit.igrdslopefdr = sHydro.slopefdr;
+    sIceInit.igrdslope    = sHydro.slope;
+    sIceInit.igrdwe  = sparse(szMain(1),szMain(2)); %Ice grid water equivalent
+    sIceInit.igrddwe = sparse(szMain(1),szMain(2)); %Ice grid change in water equivalent
+    sIceInit.icdwe   = sparse(szMain(1),szMain(2)); %Main grid change in water equivalent
+    sIceInit.icx     =  zeros(szMain,'single'); %Main grid fractional ice coverage
 end
 
-keyboard
-%Write ice grids to model folder
-write_ESRI_v4(full(sIceInit.igrdwe), ESRI_hdr(sHydro.(varLon), sHydro.(varLat), 'corner'), fullfile(sPath.output, [sMeta.region{sMeta.siteCurr} '_glacier_boolean_main_grid.asc'])         , 0);
-write_ESRI_v4(full(sIceInit.icx   ), ESRI_hdr(sHydro.(varLon), sHydro.(varLat), 'corner'), fullfile(sPath.output, [sMeta.region{sMeta.siteCurr} '_glacier_fractional_cover_main_grid.asc']), 2);
 
+%Write ice grids to model folder
+write_ESRI_v4(full(sIceInit.igrdwe), ESRI_hdr(sHydro.(varLon), sHydro.(varLat), 'corner'), fullfile(sPath.output, [sMeta.region{sMeta.siteCurr} '_glacier_initial_boolean_main_grid.asc'])         , 0);
+write_ESRI_v4(full(sIceInit.icx   ), ESRI_hdr(sHydro.(varLon), sHydro.(varLat), 'corner'), fullfile(sPath.output, [sMeta.region{sMeta.siteCurr} '_glacier_initial_fractional_cover_main_grid.asc']), 2);
 
 
 %Calculate grid sizes
