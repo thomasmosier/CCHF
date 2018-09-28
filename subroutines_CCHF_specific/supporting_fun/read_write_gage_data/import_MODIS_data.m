@@ -59,7 +59,7 @@ end
 %Find all MODIS data files:
 indPer = regexpi(fileNm,'\.');
 filesMODIS = dir([foldNm, filesep, fileNm(1:indPer) '*', ext]);
-    filesMODIS = extractfield(filesMODIS, 'name');
+    filesMODIS = extract_field(filesMODIS, 'name');
 datesMODIS = cell(2,1); %First cell is start date and second is end date
 [datesMODIS{:}] = deal(nan(numel(filesMODIS(:)), 3));
 
@@ -220,9 +220,9 @@ for jj = 1 : numel(datesMODIS{1}(:,1))
 %             dataUnit = sDataCurr.attData{rUnit, cUnit+1};
 
         fInfo = ncinfo(fileC);
-            varAvail = extractfield(fInfo, 'Variables');
+            varAvail = extract_field(fInfo, 'Variables');
             if iscell(varAvail) && isstruct(varAvail{1})
-               varAvail = extractfield(varAvail{1},'Name'); 
+               varAvail = extract_field(varAvail{1},'Name'); 
             end
             
             varAvail(strcmpi(varAvail,'lon')) = [];

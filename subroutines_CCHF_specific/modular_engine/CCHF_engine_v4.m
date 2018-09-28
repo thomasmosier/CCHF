@@ -241,6 +241,9 @@ for mm = 1 : nSites
         %Initialize coef argument for assigning parameters to:
         coef = cell(0,6);
     elseif ~regexpbl(sMeta.mode,'parameter')    
+        if numel(sMeta.dateRun{mm}(1,:)) ~= numel(sMeta.dateStart{mm}(1,:))
+            error('CCHFEngine:dateMismatch', ['There is a mismatch between the precision of the start date and the date iteration loop. The start date has ' num2str(numel(sMeta.dateRun{mm}(1,:))) ' entries and the date iteration loop has ' num2str(numel(sMeta.dateStart{mm}(1,:))) '.']);
+        end
         %Determine when to start recording output:
         sMeta.indWrite = find(all(sMeta.dateRun{mm} == repmat(sMeta.dateStart{mm}, numel(sMeta.dateRun{mm}(:,1)),1),2) == 1);
 

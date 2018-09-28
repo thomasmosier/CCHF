@@ -185,18 +185,23 @@ end
 %This must come before cropping data to specific time bounds of current
 %model run:
 if flagWrt == 1
-    %Find common output directory:
-    pathOut = char(path(:));
-    indSame = find(diff(pathOut,2) == 0);
-    if numel(indSame) < 2
-        [dirOut, ~, ~] = fileparts(pathOut);
-    else
-        indRtSame = find(diff(indSame) ~= 1, 1, 'first');
-        if isempty(indRtSame)
-          dirOut = path{1}(1:indSame(end));
+    if iscell(path) && numel(path(:)) > 1
+        %Find common output directory:
+        pathOut = char(path(:));
+        indSame = find(diff(pathOut,2) == 0);
+        if numel(indSame) < 2
+            [dirOut, ~, ~] = fileparts(pathOut);
         else
-          dirOut = path{1}(1:indRtSame+1);
+            indRtSame = find(diff(indSame) ~= 1, 1, 'first');
+            if isempty(indRtSame)
+              dirOut = path{1}(1:indSame(end));
+            else
+              dirOut = path{1}(1:indSame(indRtSame)+1);
+            end
         end
+    else
+        pathTemp = char(path);
+        [dirOut, ~, ~ ] = fileparts(pathTemp);
     end
     
     strTypes = blanks(0);

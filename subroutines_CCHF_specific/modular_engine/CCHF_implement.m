@@ -14,11 +14,21 @@ end
 %and end dates for each site being modelled)
 if isnumeric(sMeta.dateStart)
     dateStartTemp = sMeta.dateStart;
+    if numel(dateStartTemp) == 2
+        dateStartTemp = [dateStartTemp, 1];
+    end
+
     sMeta.dateStart = cell(nSites, 1);
     [sMeta.dateStart{:}] = deal(dateStartTemp);
 elseif iscell(sMeta.dateStart)
     if numel(sMeta.dateStart(:)) ~= nSites
         error('cchfImplement:diffSizeStartDateRegions',['There are ' num2str(numel(sMeta.dateStart(:))) ' start dates and ' num2str(nSites) ' sites. These should be the same.']);
+    end
+    
+    for ii = 1 : numel(sMeta.dateStart(:))
+        if numel(sMeta.dateStart{ii}) == 2
+            sMeta.dateStart{ii} = [sMeta.dateStart{ii}, 1];
+        end
     end
 else
     error('cchfImplement:unknownDateStartFormat',['Start date is of format ' ...
@@ -26,11 +36,21 @@ else
 end
 if isnumeric(sMeta.dateEnd)
     dateEndTemp = sMeta.dateEnd;
+    
+    if numel(dateEndTemp) == 2
+        dateEndTemp = [dateEndTemp, eomday(dateEndTemp(1), dateEndTemp(2))];
+    end
     sMeta.dateEnd = cell(nSites, 1);
     [sMeta.dateEnd{:}] = deal(dateEndTemp);
 elseif iscell(sMeta.dateEnd)
     if numel(sMeta.dateEnd(:)) ~= nSites
         error('cchfImplement:diffSizeEndDateRegions',['There are ' num2str(numel(sMeta.dateEnd(:))) ' end dates and ' num2str(nSites) ' sites. These should be the same.']);
+    end
+    
+    for ii = 1 : numel(sMeta.dateEnd(:))
+        if numel(sMeta.dateEnd{ii}) == 2
+            sMeta.dateEnd{ii} = [sMeta.dateEnd{ii}, eomday(sMeta.dateEnd{ii}(1), sMeta.dateEnd{ii}(2))];
+        end
     end
 else
     error('cchfImplement:unknownDateEndFormat',['End date is of format ' ...
