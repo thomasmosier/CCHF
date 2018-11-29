@@ -848,11 +848,12 @@ if numel(sOutput) == nSites
 
         %Plot output
         plot_CCHF(sOutput{mm}, {'flow'}, sMeta, [pathOutRt '_flow'], strDispOut);
+        plot_CCHF(sOutput{mm}, {'flow','pr'}, sMeta, [pathOutRt '_flow_pr'], strDispOut);
         % plot_CCHF(sOutput{mm}, {'et','pet'}, sMeta, [pathOutRt '_ET'], strDispOut);
         plot_CCHF(sOutput{mm}, {'hfnet','hfrs', 'hfrl', 'hft','hfcp', 'hfgc', 'hfsnc'}, sMeta, [pathOutRt '_heat_components'],'avg', strDispOut);
         % plot_CCHF(sOutput{mm}, {'prsn','rain','et','mrro'}, sMeta, [pathOutRt '_inVsOut'],'avg', strDispOut);  
         % plot_CCHF(sOutput{mm}, {'prsn','swe','sndwe','rain','mrro','icdwe'}, sMeta, [pathOutRt '_inVsOut'],'avg', strDispOut);
-%         plot_CCHF(sOutput{mm}, {'rain','snlr','iclr'}, sMeta, [pathOutRt '_inVsOut'],'avg', strDispOut);
+        plot_CCHF(sOutput{mm}, {'rain','snlr','iclr','mrro'}, sMeta, [pathOutRt '_inVsOut'],'avg', strDispOut);
         plot_CCHF(sOutput{mm}, {'snlr','rnrf','iclr'}, sMeta, [pathOutRt '_water_release'],'avg', strDispOut);
         % plot_CCHF(sOutput{mm}, {'sndwe','icdwe'}, sMeta, [pathOutRt '_cryoChange'], strDispOut);
         plot_CCHF(sOutput{mm}, {'snw','snlw','sndwe'}, sMeta, [pathOutRt '_snw'], strDispOut);

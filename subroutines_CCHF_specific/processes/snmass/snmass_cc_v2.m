@@ -25,7 +25,7 @@ global sCryo
 
 if isempty(varargin(:))
 	varargout{1} = cell(0,6);
-    varargout{1} = cat(1,varargout{1}, {'cc_pwr', -2,   1,    -1, 'snmass_cc_v2','cryo'}); %Unitless; impacts accumulation of cold-content (negative energy)
+    varargout{1} = cat(1,varargout{1}, {'cc_scl', 0.4,   1.3,  0.8, 'snmass_cc_v2','cryo'}); %Unitless; impacts accumulation of cold-content (negative energy)
     
     %Snow temperature only impacts heat flux (e.g. longwave out)
     if isfield(sCryo,'tsn')
@@ -34,7 +34,7 @@ if isempty(varargin(:))
     
     return
 else
-    ccPwr = find_att(varargin{1}.coef,'cc_pwr'); 
+    ccScl = find_att(varargin{1}.coef,'cc_scl'); 
     
     if isfield(sCryo,'tsn')
         tsnPwr = find_att(varargin{1}.coef,'tsn_pwr');
@@ -82,7 +82,7 @@ sCryo.lhpme = time2sec(1,sMeta.dt,sMeta.dateCurr)*sCryo.hfnet/cLate;
 %Increase cold-conent if negative heat energy input:
 indNegEn = find(sCryo.lhpme < 0);
 if ~isempty(indNegEn)
-   sCryo.sncc(indNegEn) = sCryo.sncc(indNegEn) - 10^(ccPwr)*sCryo.lhpme(indNegEn);
+   sCryo.sncc(indNegEn) = sCryo.sncc(indNegEn) - ccScl*sCryo.lhpme(indNegEn);
 end
 
 

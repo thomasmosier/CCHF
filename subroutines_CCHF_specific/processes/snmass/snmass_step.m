@@ -48,7 +48,7 @@ end
 
 
 %Calculate melt potential using simple degree indec formulation (units of m): 
-sCryo.lhpme = time2sec(1,sMeta.dt,sMeta.dateCurr)*sCryo.hfnet/cLate;
+sCryo.lhpme = squeeze(time2sec(1,sMeta.dt,sMeta.dateCurr)*sCryo.hfnet/cLate);
 % % %Set melt potential to zero at cells where temperature less than threshold:
 % sCryo.lhpme(sCryo.lhpme < 0 ) = 0;
 
@@ -89,7 +89,7 @@ end
 indMelt = find( sCryo.lhpme > 0);
 if ~isempty(indMelt)
     %Grid cells where melt is limited by amount of snow
-    indMeltAll = find(sCryo.lhpme(indMelt) >= sCryo.snw);
+    indMeltAll = find(sCryo.lhpme(indMelt) >= sCryo.snw(indMelt));
     sCryo.lhsnme(indMelt(indMeltAll)) = sCryo.snw(indMelt(indMeltAll));
     
     %Grid cells where melt is limited by energy
@@ -99,7 +99,7 @@ if ~isempty(indMelt)
         indMeltSome = setdiff(indMelt, indMelt(indMeltAll));
     end
     if ~isempty(indMeltSome)
-        sCryo.lhsnme(indMelt(indMeltSome)) = sCryo.lhpme(indMelt(indMeltSome));
+        sCryo.lhsnme(indMeltSome) = sCryo.lhpme(indMeltSome);
     end
     
     %Balance values (including adding melted snow to liquid water content):
