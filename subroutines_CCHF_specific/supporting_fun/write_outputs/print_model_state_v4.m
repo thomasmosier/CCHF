@@ -65,7 +65,21 @@ else
     %On first iteration, create output structure array:
     if indTsPrintCurr == 1 || isempty(sModOut)
         sModOut = struct;
-        outDate = date_vec_fill(sMeta.dateStart, sMeta.dateEnd, 'Gregorian');
+        
+        %Set current run dates (used for initialization
+        datesUse = sMeta.dateRun;
+        if iscell(datesUse)
+            if isfield(sMeta, 'siteCurr')
+                datesUse = datesUse{sMeta.siteCurr};
+                dateStart = sMeta.dateStart{sMeta.siteCurr};
+                dateEnd = sMeta.dateEnd{sMeta.siteCurr};
+            else
+                error('CchfModules:noSiteCurr', ['The date field is a cellarray. '...
+                    'This requires the presence of a siteCurr field to determine which index to use.']);
+            end
+        end
+        
+        outDate = date_vec_fill(dateStart, dateEnd, 'Gregorian');
         szInitPt = [numel(outDate(:,1)),1];
         szInit3d = [numel(outDate(:,1)),numel(sHydro.(varLat)),numel(sHydro.(varLon))];
         
@@ -76,7 +90,6 @@ else
             edgLon = box_edg(sCryo.iceLon);
             szIce = size(sCryo.iceDem);
         end
-        
 
         %Loop over all variables to output
         for kk = 1 : numel(sMeta.output{sMeta.siteCurr}(:,1)) 
@@ -121,16 +134,16 @@ else
                         %Find mb dates (different from other fields because there's a start and end date):
                         indMbStrt = [];
                         indMbEnd = [];
-                        unqYrs = unique(sMeta.dateRun(:,1));
+                        unqYrs = unique(datesUse(:,1));
                         for zz = 1 : numel(unqYrs)
-                            indMbStrtTemp = find(ismember(sMeta.dateRun, [unqYrs(zz)-1, sMeta.dateGlac], 'rows')) + 1;
-                            indMbEndTemp  = find(ismember(sMeta.dateRun, [unqYrs(zz), sMeta.dateGlac(1,:)], 'rows'));
+                            indMbStrtTemp = find(ismember(datesUse, [unqYrs(zz)-1, sMeta.dateGlac], 'rows')) + 1;
+                            indMbEndTemp  = find(ismember(datesUse, [unqYrs(zz), sMeta.dateGlac(1,:)], 'rows'));
                             
                             %Colllect dates during years containing both a
                             %start and an end for mb:
                             if ~isempty(indMbStrtTemp) && ~isempty(indMbEndTemp)
                                 %Ensure mb dates do not include spin-up:
-                                if days_since(sMeta.dateCurr, sMeta.dateRun(indMbStrtTemp,:), 'gregorian') >= 0
+                                if days_since(sMeta.dateCurr, datesUse(indMbStrtTemp,:), 'gregorian') >= 0
                                     indMbStrt = [indMbStrt; indMbStrtTemp];
                                     indMbEnd  = [ indMbEnd;  indMbEndTemp];
                                 end
@@ -138,8 +151,8 @@ else
                         end
 
                         %Assign mb dates:
-                        sModOut.all.(varMbDateStrt) = sMeta.dateRun(indMbStrt,:);
-                        sModOut.all.(varMbDateEnd) = sMeta.dateRun(indMbEnd,:);
+                        sModOut.all.(varMbDateStrt) = datesUse(indMbStrt,:);
+                        sModOut.all.(varMbDateEnd) = datesUse(indMbEnd,:);
                         
                         %Initialize output:
                         sModOut.all.(varCurr) = nan([numel(indMbEnd), szInit3d(2:3)], 'single');
@@ -189,12 +202,12 @@ else
                             varMbDateEnd = [varCurr '_dateEnd'];
 
                             %Find mb dates (different from other fields because there's a start and end date):
-                            indFirst = find(ismember(sMeta.dateRun, [sMeta.dateCurr(1)-1, sMeta.dateGlac], 'rows')) + 1;
-                            indMbStrt = ismember(sMeta.dateRun(:,2:end), sMeta.dateRun(indFirst,2:end), 'rows');
-                            indMbEnd = ismember(sMeta.dateRun(:,2:end), sMeta.dateGlac(1,:), 'rows');
+                            indFirst = find(ismember(datesUse, [sMeta.dateCurr(1)-1, sMeta.dateGlac], 'rows')) + 1;
+                            indMbStrt = ismember(datesUse(:,2:end), datesUse(indFirst,2:end), 'rows');
+                            indMbEnd = ismember(datesUse(:,2:end), sMeta.dateGlac(1,:), 'rows');
 
-                            sModOut.(ptWrtCurr).(varMbDateStrt) = sMeta.dateRun(indMbStrt,:);
-                            sModOut.(ptWrtCurr).(varMbDateEnd) = sMeta.dateRun(indMbEnd,:);
+                            sModOut.(ptWrtCurr).(varMbDateStrt) = datesUse(indMbStrt,:);
+                            sModOut.(ptWrtCurr).(varMbDateEnd) = datesUse(indMbEnd,:);
                             
                             sModOut.(ptWrtCurr).(varCurr) = nan(numel(indMbEnd), 1, 'single');
                         else

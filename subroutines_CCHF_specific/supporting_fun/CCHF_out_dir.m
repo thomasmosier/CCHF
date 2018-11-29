@@ -75,10 +75,14 @@ end
 indUnd = regexpi(strModules,'_');
 strModules = strModules(1:indUnd(min(4,numel(indUnd)))-1);
 
+%Find model dates (for output directory name)
+dateStr = date_range_str(sMeta.dateStart, sMeta.dateEnd);
+% if ~isempty(strEndMult)
+%     strEndMult = ['_' strEndMult];
+% end
+
 %Name of output subdirectory:
-dirCCHF = [sMeta.runType '_' ...
-    num2str(sMeta.dateStart(1)) 'thru' num2str(sMeta.dateEnd(1)) ...
-    '-' strModules];
+dirCCHF = [sMeta.runType '_' dateStr '_' strModules];
 
 
 %Ensure output directory unique (doesn't write over existing data):

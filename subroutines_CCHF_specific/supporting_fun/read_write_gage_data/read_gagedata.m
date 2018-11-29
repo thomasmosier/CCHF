@@ -105,7 +105,7 @@ for ii = 1 : numel(path(:))
         elseif regexpbl(path{ii},{'snow','radar'},'and') || regexpbl(path{ii},'swe')
             dataType{end+1} = 'radar';
         end
-    elseif regexpbl(path{ii}, 'MOD') && regexpbl(path{ii}, {'hdf','nc'}) %MODIS DATA
+    elseif ~isempty(regexp(path{ii}, 'MOD')) && regexpbl(path{ii}, {'hdf','nc'}) %MODIS DATA
         flagWrt = 1;
         
         if all2d(isnan(lon)) && all2d(isnan(lat)) 
@@ -116,7 +116,7 @@ for ii = 1 : numel(path(:))
         
         sGageCurr = import_MODIS_data(path{ii}, lon, lat, mask);
     	dataType{end+1} = 'casi'; %Stands for Covered Area Snow and Ice
-    elseif regexpbl(ext, {'.asc','.txt', '.nc'}) && regexpbl(fileNm, {'geodetic','AST-KH9','AST-SRTM'})
+    elseif regexpbl(ext, {'.asc','.txt', '.nc'}) && regexpbl(fileNm, {'geodetic','dDEM', 'Bolch'})
         flagWrt = 1;
         
         if all2d(isnan(lon)) && all2d(isnan(lat)) 
@@ -129,7 +129,8 @@ for ii = 1 : numel(path(:))
         dataType{end+1} = 'geodetic'; %Mass balance at main grid
     else
         error('read_CCHF_geodata:unknownType',['Filename ' char(39) fileNm char(39) ...
-            ' is not a recognized input type. Program more observation data type.']);
+            ' is not a recognized input type. Program more observation data type. '...
+            'See if/else-if statements in this function for list of programmed data identifiers.']);
     end
 
 
@@ -184,18 +185,23 @@ end
 %This must come before cropping data to specific time bounds of current
 %model run:
 if flagWrt == 1
-    %Find common output directory:
-    pathOut = char(path(:));
-    indSame = find(diff(pathOut,2) == 0);
-    if numel(indSame) < 2
-        [dirOut, ~, ~] = fileparts(pathOut);
-    else
-        indRtSame = find(diff(indSame) ~= 1, 1, 'first');
-        if isempty(indRtSame)
-          dirOut = path{1}(1:indSame(end));
+    if iscell(path) && numel(path(:)) > 1
+        %Find common output directory:
+        pathOut = char(path(:));
+        indSame = find(diff(pathOut,2) == 0);
+        if numel(indSame) < 2
+            [dirOut, ~, ~] = fileparts(pathOut);
         else
-          dirOut = path{1}(1:indRtSame+1);
+            indRtSame = find(diff(indSame) ~= 1, 1, 'first');
+            if isempty(indRtSame)
+              dirOut = path{1}(1:indSame(end));
+            else
+              dirOut = path{1}(1:indSame(indRtSame)+1);
+            end
         end
+    else
+        pathTemp = char(path);
+        [dirOut, ~, ~ ] = fileparts(pathTemp);
     end
     
     strTypes = blanks(0);

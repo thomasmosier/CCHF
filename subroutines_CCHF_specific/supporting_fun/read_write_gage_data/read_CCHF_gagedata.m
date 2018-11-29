@@ -146,7 +146,7 @@ else
         typeEval  = '';
 
         if ~isempty(pathLd)
-            if regexpbl(pathLd, 'MOD')
+            if ~isempty(strcmp(pathLd, 'MOD')) && ~isempty(regexpi(pathLd, '\d{7,7}'))
 %                 disp('interpolating MODIS')
                 sGageCurr = import_MODIS_data(pathLd, lon, lat, mask, 'interp');
 
@@ -179,7 +179,7 @@ else
                 else
                     flgData = []; 
                 end
-            elseif regexpbl(pathLd, {'geodetic','AST-KH9','AST-SRTM'})
+            elseif regexpbl(pathLd, {'geodetic', 'dDem','Bolch', 'AST-KH9', 'AST-SRTM'})
 %                 disp('AST_Kh9')
                 sGageCurr = import_geodetic_data(pathLd, lon, lat, mask, 'interp');
 

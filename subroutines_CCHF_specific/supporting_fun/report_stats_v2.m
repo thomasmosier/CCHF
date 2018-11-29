@@ -109,7 +109,10 @@ end
 
 %Write output to CCHF formatted text file:
 if blWrt
-    nmOutputRoot = [sMeta.runType, '_' date2str(sMeta.dateStart,'_'), 'thru' date2str(sMeta.dateEnd,'_')];
+    %Set current model run dates
+    dateStr = date_range_str(sMeta.dateStart, sMeta.dateEnd);
+
+    nmOutputRoot = [sMeta.runType, '_' dateStr];
     outputRoot = fullfile(dirStats, nmOutputRoot);
     pathOutput = [outputRoot '_modelled.txt'];
     write_CCHF_gagedata(pathOutput, sOutput);

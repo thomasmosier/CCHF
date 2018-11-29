@@ -47,6 +47,16 @@ global sAtm
 varLon = 'longitude';
 varLat = 'latitude';
 
+datesUse = sMeta.dateRun;
+if iscell(datesUse)
+    if isfield(sMeta, 'siteCurr')
+        datesUse = datesUse{sMeta.siteCurr};
+    else
+        error('loadTsEqual:noSiteCurr', ['The date field is a cellarray. '...
+            'This requires the presence of a siteCurr field to determine which index to use.']);
+    end
+end
+
 %Exit function if all requested data already loaded:
 if ~isempty(dateCurr) && ~all(isnan(dateCurr))
     for ll = 1 : numel(sMeta.varLd) %Loop over all variables to load
@@ -61,7 +71,7 @@ if ~isempty(dateCurr) && ~all(isnan(dateCurr))
         %Check if sAtm already contains needed data
         %If so, skip rest of this function (do not re-load data)
         if isfield(sAtm, varCurr) && isfield(sAtm, ['date' varCurr])
-            indCurr = ismember(sAtm.(['date' varCurr]), sMeta.dateRun(sMeta.indCurr,:),'rows');
+            indCurr = ismember(sAtm.(['date' varCurr]), datesUse(sMeta.indCurr,:),'rows');
             if any(indCurr == 1)
                 sAtm.(['ind' varCurr]) = find(indCurr == 1, 1, 'first');
                 continue
@@ -201,7 +211,7 @@ if ~isempty(dateCurr) && ~all(isnan(dateCurr))
 
                 %If precipitation, assumes units are mm:
                 if regexpbl(varCurr, 'pr')
-                    if isequal(dateCurr, sMeta.dateRun(1,:))
+                    if isequal(dateCurr, datesUse(1,:))
                         warning('load_ts:preConvert',['Units of the '...
                             'precipitation input are assumed to be '...
                             'mm, which are being converted to m.']);
@@ -210,7 +220,7 @@ if ~isempty(dateCurr) && ~all(isnan(dateCurr))
                 end
 
             else
-                sMeta.dateCurr = sMeta.dateRun(sMeta.indCurr,:);
+                sMeta.dateCurr = datesUse(sMeta.indCurr,:);
                 sDataCurr = read_geodata(sPath.([varCurr 'File']){sMeta.indCurr}, sMeta, 'no_disp');
                 sDataCurr.data = single(sDataCurr.data);
             end
@@ -333,7 +343,7 @@ if ~isempty(dateCurr) && ~all(isnan(dateCurr))
         %Transfer data from current variable to combined data structure
         %array:
         sAtm.(varCurr) = sDataCurr.data;
-        indCurr = ismember(sAtm.(['date' varCurr]), sMeta.dateRun(sMeta.indCurr,:), 'rows');
+        indCurr = ismember(sAtm.(['date' varCurr]), datesUse(sMeta.indCurr,:), 'rows');
         if ~any(indCurr)
            error('load_ts_equal:noInd',['At time indice ' num2str(sMeta.indCurr) ...
                ' no ' varCurr ' date was found.']);

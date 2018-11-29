@@ -63,7 +63,7 @@ varLon = 'longitude';
 %requirement. Default value is huge, then is edited below.
 indEval = 10^6;
 fitTest = 'KGE';
-dateEval = sMeta.dateRun(end,:);
+dateEval = sMeta.dateRun{1}(end,:);
 fitReq = 100;
 blEval = 0;
 evalAtt = cell(0,0);
@@ -137,12 +137,12 @@ if ~isempty(varargin(:)) && numel(varargin(:)) > 0
         dateEval = find_att(evalAtt, 'dateEval');
         fitReq   = find_att(evalAtt, 'fitReq');
     end
-    if numel(sMeta.dateRun(1,:)) > numel(dateEval)
-        dateEval = [dateEval, ones(1, numel(sMeta.dateRun(1,:)) - numel(dateEval))];
-    elseif numel(sMeta.dateRun(1,:)) < numel(dateEval)
-        dateEval = dateEval(1:numel(sMeta.dateRun(1,:)));
+    if numel(sMeta.dateRun{1}(1,:)) > numel(dateEval)
+        dateEval = [dateEval, ones(1, numel(sMeta.dateRun{1}(1,:)) - numel(dateEval))];
+    elseif numel(sMeta.dateRun{1}(1,:)) < numel(dateEval)
+        dateEval = dateEval(1:numel(sMeta.dateRun{1}(1,:)));
     end
-    indEval = find(ismember(sMeta.dateRun, dateEval, 'rows') == 1);
+    indEval = find(ismember(sMeta.dateRun{1}, dateEval, 'rows') == 1);
     if isempty(indEval)
         strDateEval = blanks(0);
         for kk = 1 : numel(dateEval)
@@ -226,11 +226,11 @@ for mm = 1 : nSites
         disp(['The CCHF model is being run in ' char(39) sMeta.mode char(39) ' mode.']);
         %Define date vector of time steps to loop over:
         if regexpbl(sMeta.dt,'month')
-            sMeta.dateRun = nan(1,2);
+            sMeta.dateRun{mm} = nan(1,2);
         elseif regexpbl(sMeta.dt,{'day','daily'})
-            sMeta.dateRun = nan(1,3);
+            sMeta.dateRun{mm} = nan(1,3);
         elseif regexpbl(sMeta.dt,'hour')
-            sMeta.dateRun = nan(1,4);
+            sMeta.dateRun{mm} = nan(1,4);
         else
             error('backbone:dtUnknown',[sMeta.dt ' is an unknown time-step']);
         end
@@ -241,8 +241,11 @@ for mm = 1 : nSites
         %Initialize coef argument for assigning parameters to:
         coef = cell(0,6);
     elseif ~regexpbl(sMeta.mode,'parameter')    
+        if numel(sMeta.dateRun{mm}(1,:)) ~= numel(sMeta.dateStart{mm}(1,:))
+            error('CCHFEngine:dateMismatch', ['There is a mismatch between the precision of the start date and the date iteration loop. The start date has ' num2str(numel(sMeta.dateRun{mm}(1,:))) ' entries and the date iteration loop has ' num2str(numel(sMeta.dateStart{mm}(1,:))) '.']);
+        end
         %Determine when to start recording output:
-        sMeta.indWrite = find(all(sMeta.dateRun == repmat(sMeta.dateStart, numel(sMeta.dateRun(:,1)),1),2) == 1);
+        sMeta.indWrite = find(all(sMeta.dateRun{mm} == repmat(sMeta.dateStart{mm}, numel(sMeta.dateRun{mm}(:,1)),1),2) == 1);
 
         %Determine if climate input files have been clipped and aligned to
         %input DEM (if so, code field that will expedite loading process):
@@ -320,25 +323,24 @@ for mm = 1 : nSites
                 sMeta.progress ' is not recognized.'])
         end
 
-        uniqTs = unique(sMeta.dateRun(:,1:indEnd),'rows');
+        uniqTs = unique(sMeta.dateRun{mm}(:,1:indEnd),'rows');
 
         sMeta.indUpdate = nan(numel(uniqTs(:,1)),1);
         for zz = 1 : numel(uniqTs(:,1))
-            sMeta.indUpdate(zz) = find(ismember(sMeta.dateRun(:,1:indEnd), uniqTs(zz,1:indEnd), 'rows') == 1, 1, 'first');
+            sMeta.indUpdate(zz) = find(ismember(sMeta.dateRun{mm}(:,1:indEnd), uniqTs(zz,1:indEnd), 'rows') == 1, 1, 'first');
         end
     end
 
 
-
     szDem = size(sHydro{mm}.dem);
-    nTS  = numel(sMeta.dateRun(:,1));
+    nTS  = numel(sMeta.dateRun{mm}(:,1));
 
 
     %Enter time loop:
     for ii = 1 : nTS
-        sMeta.dateCurr = sMeta.dateRun(ii,:);
+        sMeta.dateCurr = sMeta.dateRun{mm}(ii,:);
         sMeta.indCurr = ii;
-    %     disp(['iteration ' num2str(ii) ' of ' num2str(numel(sMeta.dateRun(:,1)))]);
+    %     disp(['iteration ' num2str(ii) ' of ' num2str(numel(sMeta.dateRun{mm}(:,1)))]);
 
         if isfield(sMeta, 'indUpdate')
             if any(ii == sMeta.indUpdate)
@@ -388,11 +390,11 @@ for mm = 1 : nSites
             end
             %Set date (month/day) when glacier mass balance will be
             %processed.
-            if all(~isnan(sMeta.dateStart))
-                dateTemp = days_2_date_v2(-1, sMeta.dateStart, 'gregorian');
+            if all(~isnan(sMeta.dateStart{mm}))
+                dateTemp = days_2_date_v2(-1, sMeta.dateStart{mm}, 'gregorian');
                 sMeta.dateGlac = dateTemp(2:end);
             else
-                sMeta.dateGlac = nan(size(sMeta.dateStart));
+                sMeta.dateGlac = nan(size(sMeta.dateStart{mm}));
                 warning('cchfEngine:dateStartNan','The start date vector contains nan values. This is not allowed.');
             end
 
@@ -433,7 +435,7 @@ for mm = 1 : nSites
 %         %UPDATE TIME INDICES for sAtm (potentially used when loading climate
 %         %inputs)
 %         if ~regexpbl(sMeta.mode,'parameter')
-%             [sAtm.indCurr, ~] = geodata_time_ind(sAtm, sMeta.dateRun(ii,:));
+%             [sAtm.indCurr, ~] = geodata_time_ind(sAtm, sMeta.dateRun{mm}(ii,:));
 %         end
 
     %%FITTING PARAMETERS FOR PRE AND TMP:
@@ -471,7 +473,7 @@ for mm = 1 : nSites
 
 
 
-    %%IMPLEMENT MODULES:
+        %%IMPLEMENT MODULES:
         if regexpbl(sMeta.mode,'parameter')
             coefTemp = cat(1,coef, CCHF_modules(sHydro{mm}, sMeta));
             %In case there are coefficients with dependencies, need to
@@ -517,8 +519,8 @@ for mm = 1 : nSites
                 break
             end
         end
-    end
-end
+    end %End of time loop
+end %End of site loop
 
 
 %%assign information to output arguments:

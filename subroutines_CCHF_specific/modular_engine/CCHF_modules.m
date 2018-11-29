@@ -32,6 +32,17 @@ if regexpbl(sMeta.mode,'parameter')
    coef = cell(0,6); 
 end
 
+%Set current model run dates (used for solar raad and PET)
+datesUse = sMeta.dateRun;
+if iscell(datesUse)
+    if isfield(sMeta, 'siteCurr')
+        datesUse = datesUse{sMeta.siteCurr};
+    else
+        error('CchfModules:noSiteCurr', ['The date field is a cellarray. '...
+            'This requires the presence of a siteCurr field to determine which index to use.']);
+    end
+end
+
 
 %Initialize ice thickness on first iteration:
 if ~regexpbl(sMeta.mode,'parameter') && sMeta.indCurr == 1
@@ -114,12 +125,13 @@ end
 %TOP OF ATMOSPHERE SOLAR RADIATION (not used in simple degree index):
 if ~blSimpleMod
     toaMod = find_att(sMeta.module,'toa');
+
     if regexpbl(toaMod, 'DeWalle')
         if regexpbl(sMeta.mode,'parameter')
             coef = cat(1,coef, toa_rad_DeWalle([], sHydro));
         else
             if ~isfield(sAtm,'rsdt')
-                toa_rad_DeWalle(sMeta.dateRun, sHydro, sMeta);
+                toa_rad_DeWalle(datesUse, sHydro, sMeta);
             end
         end
     elseif regexpbl(toaMod,'Liston')
@@ -127,7 +139,7 @@ if ~blSimpleMod
             coef = cat(1,coef, toa_rad_Liston([], sHydro));
         else
             if ~isfield(sAtm,'rsdt')
-                toa_rad_Liston(sMeta.dateRun, sHydro, sMeta);
+                toa_rad_Liston(datesUse, sHydro, sMeta);
             end
         end
         %
@@ -424,10 +436,10 @@ end
 petMod = find_att(sMeta.module,'pet');
 if regexpbl(petMod, 'Hammon') %Use Hammon formulation
     if regexpbl(sMeta.mode, 'parameter')
-        coef = cat(1,coef, PET_Hammon(sMeta.dateRun, sHydro));
+        coef = cat(1,coef, PET_Hammon(datesUse, sHydro));
     else
         if ~isfield(sLand, 'pet') || ~isfield(sLand, 'datepet')
-            PET_Hammon(sMeta.dateRun, sHydro, sMeta);
+            PET_Hammon(datesUse, sHydro, sMeta);
         end
     end
 elseif regexpbl(petMod, 'Hargreaves') %Use Hargreaves formulation

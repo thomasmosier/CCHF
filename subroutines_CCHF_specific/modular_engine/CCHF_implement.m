@@ -10,8 +10,56 @@ else
         'format of the region input variable.']);
 end
 
-sMeta.('rtDir')    = cell(nSites, 1);
-sMeta.('output')   = cell(nSites, 1);
+%Convert start and end dates to cell arrays (this allows different start
+%and end dates for each site being modelled)
+if isnumeric(sMeta.dateStart)
+    dateStartTemp = sMeta.dateStart;
+    if numel(dateStartTemp) == 2
+        dateStartTemp = [dateStartTemp, 1];
+    end
+
+    sMeta.dateStart = cell(nSites, 1);
+    [sMeta.dateStart{:}] = deal(dateStartTemp);
+elseif iscell(sMeta.dateStart)
+    if numel(sMeta.dateStart(:)) ~= nSites
+        error('cchfImplement:diffSizeStartDateRegions',['There are ' num2str(numel(sMeta.dateStart(:))) ' start dates and ' num2str(nSites) ' sites. These should be the same.']);
+    end
+    
+    for ii = 1 : numel(sMeta.dateStart(:))
+        if numel(sMeta.dateStart{ii}) == 2
+            sMeta.dateStart{ii} = [sMeta.dateStart{ii}, 1];
+        end
+    end
+else
+    error('cchfImplement:unknownDateStartFormat',['Start date is of format ' ...
+        class(sMeta.dateStart) ', but numeric or cell expected.']);
+end
+if isnumeric(sMeta.dateEnd)
+    dateEndTemp = sMeta.dateEnd;
+    
+    if numel(dateEndTemp) == 2
+        dateEndTemp = [dateEndTemp, eomday(dateEndTemp(1), dateEndTemp(2))];
+    end
+    sMeta.dateEnd = cell(nSites, 1);
+    [sMeta.dateEnd{:}] = deal(dateEndTemp);
+elseif iscell(sMeta.dateEnd)
+    if numel(sMeta.dateEnd(:)) ~= nSites
+        error('cchfImplement:diffSizeEndDateRegions',['There are ' num2str(numel(sMeta.dateEnd(:))) ' end dates and ' num2str(nSites) ' sites. These should be the same.']);
+    end
+    
+    for ii = 1 : numel(sMeta.dateEnd(:))
+        if numel(sMeta.dateEnd{ii}) == 2
+            sMeta.dateEnd{ii} = [sMeta.dateEnd{ii}, eomday(sMeta.dateEnd{ii}(1), sMeta.dateEnd{ii}(2))];
+        end
+    end
+else
+    error('cchfImplement:unknownDateEndFormat',['End date is of format ' ...
+        class(sMeta.dateEnd) ', but numeric or cell expected.']);
+end
+
+
+sMeta.('rtDir')  = cell(nSites, 1);
+sMeta.('output') = cell(nSites, 1);
 
 sObs = cell(nSites, 1);
 
@@ -58,6 +106,22 @@ if sMeta.useprevrun == 0
     %If this field populated here, it wont be populated inside each model call,
     %which saves time
     sMeta = dates_run(sMeta, 'spin');
+    %Ensure format of sMeta.dateRun is consistent with sMeta.dateStart and
+    %regions
+    if isfield(sMeta, 'dateRun')
+        if isnumeric(sMeta.dateRun)
+            %Make dateRun into cell array of same size as number of regions
+            datesTemp = sMeta.dateRun;
+            sMeta.dateRun = cell(nSites, 1);
+            [sMeta.dateRun{:}] = deal(datesTemp);
+        elseif ~iscell(sMeta.dateRun)
+            error('cchfImplement:dateRunFormatUnknown', ['The format of sMeta.dateRun is ' ...
+                class(sMeta.dateRun) ', which is not expected.']);
+        end
+    else
+        error('cchfImplement:dateRunNotField', ['dateRun does not exist as '...
+            'a field of sMeta, which is not expected.']);
+    end
     sMeta.progress = 'year';
 
     %Load global constants from funtion:
@@ -180,6 +244,7 @@ if sMeta.useprevrun == 0
 
             %UI to locate ice thickness grid (if specified)
             iceWEMod = find_att(sMeta.module, 'glacier0');
+            foldIcWe = '';
             if strcmpi(iceWEMod, 'external') && ~regexpbl(sMeta.iceGrid, 'none')
                 uiwait(msgbox(sprintf(['Select the ice thickness grid (expressed as water equivalent, meters depth) for ' ...
                     sMeta.region{ii} '.\n']), '(Click OK to Proceed)','modal'));
@@ -197,10 +262,15 @@ if sMeta.useprevrun == 0
             
             %Load debris cover thickness grid (if single value, assumed uniform thickness):
             if sMeta.blDebris && ~regexpbl(sMeta.iceGrid, 'none')
+                if ~isempty(foldIcWe)
+                    startIce = foldIcWe;
+                else
+                    startIce = startPath;
+                end
                 uiwait(msgbox(sprintf(['Select the debris cover thickness grid (meters depth) for ' ...
                     sMeta.region{ii} '.\n']), '(Click OK to Proceed)','modal'));
                 [fileDeb, foldDeb] = uigetfile({'*.asc';'*.txt'},['Select the debris cover thickness grid for ' ...
-                    sMeta.region{ii}], startPath);
+                    sMeta.region{ii}], startIce);
                 sPath{ii}.icdbr = fullfile(foldDeb, fileDeb);
                 disp([char(39) sPath{ii}.icdbr char(39) ' has been chosen as the debris cover thickness grid.']);
 
@@ -213,10 +283,15 @@ if sMeta.useprevrun == 0
 
             %Load ice pond fraction
             if sMeta.blIcePond == 1  && ~regexpbl(sMeta.iceGrid, 'none')
+                if ~isempty(foldIcWe)
+                    startIce = foldIcWe;
+                else
+                    startIce = startPath;
+                end
                 uiwait(msgbox(sprintf(['Select the glacier pond fraction grid (range = 0 to 1) for ' ...
                     sMeta.region{ii} '.\n']), '(Click OK to Proceed)','modal'));
                 [fileIcePnd, foldIcePnd] = uigetfile({'*.asc';'*.txt'},['Select the glacier pond fraction grid for ' ...
-                    sMeta.region{ii}], startPath);
+                    sMeta.region{ii}], startIce);
                 sPath{ii}.icpndx = fullfile(foldIcePnd, fileIcePnd);
                 disp([char(39) sPath{ii}.icpndx char(39) ' has been chosen as the glacier pond fraction grid.']);
 
@@ -328,7 +403,7 @@ if sMeta.useprevrun == 0
     %display message for location of output folder:
     if numel(nSites) > 1
        uiwait(msgbox(sprintf(['Model outputs will be written to a subfolder of ' ...
-           sMeta.regions{1} ' because this region is listed first.\n']), ...
+           sMeta.region{1} ' because this region is listed first.\n']), ...
            '(Click OK to Proceed)','modal'));
     end
 
@@ -375,7 +450,7 @@ if sMeta.useprevrun == 0
             
             %Load observation data:
             [sObs{ii}, pathCchfGage] = read_gagedata(pathGage{ii}, sHydro{ii}.(varLon), sHydro{ii}.(varLat), ...
-                'time',[sMeta.dateStart;sMeta.dateEnd], ...
+                'time',[sMeta.dateStart{ii};sMeta.dateEnd{ii}], ...
                 'mask',sHydro{ii}.dem);
             
             %Save path to CCHF formatted obersvation data (to save and use
@@ -390,6 +465,7 @@ if sMeta.useprevrun == 0
         if isempty(sMeta.output{ii})
            sMeta.output{ii} = sMeta.addoutput;
         end
+
         [sMeta.output{ii}, sObs{ii}] = output_all_gage(sMeta.output{ii}, sObs{ii}, sHydro{ii}.(varLon), sHydro{ii}.(varLat));
     end
     clear ii
@@ -436,7 +512,6 @@ if sMeta.useprevrun == 0
     end
 
 
-
     %%DISPLAY RELEVENT CONTENT TO CONSOLE
     %Display modules chosen:
     disp('The chosen set of module representations is: ');
@@ -451,11 +526,12 @@ if sMeta.useprevrun == 0
     %Display modeling package being used and user choices:
     [~,dFold1,dFold2] = fileparts(pwd);
     disp([char(39) dFold1 dFold2 char(39) ' is being used.' char(10)]);
-    disp_CCHF_meta_v2(sPath, sMeta)  
+    disp_CCHF_meta_v2(sPath, sMeta);
 
 
     %Find individual files to load each timestep (saves time later)
     for ii = 1 : nSites
+        sMeta.siteCurr = ii;
         sPath{ii} = path_find_files(sPath{ii}, sMeta);    
     %     %Record root directory in sMeta (for use during simulations)
     %     indOutRt = regexpi(sPath{ii}.output,filesep);
@@ -467,7 +543,7 @@ if sMeta.useprevrun == 0
 
     %Save input paths in file for possible future use
     if isempty(sMeta.pathinputs)
-        [dirInputs, ~, ~] = fileparts(sMeta.rtDir{1});
+        [dirInputs, ~, ~] = fileparts(sPath{1}.output);
         fileInputs = 'CCHF_saved_input_paths_4';
         for ii = 1 : nSites
             fileInputs = [fileInputs '_' sMeta.region{ii}];
@@ -479,7 +555,7 @@ if sMeta.useprevrun == 0
         disp(['Paths of all input data used saved to ' pathInputs char(10) 'This path can be set in main script to supress UI for loading inputs. You can customize the file name and location.'])
     end
     
-    
+
     %%RUN THE HYDROLOGIC MODEL:
     tStrt = now;
     % sOutput = cell(1,1);
@@ -660,7 +736,6 @@ if ~regexpbl(sMeta.runType,'sim')
         %Loop over outer-set (either number of sites or number of parameter
         %sets)
         warning('off', 'MATLAB:mir_warning_maybe_uninitialized_temporary');
-        
         if strcmpi(typOut, 'struct')
             nIter = numel(sOutput{1}(:));
             parfor mm = 1 : numel(sOutput(:)) 
@@ -678,6 +753,7 @@ if ~regexpbl(sMeta.runType,'sim')
                 scoreSameTemp = cell(nSites,1);
                 typSameTemp = cell(nSites,1);
                 for nn = 1 : nSites
+                    disp(['Stats for ' sMeta.region{nn} ':']);
                     [foldLd, fileLd, ~]= fileparts(sOutput{mm}{nn});
                     temp = load(fullfile(foldLd, [fileLd '_' sMeta.region{nn} '.mat']));
                     nmsTemp = fieldnames(temp);
@@ -687,6 +763,7 @@ if ~regexpbl(sMeta.runType,'sim')
                         error('CCHFMain:multOutFlds','The output array has an unexpected number of fields.')
                     end
                 end
+                disp(char(10));
                 
                 scoreTemp{mm} = scoreSameTemp;
                 obsTypTemp{mm} = typSameTemp;
@@ -696,7 +773,7 @@ if ~regexpbl(sMeta.runType,'sim')
         end
         clear mm
         warning('on', 'MATLAB:mir_warning_maybe_uninitialized_temporary')
-          
+        
         if ~isempty(gcp('nocreate'))
            pctRunOnAll warning('on', 'all') %Turn on warnings
         end
@@ -821,16 +898,16 @@ if ~regexpbl(sMeta.runType,'sim')
                     end
 
                     fprintf(fStats, [numFmt,'%f\n'], statCurr);
-                end
+                end %End of loop over stats
                 clear oo
                 
                 fclose(fStats); 
-            end
+            end %End of loop over observation types
             clear yy
-        end
+        end %End of loop over sites
         clear nn
     end
-end
+end %End of model evaluation section
 
 
 %MAKE PLOTS OF MODEL OUTPUT
@@ -842,6 +919,8 @@ elseif sMeta.blDispOut == 0
 end
 if numel(sOutput) == nSites
     for mm = 1 : nSites
+        sMeta.siteCurr = mm;
+        
         dirModPlots = fullfile(sPath{mm}.output, 'model_output_plots');
             mkdir(dirModPlots);
         pathOutRt = fullfile(dirModPlots,'model');
