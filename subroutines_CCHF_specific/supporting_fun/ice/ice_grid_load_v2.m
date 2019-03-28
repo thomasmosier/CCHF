@@ -27,8 +27,21 @@ function [sIceInit] = ice_grid_load_v2(sHydro, sPath, sMeta)
 szMain = size(sHydro.dem); 
 % icBlMain = zeros(szMain, 'single');
 
-varLon = 'longitude';
-varLat = 'latitude';
+if isfield(sHydro, 'longitude')
+    varLon = 'longitude';
+elseif isfield(sHydro, 'lon')
+    varLon = 'lon';    
+else
+    error('iceGridLoad:noLonField','No longitude field found in sHydro.')
+end
+
+if isfield(sHydro, 'latitude')
+    varLat = 'latitude';
+elseif isfield(sHydro, 'lat')
+    varLat = 'lat';    
+else
+    error('iceGridLoad:noLatField','No latitude field found in sHydro.')
+end
 
 %Load glacier coverage data and convert to depth:
 %If glaciers or boolean clipping being used, create grids:
