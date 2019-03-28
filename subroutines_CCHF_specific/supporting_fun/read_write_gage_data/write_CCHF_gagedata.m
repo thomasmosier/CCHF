@@ -32,6 +32,10 @@ if ~exist(fold, 'dir')
     warning('writeCchfGagedata:unknownDir',['The output directory is' fold ...
         ', which does not exist. Therefore, you will be prompted to enter the desired output directory.']);
     fold = input(['Enter the folder path for where to write ' nameInput ':' char(10)],'s');
+    
+    if ~exist(fold, 'dir')
+        error('writeCchfGagedata:dirNotExist', ['The folder path ' fold ' does not exist.'])
+    end
 end
 path = fullfile(fold, [nameInput '.txt']);
 fid = fopen(path,'wt');
