@@ -54,8 +54,34 @@ function varargout = CCHF_engine_v4(sPath, sHydro, sMeta, varargin)
     %'output' = output path
 
 
-varLat = 'latitude';
-varLon = 'longitude';
+if isfield(sHydro{1}, 'longitude')
+    varLon = 'longitude';
+elseif isfield(sHydro{1}, 'lon')
+    varLon = 'lon';    
+else
+    error('iceGridLoad:noLonField','No longitude field found in sHydro.')
+end
+
+if isfield(sHydro{1}, 'latitude')
+    varLat = 'latitude';
+elseif isfield(sHydro{1}, 'lat')
+    varLat = 'lat';    
+else
+    error('iceGridLoad:noLatField','No latitude field found in sHydro.')
+end
+    
+
+if ~iscell(sMeta.dateRun)
+    sMeta.dateRun = {sMeta.dateRun};
+    sMeta.dateStart = {sMeta.dateStart};
+    sMeta.dateEnd = {sMeta.dateEnd};
+end
+if ~iscell(sMeta.dateStart)
+    sMeta.dateStart = {sMeta.dateStart};
+end
+if ~iscell(sMeta.dateEnd)
+    sMeta.dateEnd = {sMeta.dateEnd};
+end
     
 %%Set default values:
 %This value simply determines when to test the fitness of the current
@@ -63,7 +89,11 @@ varLon = 'longitude';
 %requirement. Default value is huge, then is edited below.
 indEval = 10^6;
 fitTest = 'KGE';
-dateEval = sMeta.dateRun{1}(end,:);
+if iscell(sMeta.dateRun)
+    dateEval = sMeta.dateRun{1}(end,:);
+else
+    dateEval = sMeta.dateRun(end,:);
+end
 fitReq = 100;
 blEval = 0;
 evalAtt = cell(0,0);
@@ -225,14 +255,26 @@ for mm = 1 : nSites
     if regexpbl(sMeta.mode,'parameter') && mm == 1
         disp(['The CCHF model is being run in ' char(39) sMeta.mode char(39) ' mode.']);
         %Define date vector of time steps to loop over:
-        if regexpbl(sMeta.dt,'month')
-            sMeta.dateRun{mm} = nan(1,2);
-        elseif regexpbl(sMeta.dt,{'day','daily'})
-            sMeta.dateRun{mm} = nan(1,3);
-        elseif regexpbl(sMeta.dt,'hour')
-            sMeta.dateRun{mm} = nan(1,4);
+        if iscell(sMeta.dateRun)
+            if regexpbl(sMeta.dt,'month')
+                sMeta.dateRun{mm} = nan(1,2);
+            elseif regexpbl(sMeta.dt,{'day','daily'})
+                sMeta.dateRun{mm} = nan(1,3);
+            elseif regexpbl(sMeta.dt,'hour')
+                sMeta.dateRun{mm} = nan(1,4);
+            else
+                error('backbone:dtUnknown',[sMeta.dt ' is an unknown time-step']);
+            end
         else
-            error('backbone:dtUnknown',[sMeta.dt ' is an unknown time-step']);
+            if regexpbl(sMeta.dt,'month')
+                sMeta.dateRun = nan(1,2);
+            elseif regexpbl(sMeta.dt,{'day','daily'})
+                sMeta.dateRun = nan(1,3);
+            elseif regexpbl(sMeta.dt,'hour')
+                sMeta.dateRun = nan(1,4);
+            else
+                error('backbone:dtUnknown',[sMeta.dt ' is an unknown time-step']);
+            end
         end
 
         %Remove 'progress' field from sMeta if parameter run.
