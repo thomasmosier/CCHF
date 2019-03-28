@@ -1,6 +1,6 @@
 %MODIS move script
 
-foldFrom = '/Users/thomas/Desktop/research/geodata/MODIS/MODIS-8day-500m';
+foldFrom = '/Volumes/geospatial_research/geodata/MODIS/MOD10A2_v6_High_Mountain_Asia';
 
 %Find all files:
 fileMODIS = dir(fullfile(foldFrom, '*.hdf'));
