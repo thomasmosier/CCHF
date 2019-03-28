@@ -14,7 +14,9 @@ The first step is to run the main script (“CCHF_main_*.m”), which is located
 8.	Select the observation data (used for calibration and validation), which is located at “./CCHF_demo_*/Wolverine_inputs/SETI_gage-flow-stake-sca.txt”
 After making the above selections, the program will run on its own. Several actions occur in the main script, including calculating watershed geometric relationships, creating structure arrays of a specific format for handling the necessary inputs, intermediaries, and outputs. Lines 587 – 605 implement the model run(s) (i.e. calibration, validation, or default). I have the model setup to perform a calibration run, using a hybrid optimization routine I’ve developed (uses Monte Carlo simulations, particle swarm optimization, and linear sensitivity). Also, note that during calibration, CCHF runs in parallel by default.
 
+
 A “calibration” parameter set run for Wolverine takes about a 24 hours using a ten year period with a daily time step because calibration runs the model several thousand times. A “default” parameter set run takes about ten minutes. A “validation” run also takes about ten minutes, but can only be used once calibration has completed. I’ve included a parameter set created during calibration at the path “./CCHF_demo_*/Wolverine_inputs/gulkana_LST_parameters.txt”, which can be used in a validation run. You will be prompted to locate this file approximately 30 seconds after the prompts to locate the inputs listed above.
+
 
 Several plots are generated after any model run. All of these figures and several other files are written to a folder unique to the run within “./CCHF_demo_*/Wolverine_inputs”. Plots include time-series of requested output at points of interest (default is domain-averaged values and observation points). During calibration, plots also include optimized parameter values.
 
@@ -67,3 +69,49 @@ Naming
   *	‘pr’
   *	‘rain’
   *	‘prsn’
+=======
+•	'energy' (calculates heatflux): 
+o	'simple'
+o	'Pelli' (Pellicciotti version of ETI)
+o	'Hock' (Hock version of ETI)
+o	'SETI'
+•	'mass' (determines link between energy and melt): 
+o	'tstep'
+o	'hstep'
+o	'tinertia'
+o	'hinertia'
+o	'enbal'
+•	'trans' (atm transmissivity) (used in shortwave radiation): 
+o	'Coops'
+o	'DeWalle'
+•	'albedo' (not used if 'cryo-simple') (used to determine absorption of shortwave radiation): 
+o	'Brock'
+o	'Pelli'
+•	'PET' (Potential evapotranspiration; actual ET limited by water availability): 
+o	'Hammon'
+•	'runoff': 
+o	'bucket' (groundwater bucket model) 
+o	'direct' (surface only)
+•	'time' (refers to travel time between cells): 
+o	'Johnstone'
+o	'Liston' (allows variable travel time depending on landcover of cell)
+•	'flow': 
+o	'Muskingum'
+o	'lumped'
+o	'Liston'
+Optional modules (not needed to run)
+•	%'glacier' (if term included, model will allow glacier sliding and calculate changes in ice thickness)
+•	%'holding' (if term included, snowpack has a liquid water holding capacity of 3%)
+
+Naming
+•	Cryosphere (‘sCryo’)
+o	‘heat’ – net heat flux
+•	Land-layer (‘sLand’)
+o	
+•	Atmosphere (‘sAtm’)
+o	‘tas’
+o	‘tasmax’
+o	‘tasmin’
+o	‘pr’
+o	‘rain’
+o	‘prsn’
