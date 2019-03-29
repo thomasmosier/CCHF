@@ -550,7 +550,7 @@ if ~strcmpi(sMeta.iceGrid, 'none') && sMeta.glacierDynamics == 1
     end
     
     
-    %On 355th day of each year:
+    %On 365th day of each year:
     %(1) Translate main-grid mass balance to fine-scale gird and
     %(2) Record mass balance
     if isequal(sMeta.dateCurr(2:end), sMeta.dateGlac)
