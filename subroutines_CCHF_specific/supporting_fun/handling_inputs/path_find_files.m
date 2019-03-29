@@ -42,12 +42,12 @@ for ll = 1 : numel(sMeta.varLd)
     end
     
     %Find files in present path:
-    fileNcTemp = dir(fullfile(sPath.(sMeta.varLd{ll}),'*.nc'));
+    fileNcTemp = find_files(sPath.(sMeta.varLd{ll}),'nc');
     if isempty(fileNcTemp)
-        fileNcTemp = dir(fullfile(sPath.(sMeta.varLd{ll}),'*.asc'));
+	fileNcTemp = find_files(sPath.(sMeta.varLd{ll}),'asc');
     end
     if isempty(fileNcTemp)
-        fileNcTemp = dir(fullfile(sPath.(sMeta.varLd{ll}),'*.txt'));
+	fileNcTemp = find_files(sPath.(sMeta.varLd{ll}),'txt');
     end
     if isempty(fileNcTemp)
         warning('load_ts:uknownDataType',['Currently this function can '...
@@ -55,9 +55,6 @@ for ll = 1 : numel(sMeta.varLd)
         return
     end
     
-    %Extract field:
-    fileNcTemp = extract_field(fileNcTemp, 'name');
-
     %Test if function can read file name (based on CMIP5 convention):
     testNc = CMIP5_time(fileNcTemp{1});
 

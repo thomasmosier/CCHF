@@ -194,9 +194,13 @@ if flagWrt == 1
         else
             indRtSame = find(diff(indSame) ~= 1, 1, 'first');
             if isempty(indRtSame)
-              dirOut = path{1}(1:indSame(end));
+		dirOut = path{1}(1:indSame(end));
             else
-              dirOut = path{1}(1:indSame(indRtSame)+1);
+		if isequal(path{1}(indSame(indRtSame)), filesep)
+		    dirOut = path{1}(1:indSame(indRtSame));
+		else
+		    dirOut = path{1}(1:indSame(indRtSame)+1);
+		end
             end
         end
     else
