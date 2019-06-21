@@ -85,18 +85,29 @@ if regexpbl(extGage,{'csv'})
     dailyDischarge = splitapply(@mean, T(:, 'meanDischarge'), G);
     dailyData = table(TID, dailyDischarge);
     
-    % Extract date parts
-    yyyy = year(dailyData{:, "TID"}.Date);
-    mm = month(dailyData{:, "TID"}.Date);
-    dd = day(dailyData{:, "TID"}.Date);
+    % Set any dates with missing discharge data to NaN
+    startDate = dailyData{1, "TID"}.Date;
+    endDate = dailyData{height(dailyData), "TID"}.Date;
+    date = (startDate:endDate)';
+    discharge = NaN([numel(date) 1]);
+    allData = [table(date), table(discharge)];
+
+    for i=1:height(dailyData)
+        nextDate = dailyData{i, "TID"}.Date;
+        nextDischarge = dailyData{i, "dailyDischarge"};
+        allData(allData.date == nextDate, :).discharge = nextDischarge;
+    end
+
+    yyyy = year(allData.date);
+    mm = month(allData.date);
+    dd = day(allData.date);
     
-    dailyData = [dailyData, table(yyyy), table(mm), table(dd)];
+    % Extract date parts    
+    allData = [allData, table(yyyy), table(mm), table(dd)];
     
     % And reformat to expected output numeric matrices
-    data = table2array(dailyData(:,"dailyDischarge"));
-    date = table2array(dailyData(:,{'yyyy' 'mm' 'dd'}));
-    
-    fprintf("next");
+    data = table2array(allData(:,"discharge"));
+    date = table2array(allData(:,{'yyyy' 'mm' 'dd'}));
     
 else
     error("%s: ERROR: DHM file %s in unknownFormat: %s\n", ...
