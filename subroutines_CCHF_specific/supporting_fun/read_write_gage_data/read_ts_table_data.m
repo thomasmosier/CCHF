@@ -27,7 +27,7 @@ function [data, date] = read_ts_table_data(path, inputUnits)
 
 sepDate = {'\','/','-',':'};
 
-[~, ~, extGage] = fileparts(path);
+[~, fileNm, extGage] = fileparts(path);
 
 % rangeRead = [];
 % if ~isempty(varargin(:))
@@ -107,47 +107,58 @@ elseif regexpbl(extGage,{'txt'})
 
 
 elseif regexpbl(extGage,{'csv'})
-    dataTemp = csvread(path,1,0);
-   
-    blYr = nan;
-    blMnth = nan;
-    blDay = nan;
-
-    for jj = 1 : numel(dataTemp(1,:))
-        if all(dataTemp(:,jj) > 31) && max(diff(dataTemp(:,jj))) < 3
-            blYr = jj;
-        elseif all(dataTemp(:,jj) < 13) && max(diff(dataTemp(:,jj))) < 14
-            blMnth = jj;
-        elseif all(dataTemp(:,jj) < 35) && ~all(dataTemp(:,jj) < 13) && max(diff(dataTemp(:,jj))) < 35
-            blDay = jj;
-        end
-    end
     
-    if numel(dataTemp(1,:)) == 4
-        if any([isnan(blYr), isnan(blMnth), isnan(blDay)])
-            error('readtstabledata:missingDate2',['One of more date '...
-                'indices in the Excel file (' path ')could not be found.']);
-        end
+    % DHM streamgage files require different parsing
+    if regexpbl(fileNm,{'DHM'})
         
-        blData = setdiff((1:4), unique([blYr, blMnth, blDay]));
+        [data, date] = read_DHM_data(path);
         
-        date = [dataTemp(:,blYr), dataTemp(:,blMnth), dataTemp(:,blDay)];
-    elseif numel(dataTemp(1,:)) == 3
-        if any([isnan(blYr), isnan(blMnth)])
-            error('readtstabledata:missingDate3',['One of more date '...
-                'indices in the Excel file (' path ')could not be found.']);
-        end
-        
-        blData = setdiff((1:4), unique([blYr, blMnth]));
-        
-        date = [dataTemp(:,blYr), dataTemp(:,blMnth)];
     else
-        error('readtstabledata:csvFormat',['The CSV data in ' path ...
-            ' have unexpected dimensions. This is likely caused '...
-            'by columns not formatted as numbers.']) 
+        
+        dataTemp = csvread(path,1,0);
+
+        blYr = nan;
+        blMnth = nan;
+        blDay = nan;
+
+        for jj = 1 : numel(dataTemp(1,:))
+            if all(dataTemp(:,jj) > 31) && max(diff(dataTemp(:,jj))) < 3
+                blYr = jj;
+            elseif all(dataTemp(:,jj) < 13) && max(diff(dataTemp(:,jj))) < 14
+                blMnth = jj;
+            elseif all(dataTemp(:,jj) < 35) && ~all(dataTemp(:,jj) < 13) && max(diff(dataTemp(:,jj))) < 35
+                blDay = jj;
+            end
+        end
+
+        if numel(dataTemp(1,:)) == 4
+            if any([isnan(blYr), isnan(blMnth), isnan(blDay)])
+                error('readtstabledata:missingDate2',['One of more date '...
+                    'indices in the Excel file (' path ')could not be found.']);
+            end
+
+            blData = setdiff((1:4), unique([blYr, blMnth, blDay]));
+
+            date = [dataTemp(:,blYr), dataTemp(:,blMnth), dataTemp(:,blDay)];
+        elseif numel(dataTemp(1,:)) == 3
+            if any([isnan(blYr), isnan(blMnth)])
+                error('readtstabledata:missingDate3',['One of more date '...
+                    'indices in the Excel file (' path ')could not be found.']);
+            end
+
+            blData = setdiff((1:4), unique([blYr, blMnth]));
+
+            date = [dataTemp(:,blYr), dataTemp(:,blMnth)];
+        else
+            error('readtstabledata:csvFormat',['The CSV data in ' path ...
+                ' have unexpected dimensions. This is likely caused '...
+                'by columns not formatted as numbers.']) 
+        end
+
+        data = dataTemp(:,blData);
+        
     end
     
-    data = dataTemp(:,blData);
 else
     error('read_ts_table_data:unknownFormat',['Time-series data in ' char(39) ...
         extGage char(39) ' format has not been programmed for.']);
@@ -201,7 +212,7 @@ end
 
 
 if numel(data(:,1)) ~= numel(date(:,1))
-        error('read_USGS_data:diffLength',['There are ' ...
+        error('read_ts_table_data:diffLength',['There are ' ...
             num2str(numel(data(:,1))) ' entries in the data array and '...
             num2str(numel(date(:,1))) ' entries in the date array.  '...
             'The cause of this mismatch needs to be investigated.']);
