@@ -146,14 +146,22 @@ if sMeta.useprevrun == 0
                 sPath{ii}.('coef')   = blanks(0);
             sHydro{ii} = struct;
 
-            %Ask to load information from directory of calibration run that was
-            %interrupted
-            if ii == 1 && regexpbl(sMeta.runType,{'calib','resume'},'and')
-                uiwait(msgbox(sprintf(['Select the folder containing containing '...
-                    'the unfinished calibration for ' sMeta.region{ii} '.\n']), ...
-                    '(Click OK to Proceed)','modal'));
-                sPath{ii}.resume = uigetdir(startPath,['Select the folder containing '...
-                    'the unfinished calibration for ' sMeta.region{ii}]);
+            %Load folder of previous calibration run that was interrupted
+            if ii == 1 && regexpbl(sMeta.runType, {'calib','resume'}, 'and')
+                if isempty(sMeta.pathresume)
+                    uiwait(msgbox(sprintf(['Select the folder containing '...
+                        'the unfinished calibration state file for ' sMeta.region{ii} '.\n']), ...
+                        '(Click OK to Proceed)','modal'));
+                    sPath{ii}.resume = uigetdir(startPath,['Select the folder containing '...
+                        'the unfinished calibration state file for ' sMeta.region{ii}]);
+                else
+                    if isfolder(sMeta.pathresume)
+                        pathResume = sMeta.pathresume;
+                    elseif isfile(sMeta.pathresume)
+                        [pathResume, ~, ~] = fileparts(sMeta.pathresume);
+                    end
+                    sPath{ii}.resume = pathResume;
+                end
             end
 
             %Digital Elevation Model (DEM) selection and display:

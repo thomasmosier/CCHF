@@ -31,6 +31,10 @@ close all   %Closes all figure windows.
 %which user selects inputs through GUI)
 path2Inputs = '';
 
+%Path to calibration state file generated during previous, interupted
+%calibration run (leave empty unless " runType = 'calibrate_resume' "
+pathCalibrateResume = ''; 
+
 
 %%USER INPUTS:
 %Select the type of model run:
@@ -320,6 +324,7 @@ sMeta = struct;
     sMeta.('nGage') = nGage;
     sMeta.('useprevrun') = blPrevRun;
     sMeta.('pathinputs') = path2Inputs;
+    sMeta.('pathresume') = pathCalibrateResume;
 
 sOpt = struct;
     sOpt.('fitTest') = fitType;
