@@ -18,15 +18,39 @@
 % along with the Downscaling Package.  If not, see 
 % <http://www.gnu.org/licenses/>.
 
-function coefN = apso(coef, fitScore, prmBnds, iter)
+function coefN = apso(coef, fitScore, prmBnds, iter, varargin)
 
 %SEE DISCUSSION AT END OF SCRIPT REGARDING PSO OPTIMIZATION.
 
 persistent vel lrnRt state
-if iter == 1
-   vel = zeros(size(squeeze(coef(1,:,:))));
-   lrnRt = [2; 2];
-   state = 1;
+
+%Check if persistent variable empty (just initialized)
+if any(isempty(vel), isempty(lrnRt), isempty(state))
+    varEmpty = 1;
+else
+    varEmpty = 0;
+end
+
+%Optional input argument for path to save outputs
+pathPrmSave = '';
+fileSave = 'apso_parameters.mat';
+if ~isempty(varargin)
+    for ii = 1 : numel(varargin)
+        if strcmpi(varargin{ii}, 'pathSave')
+            pathPrmSave = fullfile(varargin{ii+1}, fileSave);
+        end
+    end
+end
+
+%Load or set values of APSO state variables
+if iter == 1 || varEmpty
+    if varEmpty && isfile(pathPrmSave)
+        load(pathPrmSave, '-mat', vel, lrnRt, state);
+    else
+       vel = zeros(size(squeeze(coef(1,:,:))));
+       lrnRt = [2; 2];
+       state = 1;
+    end
 end
 
 
@@ -52,6 +76,10 @@ else %Regular PSO optimization:
     [coefN, vel, lrnRt, state] = apso_update(coef(1:iter,:,:), fitScore(1:iter,:), prmBnds, lrnRt, state, vel);
 end
 
+%Save state variables if path present
+if ~isempty(pathPrmSave)
+    save(pathPrmSave, vel, lrnRt, state);
+end
 
 
 %%FROM http://www.swarmintelligence.org/tutorials.php

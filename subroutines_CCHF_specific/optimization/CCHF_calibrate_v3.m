@@ -45,6 +45,7 @@ end
 prmBnds = cell2mat(sMeta.coefAtt(:,2:3));
 fitTest = sOpt.fitTest; %Needed for parfor.
 
+sOpt.dirSave = sPath{1}.outputMain;
 
 %If multiple stages of calibration, (1) determine which parameters fit each
 %category and (2) which observation data to use

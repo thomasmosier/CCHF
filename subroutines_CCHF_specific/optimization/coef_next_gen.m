@@ -70,7 +70,7 @@ elseif regexpbl(sOpt.type,{'hybrid'})
 elseif strcmpi(sOpt.type, 'pso') || regexpbl(sOpt.type, 'particle swarm')
     coef = pso(coef, fitScore, prmBnds, ii);
 elseif strcmpi(sOpt.type, 'apso')
-    coef = apso(coef, fitScore, prmBnds, ii);
+    coef = apso(coef, fitScore, prmBnds, ii, 'path', sOpt.dirSave);
 elseif regexpbl(sOpt.type,{'Uniform','sampling'},'and')
     %Do nothing because all parameter sets have already been defined
 elseif regexpbl(sOpt.type,{'Monte','Carlo'},'and')
