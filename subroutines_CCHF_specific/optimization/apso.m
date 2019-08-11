@@ -45,7 +45,7 @@ end
 %Load or set values of APSO state variables
 if iter == 1 || varEmpty
     if varEmpty && isfile(pathPrmSave)
-        load(pathPrmSave, '-mat', vel, lrnRt, state);
+        load(pathPrmSave, '-mat', 'vel', 'lrnRt', 'state');
     else
        vel = zeros(size(squeeze(coef(1,:,:))));
        lrnRt = [2; 2];
@@ -78,7 +78,7 @@ end
 
 %Save state variables if path present
 if ~isempty(pathPrmSave)
-    save(pathPrmSave, vel, lrnRt, state);
+    save(pathPrmSave, 'vel', 'lrnRt', 'state');
 end
 
 
