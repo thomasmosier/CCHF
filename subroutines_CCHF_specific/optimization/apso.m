@@ -25,7 +25,7 @@ function coefN = apso(coef, fitScore, prmBnds, iter, varargin)
 persistent vel lrnRt state
 
 %Check if persistent variable empty (just initialized)
-if any(isempty(vel), isempty(lrnRt), isempty(state))
+if any([isempty(vel), isempty(lrnRt), isempty(state)])
     varEmpty = 1;
 else
     varEmpty = 0;
