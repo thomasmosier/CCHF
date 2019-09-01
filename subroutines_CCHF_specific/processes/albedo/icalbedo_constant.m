@@ -42,16 +42,25 @@ if ~isfield(sCryo, 'icalb')
     %Set different albedo for grid cells with debris:
     if isfield(sCryo, 'icdbr')
         aDebris = find_att(sMeta.global,'albedo_debris');
+        dDebris = find_att(sMeta.global, 'debris_threshold');
 
-        sCryo.ialb(~isnan(sCryo.icdbr)) = aDebris;
+        sCryo.ialb(~isnan(sCryo.icdbr) & sCryo.icdbr > dDebris) = aDebris;
     end
     
+    
     %If lake inventory is available, modify glacier albedo values at lake:
-    if isfield(sCryo, 'iclk')
+    fldLake = '';
+    if isfield(sCryo, 'icpndx')
+        fldLake = 'icpndx';
+    elseif isfield(sCryo, 'iclk')
+        fldLake = 'iclk';
+    end
+
+    if ~isempty(fldLake)
         aLake = find_att(sMeta.global,'albedo_water');
         
-        if ~all2d(sCryo.iclk >= 0 & sCryo.iclk <= 1)
-            sCryo.icalb = aLake*sCryo.iclk + sCryo.icalb.*(1 - sCryo.iclk);
+        if ~all2d(sCryo.(fldLake) >= 0 & sCryo.(fldLake) <= 1)
+            sCryo.icalb = aLake*sCryo.(fldLake) + sCryo.icalb.*(1 - sCryo.(fldLake));
         else
             error('icalbedoConstant:lakeNotFraction', ['The lake inventory ' ...
                 'contains values outside the range 0 and 1. It is expected '...

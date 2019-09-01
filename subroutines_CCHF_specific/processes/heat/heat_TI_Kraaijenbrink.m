@@ -65,10 +65,17 @@ if isfield(sCryo, 'icdbr') %If debris cover information available
     sCryo.hfneti = sCryo.icdbrmelt.*sCryo.hfneti;
 end
 
+%Melt is enhanced by factor of 10 at locations that are entirely ponds.
+%Use fractional relation to account for partially ponded grid cells
+%(when fraction is 0, there is no impact; when fraction is 1, the
+%factor is 10)
+fldLake = '';
 if isfield(sCryo, 'icpndx')
-    %Melt is enhanced by factor of 10 at locations that are entirely ponds.
-    %Use fractional relation to account for partially ponded grid cells
-    %(when fraction is 0, there is no impact; when fraction is 1, the
-    %factor is 10)
-    sCryo.hfneti = (1+9*sCryo.icpndx).*sCryo.hfneti;
+    fldLake = 'icpndx';
+elseif isfield(sCryo, 'iclk')
+    fldLake = 'iclk';
+end
+
+if ~isempty(fldLake)
+    sCryo.hfneti = (1+9*sCryo.(fldLake)).*sCryo.hfneti;
 end

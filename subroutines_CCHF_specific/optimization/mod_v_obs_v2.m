@@ -1003,13 +1003,13 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                         [gridObsPlot,       ~,       ~] = rm_nan_border(squeeze(gridObsCurr(kk,:,:)), lat, lon);
                         [gridModPlot, latPlot, lonPlot] = rm_nan_border(squeeze(gridModCurr(kk,:,:)), lat, lon);
                         
-                        cLim = max([max2d(abs(gridModPlot)), max2d(abs(gridObsPlot))]);
+                        cLim = nanmax([max2d(abs(gridModPlot)), max2d(abs(gridObsPlot))]);
                         
 %                         gridObsCurr(isnan(gridObsCurr)) = cLim + 0.1*cLim;
                         if all(~isnan(lon)) && all(~isnan(lat))
                             imagesc(lonPlot, latPlot, gridObsPlot, 'alphaData', ~isnan(gridObsPlot));
-                            xlim([min(lonPlot), max(lonPlot)]);
-                            ylim([min(latPlot), max(latPlot)]);
+                            xlim([nanmin(lonPlot), nanmax(lonPlot)]);
+                            ylim([nanmin(latPlot), nanmax(latPlot)]);
                         else   
                             hGrid = imagesc(gridObsPlot, 'alphaData', ~isnan(gridObsPlot));
                         end
@@ -1055,8 +1055,8 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
 %                         gridModCurr(isnan(gridModCurr)) = cLim + 0.1*cLim;
                         if all(~isnan(lon)) && all(~isnan(lat))
                             imagesc(lonPlot, latPlot, gridModPlot, 'alphaData', ~isnan(gridModPlot));
-                            xlim([min(lonPlot), max(lonPlot)]);
-                            ylim([min(latPlot), max(latPlot)]);
+                            xlim([nanmin(lonPlot), nanmax(lonPlot)]);
+                            ylim([nanmin(latPlot), nanmax(latPlot)]);
                         else   
                             imagesc(gridModPlot, 'alphaData', ~isnan(gridModPlot));
                         end
@@ -1109,8 +1109,8 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
 %                         dataPlot(isnan(dataPlot)) = cLim + 0.1*cLim;
                         if all(~isnan(lon)) && all(~isnan(lat))
                             imagesc(lonPlot, latPlot, dataPlot, 'alphaData', ~isnan(dataPlot));
-                            xlim([min(lonPlot), max(lonPlot)]);
-                            ylim([min(latPlot), max(latPlot)]);
+                            xlim([nanmin(lonPlot), nanmax(lonPlot)]);
+                            ylim([nanmin(latPlot), nanmax(latPlot)]);
                         else   
                             imagesc(dataPlot, 'alphaData', ~isnan(dataPlot));
                         end
@@ -1167,8 +1167,8 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
 %                         dataPlot(isnan(dataPlot)) = cLim + 0.1*cLim;
                         if all(~isnan(lon)) && all(~isnan(lat))
                             imagesc(lonPlot, latPlot, dataPlot, 'alphaData', ~isnan(dataPlot));
-                            xlim([min(lonPlot), max(lonPlot)]);
-                            ylim([min(latPlot), max(latPlot)]);
+                            xlim([nanmin(lonPlot), nanmax(lonPlot)]);
+                            ylim([nanmin(latPlot), nanmax(latPlot)]);
                         else   
                             imagesc(dataPlot, 'alphaData', ~isnan(dataPlot));
                         end
@@ -1405,8 +1405,8 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                 strSeries = cell(nSeries,1);
             else
                 hTs = nan(2*nSeries,1);
-                xMin = 10000;
-                xMax = 0;
+                xMin = nan;
+                xMax = nan;
                 strSeries = cell(2*nSeries,1);
             end
 
@@ -1437,8 +1437,8 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                         end
                     end
                     
-                    xMin = min(real([plotModData(:); plotObsData(:); xMin]));
-                    xMax = max(real([plotModData(:); plotObsData(:); xMax]));
+                    xMin = nanmin(real([plotModData(:); plotObsData(:); xMin]));
+                    xMax = nanmax(real([plotModData(:); plotObsData(:); xMax]));
 
                     hTs(indCurr) = scatter(plotObsData,plotModData, ...
                         2*ftSz, 'MarkerEdgeColor',[0 0 0], 'MarkerFaceColor',colorsUse(mod(indCurr-1, nSeries)+1,:));
@@ -1482,15 +1482,15 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
 
                         hTs(cntrTs) = plot(plotDates, plotModData, 'x', plotDates, plotObsData, 'o'); 
 
-                        %Find min and max dates:
-                        xMin = min(min(plotDates), xMin);
-                        xMax = max(max(plotDates), xMax);
+                        %Find min and max dates:                       
+                        xMin = nanmin([nanmin(plotDates), xMin]);
+                        xMax = nanmax([nanmax(plotDates), xMax]);
                     else %Regular time-series
                         hTs(cntrTs) = plot(dataAll{indCurrType{ll}(indCurr),iMDate}, dataAll{indCurrType{ll}(indCurr),iMData}, '-x', dataAll{indCurrType{ll}(indCurr),iODate}, dataAll{indCurrType{ll}(indCurr),iOData}, '-o'); 
 
                         %Find min and max dates:
-                        xMin = min(dataAll{indCurrType{ll}(indCurr),iMDate}(1), xMin);
-                        xMax = max(dataAll{indCurrType{ll}(indCurr),iMDate}(end), xMax);
+                        xMin = nanmin([dataAll{indCurrType{ll}(indCurr),iMDate}(1), xMin]);
+                        xMax = nanmax([dataAll{indCurrType{ll}(indCurr),iMDate}(end), xMax]);
                     end
 
                     %Set properties of current series:
@@ -1528,7 +1528,7 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                 for zz = 1 : numel(xdata)
                     indNInf = find(xdata{zz} ~= Inf);
                     if ~isempty(indNInf)
-                       xMax = max([xMax,xdata{zz}(indNInf)]); 
+                       xMax = nanmax([xMax,xdata{zz}(indNInf)]); 
                     end
                 end
 
@@ -1536,11 +1536,10 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                 for zz = 1 : numel(ydata)
                     indNInf = find(ydata{zz} ~= Inf);
                     if ~isempty(indNInf)
-                       yMax = max([yMax,ydata{zz}(indNInf)]); 
+                       yMax = nanmax([yMax,ydata{zz}(indNInf)]); 
                     end
                 end
             end
-
 
             if isequal(xMin, xMax)
                 xMin = xMin - 0.2*xMin;
@@ -1621,14 +1620,15 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                 hYLab = ylabel([varCurr ' (' unitCurr ')']);
 
                 %EDIT X-TICK LABELS:
-                xMin = max(xMin, 1);
-                %Create dates for x-axis:
-                strDates = date2str(unique(days_2_date_v2((xMin:xMax),dataAll{indCurrType{ll}(indCurr),iMeta}{2}(1,:),calUse),'rows'),'m/d/y');
+                xMin = nanmax([xMin, 1]);
+                %Create dates for x-axis: 
+                strDates = date2str(unique(days_2_date_v2((xMin:xMax),dateRef,calUse),'rows'),'m/d/y');
+                %strDates = date2str(unique(days_2_date_v2((xMin:xMax),dataAll{indCurrType{ll}(indCurr),iMeta}{2}(1,:),calUse),'rows'),'m/d/y');
                 %Set labels
                 if ischar(strDates)
                     nXTicks = 1;
                 else
-                    nXTicks = min(numel(strDates),10);
+                    nXTicks = nanmin([numel(strDates),10]);
                 end
                 ptsDates = round(linspace(1,numel(strDates),nXTicks));
                 ptsTicks =  round(linspace(xMin,xMax,nXTicks));

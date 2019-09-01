@@ -325,7 +325,7 @@ if regexpbl(avMod, 'angle')
     end
     
 elseif ~regexpbl(avMod, 'none')
-    error('cchfModules:avalancheUnknown', ['The avalnching representation ' avMod ' not recognized.']);
+    error('cchfModules:avalancheUnknown', ['The avalanching representation ' avMod ' not recognized.']);
 end
 
 
