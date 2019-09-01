@@ -44,7 +44,7 @@ if ~isfield(sCryo, 'icalb')
         aDebris = find_att(sMeta.global,'albedo_debris');
         dDebris = find_att(sMeta.global, 'debris_threshold');
 
-        sCryo.ialb(~isnan(sCryo.icdbr) & sCryo.icdbr > dDebris) = aDebris;
+        sCryo.icalb(~isnan(sCryo.icdbr) & sCryo.icdbr > dDebris) = aDebris;
     end
     
     
@@ -59,7 +59,7 @@ if ~isfield(sCryo, 'icalb')
     if ~isempty(fldLake)
         aLake = find_att(sMeta.global,'albedo_water');
         
-        if ~all2d(sCryo.(fldLake) >= 0 & sCryo.(fldLake) <= 1)
+        if all2d(sCryo.(fldLake) >= 0 & sCryo.(fldLake) <= 1)
             sCryo.icalb = aLake*sCryo.(fldLake) + sCryo.icalb.*(1 - sCryo.(fldLake));
         else
             error('icalbedoConstant:lakeNotFraction', ['The lake inventory ' ...
