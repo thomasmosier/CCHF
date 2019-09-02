@@ -122,9 +122,22 @@ iMData = 3;
 iODate = 4;
 iOData = 5;
 
+varDate = 'date';
+
 %Set calendar properties:
 calUse = 'gregorian';
 dateRef = [1981, 1, 1];
+for ii = 1 : numel(ptsMod)
+    dateCurr = sMod.(ptsMod{ii}).(varDate)(1,:,:);
+    if dateCurr(1) < dateRef(1)
+        dateRef(1) = dateCurr(1);
+    end
+end
+clear ii
+
+if all(isnan(dateRef))
+   error('mod_v_obs:noRefDate', 'The reference date could not be found.');
+end
 
 %%FIND ALL DATA FIELDS PRESENT IN OBSERVATION DATA:
 obsTypes = cell(0,1);
@@ -171,7 +184,7 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
         fldCurrObs(strcmpi(fldCurrObs,'att')) = [];
         fldCurrObs(strcmpi(fldCurrObs,'attributes')) = [];
         fldCurrObs(strcmpi(fldCurrObs,'flag')) = [];
-        fldCurrObs(strcmpi(fldCurrObs,'date')) = [];
+        fldCurrObs(strcmpi(fldCurrObs,varDate)) = [];
         fldCurrObs(strcmpi(fldCurrObs,'dateStart')) = [];
         fldCurrObs(strcmpi(fldCurrObs,'dateEnd')) = [];
         %remove any field starting with 'path_' in it:
@@ -270,7 +283,7 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
             daysMod{2} = days_since(dateRef, dataAll{cntrObs,iMDate}{2}, calUse);
             
             tResMod = numel(dataAll{cntrObs,iMDate}{1}(1,:));   
-        elseif isfield(sMod.(ptsMod{indCurr}), 'date') %Dates same as model time step
+        elseif isfield(sMod.(ptsMod{indCurr}), varDate) %Dates same as model time step
             dataAll{cntrObs,iMDate} = sMod.(ptsMod{indCurr}).date; %Modelled date is always '.date' except mass balance
             
             daysMod = days_since(dateRef, dataAll{cntrObs,iMDate}, calUse);
@@ -443,9 +456,9 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
             end
 
             
-            %Switch between types of model dates (continuous versus
+            %Process data based on type of dates (continuous versus
             %start & end)
-            if isnumeric(dataAll{cntrObs,iMDate})
+            if isnumeric(dataAll{cntrObs,iMDate}) %Continuous
                 %Get dates scaling between mod and obs:
                 [nDaysMod, nDaysObs, indModStrt, indModEnd] ...
                     = days_mod_2_obs(daysMod, daysMod, daysObs{1}, daysObs{2});
@@ -555,32 +568,16 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
             error('mod_v_obs:noDate',['No time field appears to be present for ' sObs.(ptsObs{ii}) ' observation data.'])
         end
 
-
-        %Save time signature as reference date and "days_since" instead of
-        %date:
-        if iscell(daysMod)
-            dateRefCurr = dataAll{cntrObs,iMDate}{1}(1,:);
-        else
-            dateRefCurr = dataAll{cntrObs,iMDate}(1,:);
-        end
+        %Dates for model and observed should now be the same:
         dataAll{cntrObs,iMDate} = daysMod;
         dataAll{cntrObs,iODate} = daysObs;
-
-        
-        if all(isnan(dateRefCurr))
-           warning('mod_v_obs:noRefDate',...
-                    ['The reference date for ' char(fldCurrObs) ...
-                    ' could not be found. This variable is therefore '...
-                    'being skipped.']);
-                continue 
-        end
 
         
         %Write metadata for current observation-model:
             % {Measurement Type; reference date dateRef; [lon, lat]; evalulation metric ; evalulation type (sum, max, mean, ...)};
         %This could be defined within the ii loop, but by having it in the
         %kk loop it will be empty if no datafield found.
-        dataAll{cntrObs,iMeta}(1:3) = {fldCurrObs{kk}; dateRefCurr; [sObs.(ptsObs{ii}).lon, sObs.(ptsObs{ii}).lat]};
+        dataAll{cntrObs,iMeta}(1:3) = {fldCurrObs{kk}; dateRef; [sObs.(ptsObs{ii}).lon, sObs.(ptsObs{ii}).lat]};
         dataAll{cntrObs,iMeta}{5} = intrpType;
         %Diagnostics:
         %max(dataAll{cntrObs,iMData}(:))
@@ -1213,14 +1210,13 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                 
 
                 %%Write evaluation grids to file:
-                dateRefCurr = dataAll{indCurrType{ll}(1),iMeta}{2};
                 %Get dates and Estimate time bounds:
                 if  dateTyp == 2
                     daysBndsOut = [dataAll{indCurrType{ll}(1),iMDate}{1}(:), dataAll{indCurrType{ll}(1),iMDate}{2}(:)];
                     
                     daysUse = nanmean(daysBndsOut, 2);
-                    dateOut = days_2_date_v2(daysUse, dateRefCurr, calUse);
-                    dateWrtOut = [{days_2_date_v2(daysBndsOut(:,1), dateRefCurr, calUse)}, {days_2_date_v2(daysBndsOut(:,2), dateRefCurr, calUse)}];
+                    dateOut = days_2_date_v2(daysUse, dateRef, calUse);
+                    dateWrtOut = [{days_2_date_v2(daysBndsOut(:,1), dateRef, calUse)}, {days_2_date_v2(daysBndsOut(:,2), dateRef, calUse)}];
                 elseif dateTyp == 1
                     daysOut = dataAll{indCurrType{ll}(1),iMDate};
                     
@@ -1237,7 +1233,7 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                         daysBndsOut = [dataAll{indCurrType{ll}(1),iMDate}{1}(1,:); dataAll{indCurrType{ll}(1),iMDate}{2}(1,:)];
                     end
                     
-                    dateOut = days_2_date_v2(daysOut, dateRefCurr, calUse);
+                    dateOut = days_2_date_v2(daysOut, dateRef, calUse);
                     dateWrtOut = {dateOut};
                 else
                     error('modVObs:unknownDateType',['The date type with ' num2str(dateTyp) ' has not been programmed for.'])
@@ -1256,7 +1252,7 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                         daysBndsTemp(cntr:cntr+1) = daysBndsOut(zz,:);
                         cntr = cntr + 2;
                     end
-                    dateBndsOut = days_2_date_v2(daysBndsTemp, dateRefCurr, calUse);
+                    dateBndsOut = days_2_date_v2(daysBndsTemp, dateRef, calUse);
                 elseif regexpbl(wrtGridTyp, 'asc')
                     extWrt = 'asc';
                 else
