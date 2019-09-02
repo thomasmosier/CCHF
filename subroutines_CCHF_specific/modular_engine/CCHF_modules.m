@@ -116,8 +116,24 @@ if ~strcmpi(sMeta.iceGrid, 'none') && ~blSimpleMod
         else
             icalbedo_constant(sMeta);
         end
-    else
+    elseif ~regexpbl(icalbMod, 'none')
         error('cchfModules:icalbedoUnknown', ['The ice albedo representation ' icalbMod ' is not recognized.']);
+    end
+end
+
+
+%BLACK CARBON IMPACT ON ALBEDO:
+if ~blSimpleMod
+    bcalbMod = find_att(sMeta.module, 'bcalbedo');
+    if regexpbl(bcalbMod, 'Ming')
+        %If debris grid included, set albedo to 0.15 at debris covered ice locations:
+        if regexpbl(sMeta.mode,'parameter')
+            coef = cat(1,coef, icalbedo_constant());
+        else
+            icalbedo_constant(sMeta);
+        end
+    elseif ~regexpbl(bcalbMod, 'none')
+        error('cchfModules:icalbedoUnknown', ['The ice albedo representation ' bcalbMod ' is not recognized.']);
     end
 end
 
@@ -276,7 +292,7 @@ if regexpbl(find_att(sMeta.module, 'heat', 'no_warning'), 'SETI') || regexpbl(fi
         else
             density_Cosima(sMeta);
         end
-    else
+    elseif ~regexpbl(icalbMod, 'none')
         error('cchfModules:densityUnknown',['Snow density representation ' dnsMod ' not recognized.']);
     end
 end
