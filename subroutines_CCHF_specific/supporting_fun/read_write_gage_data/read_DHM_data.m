@@ -109,6 +109,12 @@ if regexpbl(extGage,{'csv'})
     data = table2array(allData(:,"discharge"));
     date = table2array(allData(:,{'yyyy' 'mm' 'dd'}));
     
+    % TEMPORARY ADJUSTMENT FOR LANGTANG ONLY!
+    warning(sprintf(['%s: WARNING: Dividing DHM gage data by 1000. ' ...
+		     ' This may not be appropriate for all DHM data.'], ...
+		    mfilename()));
+    data = data / 1000.;
+
 else
     error("%s: ERROR: DHM file %s in unknownFormat: %s\n", ...
         mfilename(), path, extGage);
