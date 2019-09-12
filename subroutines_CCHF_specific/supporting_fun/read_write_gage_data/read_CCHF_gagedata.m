@@ -46,7 +46,8 @@ end
 pathObsSv = fullfile(foldInput, [nameInput '.mat']);
 
 if exist(pathObsSv, 'file')
-    disp('CCHF format observation data loaded from previous model run.');
+    disp(['CCHF format observation data loaded from previous model run: ' ...
+	 pathObsSav]);
     load(pathObsSv);
 else
     %Open file:
