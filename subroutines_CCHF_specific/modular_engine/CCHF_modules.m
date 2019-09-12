@@ -133,7 +133,9 @@ if ~blSimpleMod
             icalbedo_constant(sMeta);
         end
     elseif ~regexpbl(bcalbMod, 'none')
-        error('cchfModules:icalbedoUnknown', ['The ice albedo representation ' bcalbMod ' is not recognized.']);
+        error('cchfModules:bcalbedoUnknown', ...
+            ['The black carbon albedo representation ' bcalbMod ...
+            ' is not recognized.']);
     end
 end
 
