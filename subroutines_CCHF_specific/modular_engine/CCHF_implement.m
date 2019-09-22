@@ -706,6 +706,9 @@ if ~regexpbl(sMeta.runType,'sim')
                 mkdir(dirModObs);
             end
             
+            %For debugging:
+            %mod_v_obs_v2(sObs{mm}, sOutput{mm}, sOpt.fitTest, 'combineType');
+            
             %Display all stats and write to file
             report_stats_v2(sObs{mm}, sOutput{mm}, cellStats, sPath{mm}.output, sMeta);
 

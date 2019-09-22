@@ -160,14 +160,14 @@ end
 
 obsTypes = unique(obsTypes);
 
-    
+  
 cntrObs = 0;
 %Find matches between observation and model output:
 for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
     indCurr = strcmpi(ptsObs{ii},ptsMod);
     
     if all(indCurr == 0)
-        warning('mod_vs_obs:missingField',['Observations at ' ...
+        warning('mod_vs_obs:missingField', ['Observations at ' ...
             ptsObs{ii} ' are being skipped because output are not '...
             'available in the model output.']);
         continue
@@ -234,7 +234,7 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
                 evalType = sObs.(ptsObs{ii}).([fldCurrObs{kk} '_type']);
             else
                 evalType = 'max';
-                warning('mod_v_obs:unknownEvalType',['The evaluation '...
+                warning('mod_v_obs:unknownEvalType', ['The evaluation '...
                     'type is assumed to be ' evalType ' for aggregating ' ...
                     fldCurrObs{kk} ' observations.']);
             end
@@ -356,8 +356,8 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
 
         
         %Get and process dates (various formats)
-        %The initial switching is between formats of observation dates
-        if isfield(sObs.(ptsObs{ii}), [fldCurrObs{kk} '_date']) %Observations occur at single point in time
+        %Check if observation data has continuous of start/end dates
+        if isfield(sObs.(ptsObs{ii}), [fldCurrObs{kk} '_date']) %Observation dates continuous
             %Get observation date:
             dataAll{cntrObs,iODate} = sObs.(ptsObs{ii}).([fldCurrObs{kk} '_date']);
             %Time resolution of observation:
@@ -430,8 +430,8 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
 
             %Match observation and modelled dates differently
             %depending on resolutions:             
-            if tResObs ~= tResMod 
-                if tResObs == 3 && tResMod == 2
+            if tResObs ~= tResMod %Date resolution not the same 
+                if tResObs == 3 && tResMod == 2 %Obs are daily and modelled are monthly
                     %Interpolate modelled data to daily resolution
                     %and extract for same dates present in
                     %observations
@@ -543,7 +543,7 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
                         ' elements. It is probably point data, but this specific clause has not been programmed for.']);
                 end
             else
-                
+                error('modVObs:modDateFormatUnknown','The modelled date format has not been programmed for.')
             end
 
             %Copy aggregated model data to data array:
@@ -559,6 +559,26 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
                     dataAll{cntrObs,iODate}{2}(indRemCurr,:) = []; %Observation end date
                 end
             end
+            %For checking: lon, lat, gridObsPlot, 'alphaData', ~isnan(gridObsPlot)
+            %figure; imagesc(squeeze(dataAll{cntrObs,iOData}), 'alphaData', ~isnan(squeeze(dataAll{cntrObs,iOData}))); caxis([nanmin(dataAll{cntrObs,iOData}(:)), nanmax(dataAll{cntrObs,iOData}(:))]); colorbar;
+            %figure; imagesc(squeeze(dataAll{cntrObs,iMData}), 'alphaData', ~isnan(squeeze(dataAll{cntrObs,iOData}))); caxis([nanmin(dataAll{cntrObs,iOData}(:)), nanmax(dataAll{cntrObs,iOData}(:))]); colorbar;
+            keyboard
+            dataTempO = squeeze(dataAll{cntrObs,iOData}); 
+            if ndims(dataTempO) == 3
+                if numel(dataTempO(:,1,1)) > 10
+                    indO = 9;
+                else
+                    indO = 1;
+                end
+                dataTempO = squeeze(dataTempO(indO,:,:));
+            end
+            dataTempM = squeeze(dataAll{cntrObs,iMData}); 
+            if ndims(dataTempM) == 3
+                dataTempM = squeeze(dataTempM(1,:,:));
+            end
+            pathOutM = fullfile('/Users/thomas/Downloads',[fldCurrObs{kk} '_mod.asc']); write_ESRI_v4(dataTempM, ESRI_hdr(lon, lat, 'corner'), pathOutM, 2);
+            pathOutO = fullfile('/Users/thomas/Downloads',[fldCurrObs{kk} '_obs.asc']); write_ESRI_v4(dataTempO, ESRI_hdr(lon, lat, 'corner'), pathOutO, 2);
+
             
             %Set model output dates to be same as observation (because
             %model output has been aggregated to observation time elements)
@@ -567,7 +587,7 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
         else
             error('mod_v_obs:noDate',['No time field appears to be present for ' sObs.(ptsObs{ii}) ' observation data.'])
         end
-
+        
         %Dates for model and observed should now be the same:
         dataAll{cntrObs,iMDate} = daysMod;
         dataAll{cntrObs,iODate} = daysObs;
