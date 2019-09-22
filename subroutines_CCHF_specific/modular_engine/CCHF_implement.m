@@ -146,24 +146,6 @@ if sMeta.useprevrun == 0
                 sPath{ii}.('coef')   = blanks(0);
             sHydro{ii} = struct;
 
-            %Load folder of previous calibration run that was interrupted
-            if ii == 1 && regexpbl(sMeta.runType, {'calib','resume'}, 'and')
-                if isempty(sMeta.pathresume)
-                    uiwait(msgbox(sprintf(['Select the folder containing '...
-                        'the unfinished calibration state file for ' sMeta.region{ii} '.\n']), ...
-                        '(Click OK to Proceed)','modal'));
-                    sPath{ii}.resume = uigetdir(startPath,['Select the folder containing '...
-                        'the unfinished calibration state file for ' sMeta.region{ii}]);
-                else
-                    if isfolder(sMeta.pathresume)
-                        pathResume = sMeta.pathresume;
-                    elseif isfile(sMeta.pathresume)
-                        [pathResume, ~, ~] = fileparts(sMeta.pathresume);
-                    end
-                    sPath{ii}.resume = pathResume;
-                end
-            end
-
             %Digital Elevation Model (DEM) selection and display:
             uiwait(msgbox(sprintf(['Select the Digital Elevation Model (DEM) for ' ...
                 sMeta.region{ii} '.\n']), '(Click OK to Proceed)','modal'));
@@ -337,6 +319,25 @@ if sMeta.useprevrun == 0
 
         %Create unique 'main' output directory based upon inputs:
         if ii == 1   
+
+            %Load folder of previous calibration run that was interrupted
+            if regexpbl(sMeta.runType, {'calib','resume'}, 'and')
+                if isempty(sMeta.pathresume)
+                    uiwait(msgbox(sprintf(['Select the folder containing '...
+                        'the unfinished calibration state file for ' sMeta.region{ii} '.\n']), ...
+                        '(Click OK to Proceed)','modal'));
+                    sPath{ii}.resume = uigetdir(startPath,['Select the folder containing '...
+                        'the unfinished calibration state file for ' sMeta.region{ii}]);
+                else
+                    if isfolder(sMeta.pathresume)
+                        pathResume = sMeta.pathresume;
+                    elseif isfile(sMeta.pathresume)
+                        [pathResume, ~, ~] = fileparts(sMeta.pathresume);
+                    end
+                    sPath{ii}.resume = pathResume;
+                end
+            end
+
             if isfield(sPath{ii},'resume')
                 foldOutputMain = sPath{ii}.resume;
                 [~, sMeta.strModule] = CCHF_out_dir(sPath{ii}, sMeta);
