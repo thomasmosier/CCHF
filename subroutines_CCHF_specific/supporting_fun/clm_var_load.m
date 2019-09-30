@@ -46,7 +46,8 @@ else
         ' has not been programmed for. Add it to the dictionary in this function']);
 end
 
-if sum(strcmpi(modules, 'bcalbedo')) > 0 && ~regexpbl(find_att(modules, 'bcalbedo'), {'none'})
+if sum(strcmpi(modules(:,1), 'bcalbedo')) > 0 ...
+        && ~regexpbl(find_att(modules, 'bcalbedo'), {'none'})
     varLd = [varLd, 'bcdep'];
     varDisp = [varDis, 'black carbon deposition (micrograms per day)'];
 end
