@@ -19,11 +19,11 @@
 % <http://www.gnu.org/licenses/>.
 
 
-function [data, date] = read_ts_table_data(path, inputUnits)
+function [data, date, latitude, longitude] = ...
+    read_ts_table_data(path, inputUnits)
 
-
-
-
+latitude = NaN;
+longitude = NaN;
 
 sepDate = {'\','/','-',':'};
 
@@ -157,6 +157,20 @@ elseif regexpbl(extGage,{'csv'})
 
         data = dataTemp(:,blData);
         
+    end
+    
+elseif regexpbl(extGage,{'dat'})
+    
+    % CHARIS streamgage files require different parsing
+    if regexpbl(fileNm,{'day_discharge'})
+        
+        [data, date, latitude, longitude] = read_CHARIS_data(path);
+        
+    else
+        error('readtstabledata:datFormat', ...
+        ['The .dat data in ' path ...
+            ' are expected to be CHARIS day_discharge data. but '...
+            ' the filename is not what was expected.'])
     end
     
 else
