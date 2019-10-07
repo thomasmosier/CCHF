@@ -110,12 +110,12 @@ varStake = 'stake';
 
 %Create output array for observations-model comparisons:
 dataAll = cell(0,5);
-%Format is: 
-    %{ii,1} = {Measurement Type; reference date dateRef; [lon, lat]; eval metric};
-    %{ii,2} = dates/days (Model)
-    %{ii,3} = data (Model)
-    %{ii,4} = days (Obs)
-    %{ii,5} = data (Obs)
+% Format is: 
+% {ii,1} = {Measurement Type; reference date dateRef; [lon, lat]; eval metric};
+% {ii,2} = dates/days (Model)
+% {ii,3} = data (Model)
+% {ii,4} = days (Obs)
+% {ii,5} = data (Obs)
 iMeta = 1;
 iMDate = 2;
 iMData = 3;
@@ -225,7 +225,7 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
             intrpType = 'sum';
         elseif regexpbl(fldCurrObs{kk}, {'casi', 'icx', 'snx', 'sca'}) %Snow cover
             %This is tricky because the data to compare with depends on the
-            %metric. If metric is ''Parajka' (following Parajka & Blöschl,
+            %metric. If metric is ''Parajka' (following Parajka & Blï¿½schl,
             %2008), then compare MODIS SCA with modelled SWE. Otherwise,
             %compare observed SCA with modelled SCA.
             indField = find(strcmpi(fldsCurrMod, fldCurrObs{kk}) == 1);
@@ -562,7 +562,7 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
             %For checking: lon, lat, gridObsPlot, 'alphaData', ~isnan(gridObsPlot)
             %figure; imagesc(squeeze(dataAll{cntrObs,iOData}), 'alphaData', ~isnan(squeeze(dataAll{cntrObs,iOData}))); caxis([nanmin(dataAll{cntrObs,iOData}(:)), nanmax(dataAll{cntrObs,iOData}(:))]); colorbar;
             %figure; imagesc(squeeze(dataAll{cntrObs,iMData}), 'alphaData', ~isnan(squeeze(dataAll{cntrObs,iOData}))); caxis([nanmin(dataAll{cntrObs,iOData}(:)), nanmax(dataAll{cntrObs,iOData}(:))]); colorbar;
-            keyboard
+            %keyboard
             dataTempO = squeeze(dataAll{cntrObs,iOData}); 
             if ndims(dataTempO) == 3
                 if numel(dataTempO(:,1,1)) > 10
@@ -576,8 +576,8 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
             if ndims(dataTempM) == 3
                 dataTempM = squeeze(dataTempM(1,:,:));
             end
-            pathOutM = fullfile('/Users/thomas/Downloads',[fldCurrObs{kk} '_mod.asc']); write_ESRI_v4(dataTempM, ESRI_hdr(lon, lat, 'corner'), pathOutM, 2);
-            pathOutO = fullfile('/Users/thomas/Downloads',[fldCurrObs{kk} '_obs.asc']); write_ESRI_v4(dataTempO, ESRI_hdr(lon, lat, 'corner'), pathOutO, 2);
+            %pathOutM = fullfile('/Users/thomas/Downloads',[fldCurrObs{kk} '_mod.asc']); write_ESRI_v4(dataTempM, ESRI_hdr(lon, lat, 'corner'), pathOutM, 2);
+            %pathOutO = fullfile('/Users/thomas/Downloads',[fldCurrObs{kk} '_obs.asc']); write_ESRI_v4(dataTempO, ESRI_hdr(lon, lat, 'corner'), pathOutO, 2);
 
             
             %Set model output dates to be same as observation (because
