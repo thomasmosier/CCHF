@@ -461,7 +461,7 @@ if sMeta.useprevrun == 0
             [sObs{ii}, pathCchfGage] = read_gagedata(pathGage{ii}, sHydro{ii}.(varLon), sHydro{ii}.(varLat), ...
                 'time',[sMeta.dateStart{ii};sMeta.dateEnd{ii}], ...
                 'mask',sHydro{ii}.dem);
-            
+
             %Save path to CCHF formatted obersvation data (to save and use
             %in future runs)
             if ~isempty(pathCchfGage)

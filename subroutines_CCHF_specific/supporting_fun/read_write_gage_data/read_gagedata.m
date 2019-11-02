@@ -50,7 +50,7 @@ szGrid = [numel(lat),numel(lon)];
 
 %Initialize output structure:
 sObs = struct;
-dataType = cell(0,1); %Record each datatype loaded (only used for writing CCHF formatted gagedata)
+obsTypes = cell(0,1); %Record each datatype loaded (only used for writing CCHF formatted gagedata)
 
 
 flagWrt = 0;
@@ -59,7 +59,7 @@ for ii = 1 : numel(path(:))
     
     if regexpbl(fileNm, 'cchf')
         [sGageCurr, varCurr] = read_CCHF_gagedata(path{ii}, lon, lat, mask);
-        dataType(end+1 : end+numel(varCurr(:))) = varCurr;
+        obsTypes(end+1 : end+numel(varCurr(:))) = varCurr;
         disp('finished loading cchf gagedata')
     elseif regexpbl(ext, {'.csv','.txt','.xls'}) && regexpbl(fileNm, {'flow','stream','discharge'})
         if regexpbl(fileNm, 'usgs')
@@ -88,7 +88,7 @@ for ii = 1 : numel(path(:))
             'lat',  latCurr,...
             varFlow, dataGage,...
             [varFlow '_date'], dateGage);
-        dataType{end+1} = 'flow';
+        obsTypes{end+1} = 'flow';
     elseif  regexpbl(fileNm, 'arc') %POINT SHAPEFILE data copied from ArcMap (CSV file?)
         flagWrt = 1; %If non-CCHF data being input, combine all data into one CCHF file after loading all.
         
@@ -101,9 +101,9 @@ for ii = 1 : numel(path(:))
         end
         
         if regexpbl(path{ii},'stake')
-            dataType{end+1} = 'stake';
+            obsTypes{end+1} = 'stake';
         elseif regexpbl(path{ii},{'snow','radar'},'and') || regexpbl(path{ii},'swe')
-            dataType{end+1} = 'radar';
+            obsTypes{end+1} = 'radar';
         end
     elseif ~isempty(regexp(path{ii}, 'MOD')) && regexpbl(path{ii}, {'hdf','nc'}) %MODIS DATA
         flagWrt = 1;
@@ -115,7 +115,7 @@ for ii = 1 : numel(path(:))
         end
         
         sGageCurr = import_MODIS_data(path{ii}, lon, lat, mask);
-    	dataType{end+1} = 'casi'; %Stands for Covered Area Snow and Ice
+    	obsTypes{end+1} = 'casi'; %Stands for Covered Area Snow and Ice
     elseif regexpbl(ext, {'.asc','.txt', '.nc'}) && regexpbl(fileNm, {'geodetic','dDEM', 'Bolch'})
         flagWrt = 1;
         
@@ -126,7 +126,7 @@ for ii = 1 : numel(path(:))
         end
         
         sGageCurr = import_geodetic_data(path{ii}, lon, lat, mask);
-        dataType{end+1} = 'geodetic'; %Mass balance at main grid
+        obsTypes{end+1} = 'geodetic'; %Mass balance at main grid
     else
         error('read_CCHF_geodata:unknownType',['Filename ' char(39) fileNm char(39) ...
             ' is not a recognized input type. Program more observation data type. '...
@@ -187,14 +187,15 @@ end
 if flagWrt == 1
     if iscell(path) && numel(path(:)) > 1
         %Find common output directory:
-        pathOut = char(path(:));
-        indSame = find(diff(pathOut,2) == 0);
+        pathTemp = char(path(:));
+        indSame = find(diff(pathTemp,2) == 0);
         if numel(indSame) < 2
-            [dirOut, ~, ~] = fileparts(pathOut);
+            [dirOut, ~, ~] = fileparts(pathTemp);
+            [dirOut, ~, ~] = fileparts(dirOut); %This moves the output directory one level up
         else
             indRtSame = find(diff(indSame) ~= 1, 1, 'first');
             if isempty(indRtSame)
-		dirOut = path{1}(1:indSame(end));
+                dirOut = path{1}(1:indSame(end));
             else
 		if isequal(path{1}(indSame(indRtSame)), filesep)
 		    dirOut = path{1}(1:indSame(indRtSame));
@@ -209,22 +210,25 @@ if flagWrt == 1
     end
     
     strTypes = blanks(0);
-    for ii = 1 : numel(dataType)
-        strTypes = [strTypes, '-', dataType{ii}];
+    for ii = 1 : numel(obsTypes)
+        strTypes = [strTypes, '-', obsTypes{ii}];
     end
 
-    pathOut = fullfile(dirOut,['CCHF_formatted_observations' strTypes '.txt']);
+    ccfhFileRt = ['CCHF_formatted_observations' strTypes];
+    pathOutTxt = fullfile(dirOut, [ccfhFileRt '.txt']);
+    pathOutMat = fullfile(dirOut, [ccfhFileRt '.mat']);
     
-    uiwait(msgbox(sprintf(['All the input gage data are being written'...
-        ' to ' char(39) strrep(pathOut, '\', '/') char(39) '.' char(10) 'This file can '...
-        'be used in place of all of the current gage files.']), ...
-        '(Click OK to Proceed)','modal'));
-    write_CCHF_gagedata(pathOut, sObs);
+    disp(['All the input gage data are being written to ' char(39) ...
+        strrep(pathOutTxt, '\', '/') char(39) '.' newline 'This file can '...
+        'be used in place of all of the current gage files.' newline ...
+        'This file can be moved to a preferred directory for future use.']);
+    save(pathOutMat, 'sObs', 'obsTypes');
+    write_CCHF_gagedata(pathOutTxt, sObs);
 end
 
 if nargout > 1
     if flagWrt == 1
-        varargout{1} = pathOut;
+        varargout{1} = pathOutTxt;
     else
         varargout{1} = '';
     end
@@ -257,16 +261,16 @@ if all2d(~isnan(time))
 
         %Remove non-data or date fields
         for kk = numel(nmsAll) : -1 : 1
-            if regexpbl(nmsAll{kk},{'lat', 'lon', 'att', 'path'});
+            if regexpbl(nmsAll{kk},{'lat', 'lon', 'att', 'path'})
                 nmsAll(kk) = [];
             end
         end
         
         %Identify data fields:
         varCurr = cell(0,1);
-        for kk = 1 : numel(dataType(:))
-            if any(strcmpi(dataType{kk}, nmsAll))
-                varCurr{end+1} = dataType{kk};
+        for kk = 1 : numel(obsTypes(:))
+            if any(strcmpi(obsTypes{kk}, nmsAll))
+                varCurr{end+1} = obsTypes{kk};
             end
         end
         

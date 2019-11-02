@@ -46,9 +46,9 @@ end
 pathObsSv = fullfile(foldInput, [nameInput '.mat']);
 
 if exist(pathObsSv, 'file')
-    disp(['CCHF format observation data loaded from previous model run: ' ...
+    disp(['CCHF format observation data are being loaded from previous model run: ' ...
 	 pathObsSv]);
-    load(pathObsSv);
+    load(pathObsSv, 'sObs', 'obsTypes');
 else
     %Open file:
     fid = fopen(path, 'rt');
@@ -65,7 +65,7 @@ else
 
     %Next, read each variable-location pair:
     %These pairs are seperated by a single blank line
-    varAll = cell(0,1);
+    obsTypes = cell(0,1);
     flagVarPair = 0;
     while flagVarPair == 0
         nameStCurr = 'NAN';
@@ -132,7 +132,7 @@ else
         end
 
         if ~isempty(varCurr)
-            varAll{end+1} = varCurr;
+            obsTypes{end+1} = varCurr;
         end
         
 %         if regexpbl(varCurr, 'flag')
@@ -217,7 +217,7 @@ else
 %                 fclose(fid); 
 % 
 %                 if nargout == 2
-%                     varargout{1} = varAll;
+%                     varargout{1} = obsTypes;
 %                 end
 %                 disp('returning')
                 break
@@ -352,7 +352,7 @@ else
         if isnumeric(lineCurr) %Means the end of the file has been reached.
             break
 %             if nargout == 2
-%                 varargout{1} = varAll;
+%                 varargout{1} = obsTypes;
 %             end
 %             %Close file and return to invoking function
 %             fclose(fid); 
@@ -363,8 +363,8 @@ else
     
     fclose(fid);
     
-    disp(['CCHF format observation data is being saved to: ' pathObsSv]);
-    save(pathObsSv, 'sObs', 'varAll');
+    disp(['Observation formatted for CCHF use are being saved to: ' pathObsSv]);
+    save(pathObsSv, 'sObs', 'obsTypes');
 end
 
 
@@ -391,5 +391,5 @@ end
 
 
 if nargout == 2
-    varargout{1} = varAll;
+    varargout{1} = obsTypes;
 end
