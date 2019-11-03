@@ -692,7 +692,7 @@ if ~regexpbl(sMeta.runType,'sim')
     end
     warning('off','all'); %Turn off warning that some time-series not being used.
     %Define additional stats to calculate on data
-    statsExtra = {'KGEr', 'KGEs', 'KGEb', 'NSE', 'MAPE', 'MAE'};
+    statsExtra = {'KGEr', 'KGEs', 'KGEb', 'NSE', 'Parajka', 'ParajkaOver', 'ParajkaUnder', 'MAPE', 'MAE'};
     if strcmpi(sOpt.fitTest,'kge')
         cellStats = [sOpt.fitTest, statsExtra];
     else
