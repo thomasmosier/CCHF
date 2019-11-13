@@ -170,6 +170,11 @@ latInterp = lat;
 
 %Loop over all MODIS files to load:
 for jj = 1 : numel(datesMODIS{1}(:,1))
+    if (0 == mod(jj, 50))
+        fprintf("%s: MODIS file index %d of %d\n", ...
+            mfilename(), jj, numel(datesMODIS{1}(:,1)));
+    end
+    
     if regexpbl(strFile, 'hdf')
         if jj == 1 %Calculate MODIS GRID
             lonEdgMODIS = linspace(-180,180,7201);
