@@ -47,7 +47,7 @@ end
 %Initialize ice thickness on first iteration:
 if ~regexpbl(sMeta.mode,'parameter') && sMeta.indCurr == 1
     if ~strcmpi(sMeta.iceGrid, 'none') 
-        iceWEMod = find_att(sMeta.module, 'glacier0');
+        iceWEMod = find_att(sMeta.module, 'glacier0', 'no_warning');
         if regexpbl(iceWEMod, 'Shea')
             %Estimate thickness (force balance based on equilibrium
             %assumption from Shea et al. 2015)
@@ -66,7 +66,7 @@ end
 
 
 %PARTITION PRECIPITATION INTO RAIN AND SNOWFALL:
-partMod = find_att(sMeta.module, 'partition');
+partMod = find_att(sMeta.module, 'partition', 'no_warning');
 if regexpbl(partMod, 'ramp') 
     if regexpbl(sMeta.mode,'parameter')
         coef = cat(1,coef,partition_ramp());
@@ -87,7 +87,7 @@ end
 
 %SNOW ALBEDO:
 if ~blSimpleMod %Albedo not used in simple degree-index model
-    snalbMod = find_att(sMeta.module, 'snalbedo');
+    snalbMod = find_att(sMeta.module, 'snalbedo', 'no_warning');
     if regexpbl(snalbMod, 'Pelli')
         if regexpbl(sMeta.mode,'parameter')
             coef = cat(1,coef, snalbedo_Pellicciotti());
@@ -108,7 +108,7 @@ end
 
 %ICE ALBEDO
 if ~strcmpi(sMeta.iceGrid, 'none') && ~blSimpleMod
-    icalbMod = find_att(sMeta.module, 'icalbedo');
+    icalbMod = find_att(sMeta.module, 'icalbedo', 'no_warning');
     if regexpbl(icalbMod, 'constant')
         %If debris grid included, set albedo to 0.15 at debris covered ice locations:
         if regexpbl(sMeta.mode,'parameter')
@@ -124,7 +124,16 @@ end
 
 %BLACK CARBON IMPACT ON ALBEDO:
 if ~blSimpleMod
-    bcalbMod = find_att(sMeta.module, 'bcalbedo');
+    bcalbMod = find_att(sMeta.module, 'bcalbedo', 'no_warning');
+    if isempty(bcalbMod)
+        bcalbMod = 'none';
+        sMeta.module(end+1,:) = {'bcalbedo', 'none'}; 
+        if sMeta.indCurr == 1
+            warning('CCHFModules:noBcModule',['No black carbon process '...
+                'representation was included. Therefore it is being set to ' char(39) 'none' char(39) '.']);
+        end
+    end
+    
     if regexpbl(bcalbMod, 'Ming')
         %If debris grid included, set albedo to 0.15 at debris covered ice locations:
         if regexpbl(sMeta.mode,'parameter')
@@ -142,7 +151,7 @@ end
 
 %TOP OF ATMOSPHERE SOLAR RADIATION (not used in simple degree index):
 if ~blSimpleMod
-    toaMod = find_att(sMeta.module,'toa');
+    toaMod = find_att(sMeta.module,'toa', 'no_warning');
 
     if regexpbl(toaMod, 'DeWalle')
         if regexpbl(sMeta.mode,'parameter')
@@ -181,7 +190,7 @@ end
 
 %TRANSMISSIVITY (not used in simple degree index):
 if ~blSimpleMod
-    transMod = find_att(sMeta.module,'atmtrans');
+    transMod = find_att(sMeta.module,'atmtrans', 'no_warning');
     if regexpbl(transMod, 'DeWalle')
         if regexpbl(sMeta.mode,'parameter')
             coef = cat(1,coef, atmtrans_DeWalle());
@@ -214,7 +223,7 @@ end
     
 
 %CRYOSPHERE HEAT:
-heatMod = find_att(sMeta.module, 'heat');
+heatMod = find_att(sMeta.module, 'heat', 'no_warning');
 if strcmpi(heatMod, 'SDI') || strcmpi(heatMod, 'STI')
     if regexpbl(sMeta.mode,'parameter')
         coef = cat(1,coef, heat_simple_degree());
@@ -280,7 +289,7 @@ end
 %SNOWPACK DENSITY:
 %Comes after heat flux because depends on cryosphere surface temperature
 if regexpbl(find_att(sMeta.module, 'heat', 'no_warning'), 'SETI') || regexpbl(find_att(sMeta.module, 'sndrain', 'no_warning'), 'Liston')%Albedo not used in simple degree-index model
-    dnsMod = find_att(sMeta.module, 'density');
+    dnsMod = find_att(sMeta.module, 'density', 'no_warning');
     
     if regexpbl(dnsMod, 'Liston')
         if regexpbl(sMeta.mode,'parameter')
@@ -302,7 +311,7 @@ end
 
 
 %SNOW ACCUMULATION AND MELT:
-massMod = find_att(sMeta.module, 'snmass');
+massMod = find_att(sMeta.module, 'snmass', 'no_warning');
 if regexpbl(massMod, 'step') %Calculate snow and glacier melt using heat threshold
     if regexpbl(sMeta.mode,'parameter')
         coef = cat(1,coef, snmass_step());
@@ -334,7 +343,15 @@ end
 
 
 %SNOW AVALANCHING (using glacier grid):
-avMod = find_att(sMeta.module, 'avalanche');
+avMod = find_att(sMeta.module, 'avalanche', 'no_warning');
+if isempty(avMod)
+    avMod = 'none';
+    sMeta.module(end+1,:) = {'avalanche', 'none'}; 
+    if sMeta.indCurr == 1
+        warning('CCHFModules:noAvalancheModule',['No avalanching process '...
+            'representation was included. Therefore it is being set to ' char(39) 'none' char(39) '.']);
+    end
+end
 if regexpbl(avMod, 'angle') 
     if regexpbl(sMeta.mode,'parameter')
         coef = cat(1,coef, avalanche_angle(sHydro));
@@ -349,7 +366,15 @@ end
 
 
 %SNOW SUBLIMATION:
-sublimateMod = find_att(sMeta.module,'sublimate');
+sublimateMod = find_att(sMeta.module,'sublimate', 'no_warning');
+if isempty(sublimateMod)
+    sublimateMod = 'none';
+    sMeta.module(end+1,:) = {'sublimate', 'none'}; 
+    if sMeta.indCurr == 1
+        warning('CCHFModules:noSublimateModule',['No sublimation process '...
+            'representation was included. Therefore it is being set to ' char(39) 'none' char(39) '.']);
+    end
+end
 if regexpbl(sublimateMod, 'Lutz')
     if regexpbl(sMeta.mode,'parameter')
         coef = cat(1,coef, sublimate_Lutz(sHydro));
@@ -451,7 +476,7 @@ end
 
 
 %PET:
-petMod = find_att(sMeta.module,'pet');
+petMod = find_att(sMeta.module,'pet', 'no_warning');
 if regexpbl(petMod, 'Hammon') %Use Hammon formulation
     if regexpbl(sMeta.mode, 'parameter')
         coef = cat(1,coef, PET_Hammon(datesUse, sHydro));
@@ -479,7 +504,7 @@ end
 
 
 %RUNOFF:
-runoffMod = find_att(sMeta.module, 'runoff');
+runoffMod = find_att(sMeta.module, 'runoff', 'no_warning');
 if regexpbl(runoffMod, 'bucket') %Calculate groundwater holding and release (using bucket model)
     if regexpbl(sMeta.mode, 'parameter')
         coef = cat(1,coef, runoff_bucket());
@@ -499,7 +524,7 @@ end
 
 
 %TRAVEL TIME THROUGH CELLS:
-timeMod = find_att(sMeta.module,'timelag');
+timeMod = find_att(sMeta.module,'timelag', 'no_warning');
 if regexpbl(timeMod, 'Johnstone') %Calculate time lag using Johnstone
     if regexpbl(sMeta.mode,'parameter')
         coef = cat(1,coef, tLag_Johnstone(sHydro));
@@ -521,7 +546,7 @@ end
 
 
 %ROUTING RUNOFF AND FLOW:
-flowMod = find_att(sMeta.module,'flow');
+flowMod = find_att(sMeta.module,'flow', 'no_warning');
 %Use numerical Muskingum method (allows dispersion)
 if regexpbl(flowMod, 'Muskingum')
     if regexpbl(sMeta.mode,'parameter') 
@@ -583,7 +608,7 @@ if ~strcmpi(sMeta.iceGrid, 'none') && sMeta.glacierDynamics == 1
 
         
         %Glacier velocity:
-        gvelMod = find_att(sMeta.module, 'glaciervel');
+        gvelMod = find_att(sMeta.module, 'glaciervel', 'no_warning');
         if regexpbl(gvelMod, 'sheer') 
             if regexpbl(sMeta.mode,'parameter')
                 coef = cat(1,coef, glaciervel_sheer());

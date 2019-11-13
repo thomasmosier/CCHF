@@ -60,7 +60,7 @@ end
 %     end
 % strScoreDisp{1} = ['The ' fitType ' scores between modeled and observed '...
 %     'values for the current run are: ' strScoreOut{1}];
-% 
+
 % mod_v_obs_v2(sObs, sOutput, fitType, 'plot', dirModObs,'combineType');
 [scoreAll, typeAll] = mod_v_obs_v2(sObs, sOutput, cellStats,'combineType');
 

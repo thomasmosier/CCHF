@@ -26,24 +26,25 @@ varLat = {'latitude','lat'};
 namesPtsWrt = fieldnames(sObs);
 sNum = '%.6g';
 
-[fold, nameInput, ~] = fileparts(path);
-if ~exist(fold, 'dir')
-    fold = pwd;
-    warning('writeCchfGagedata:unknownDir',['The output directory is' fold ...
+[foldIn, nameIn, ~] = fileparts(path);
+if ~exist(foldIn, 'dir')
+    foldIn = pwd;
+    warning('writeCchfGagedata:unknownDir',['The output directory is' foldIn ...
         ', which does not exist. Therefore, you will be prompted to enter the desired output directory.']);
-    fold = input(['Enter the folder path for where to write ' nameInput ':' char(10)],'s');
+    foldIn = input(['Enter the folder path for where to write ' nameIn ':' char(10)],'s');
     
-    if ~exist(fold, 'dir')
-        error('writeCchfGagedata:dirNotExist', ['The folder path ' fold ' does not exist.'])
+    if ~exist(foldIn, 'dir')
+        error('writeCchfGagedata:dirNotExist', ['The folder path ' foldIn ' does not exist.'])
     end
 end
-path = fullfile(fold, [nameInput '.txt']);
+path = fullfile(foldIn, [nameIn '.txt']);
 fid = fopen(path,'wt');
 
 %Write intro string
-fprintf(fid,'%s\n', ['CCHF formatted gagedata from ' char(39) nameInput char(39) '.']);
+fprintf(fid,'%s\n', ['CCHF formatted gagedata from ' char(39) nameIn char(39) '.']);
 fprintf(fid,'%s\n', 'Each point-variable pair of data will be written to this file but be separated by an empty line.');
 
+  
 %Write all substructures into same file, seperated by a blank line:
 for ii = 1 : numel(namesPtsWrt(:))
     %IDENTIFY HEADER INFORMATION:

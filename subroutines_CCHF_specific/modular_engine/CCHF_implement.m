@@ -461,7 +461,7 @@ if sMeta.useprevrun == 0
             [sObs{ii}, pathCchfGage] = read_gagedata(pathGage{ii}, sHydro{ii}.(varLon), sHydro{ii}.(varLat), ...
                 'time',[sMeta.dateStart{ii};sMeta.dateEnd{ii}], ...
                 'mask',sHydro{ii}.dem);
-            
+
             %Save path to CCHF formatted obersvation data (to save and use
             %in future runs)
             if ~isempty(pathCchfGage)
@@ -692,7 +692,7 @@ if ~regexpbl(sMeta.runType,'sim')
     end
     warning('off','all'); %Turn off warning that some time-series not being used.
     %Define additional stats to calculate on data
-    statsExtra = {'KGEr', 'KGEs', 'KGEb', 'NSE', 'MAPE', 'MAE'};
+    statsExtra = {'KGEr', 'KGEs', 'KGEb', 'NSE', 'Parajka', 'ParajkaOver', 'ParajkaUnder', 'MAPE', 'MAE'};
     if strcmpi(sOpt.fitTest,'kge')
         cellStats = [sOpt.fitTest, statsExtra];
     else
