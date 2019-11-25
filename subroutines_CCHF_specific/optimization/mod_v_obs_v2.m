@@ -699,7 +699,14 @@ for ii = 1 : numel(dataAll(:,1))
             %Remove 'Parajka' metric reference
             indMeth = regexpi(evalCurr{jj},'Parajka');
             if ~isempty(indMeth)
-                evalCurr{jj}(indMeth:indMeth+6) = [];
+                if strcmpi(evalCurr{jj}, 'Parajka')
+                    evalCurr{jj} = '';
+                else
+                    evalCurr{jj}(indMeth:indMeth+6) = [];
+                end
+                if isempty(evalCurr{jj})
+                    continue
+                end
             end
             
             %Remove underscores from start or end of method rank string:
@@ -741,9 +748,18 @@ for ii = 1 : numel(dataAll(:,1))
                 obsCurr '.']);
         end
     end %End of loop over metrics
+    clear jj
+    
+    for jj = numel(evalCurr(:)) : -1 : 1
+        if strcmpi(evalCurr{jj}, 'under') || strcmpi(evalCurr{jj}, 'over') %This can happen if 'Parajka' removed
+            evalCurr{jj} = '';
+        end
+    end
+    clear jj
     
     dataAll{ii,iMeta}{4} = evalCurr;
 end
+clear ii
 
 
 %Testing:
@@ -773,6 +789,7 @@ if regexpbl(typeCombine,'type') %Evaluate individually for each seperate observa
             for indCurr = 1 : numel(dataAll(:,1))
                 indCurrType(indCurr) = strcmpi(obsTypes{ii}, dataAll{indCurr,iMeta}{1});
             end
+            clear indCurr
             indCurrType = find(indCurrType == 1);
 
             fitTemp = nan(size(indCurrType));
@@ -782,6 +799,7 @@ if regexpbl(typeCombine,'type') %Evaluate individually for each seperate observa
                         fitness(dataAll{indCurrType(indCurr),iOData}, dataAll{indCurrType(indCurr),iMData}, dataAll{indCurrType(indCurr),iMeta}{4}{kk}, rmMod);
                 end
             end
+            clear indCurr
 
             %Combine scored for current type:
             if ~isempty(fitTemp)
@@ -1463,8 +1481,8 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                         plotModData = dataAll{indCurrType{ll}(indCurr),iMData};
                         plotObsData = dataAll{indCurrType{ll}(indCurr),iOData};
                         
-                        plotModData(isnan(plotModData) || isnan(plotObsData)) = nan;
-                        plotObsData(isnan(plotModData) || isnan(plotObsData)) = nan;
+                        plotModData(isnan(plotModData) | isnan(plotObsData)) = nan;
+                        plotObsData(isnan(plotModData) | isnan(plotObsData)) = nan;
                     elseif numel(szModData) == 3 && numel(szObsData) == 3 
                         plotModData = nan(numel(dataAll{indCurrType{ll}(indCurr),iMData}(:,1,1)),1);
                         plotObsData = nan(numel(dataAll{indCurrType{ll}(indCurr),iOData}(:,1,1)),1);
