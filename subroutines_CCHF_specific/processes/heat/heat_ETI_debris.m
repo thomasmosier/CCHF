@@ -65,7 +65,7 @@ sCryo.hfrsi = (1-sCryo.icalb).*sAtm.rstran.*squeeze(sAtm.rsdt(indRSDT,:,:));
 
 %Temperature melt energy:
 sCryo.hft  = wattperdegSnow*squeeze(sAtm.tas(sAtm.indtas,:,:));
-sCryo.hfti = wattperdegIce*squeeze(sAtm.tas(sAtm.indtas,:,:));
+sCryo.hfti = wattperdegIce *squeeze(sAtm.tas(sAtm.indtas,:,:));
 
 %Calculate melt potential using Pellicciotti's formulation: 
 %Because of conversion factor, each term has units of w/m^2

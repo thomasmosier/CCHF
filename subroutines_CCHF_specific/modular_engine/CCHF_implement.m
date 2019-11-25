@@ -329,9 +329,9 @@ if sMeta.useprevrun == 0
                     sPath{ii}.resume = uigetdir(startPath,['Select the folder containing '...
                         'the unfinished calibration state file for ' sMeta.region{ii}]);
                 else
-                    if isfolder(sMeta.pathresume)
+                    if exist(sMeta.pathresume, 'dir')
                         pathResume = sMeta.pathresume;
-                    elseif isfile(sMeta.pathresume)
+                    elseif exist(sMeta.pathresume, 'file')
                         [pathResume, ~, ~] = fileparts(sMeta.pathresume);
                     end
                     sPath{ii}.resume = pathResume;
