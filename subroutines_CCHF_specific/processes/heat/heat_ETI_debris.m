@@ -43,8 +43,8 @@ if isempty(varargin(:))
     return
 else
     sMeta = varargin{1};
-    wattperdegSnow = find_att(varargin{1}.coef, 'Watt_per_deg_snow');  
-    wattperdegIce  = find_att(varargin{1}.coef, 'Watt_per_deg_ice'); 
+    wattperdegS = find_att(varargin{1}.coef, 'Watt_per_deg_snow');  
+    wattperdegI  = find_att(varargin{1}.coef, 'Watt_per_deg_ice'); 
 end
 
 % fConvert = 3.34*10^8/3600; %Latent heat of fusion divided by seconds in hour. Comes from (L_f*density_water)/(1000mm/m * 3600 s/hr)
@@ -64,8 +64,8 @@ sCryo.hfrs  = (1-sCryo.snalb).*sAtm.rstran.*squeeze(sAtm.rsdt(indRSDT,:,:));
 sCryo.hfrsi = (1-sCryo.icalb).*sAtm.rstran.*squeeze(sAtm.rsdt(indRSDT,:,:));
 
 %Temperature melt energy:
-sCryo.hft  = wattperdegSnow*squeeze(sAtm.tas(sAtm.indtas,:,:));
-sCryo.hfti = wattperdegIce *squeeze(sAtm.tas(sAtm.indtas,:,:));
+sCryo.hft  = wattperdegS*squeeze(sAtm.tas(sAtm.indtas,:,:));
+sCryo.hfti = wattperdegI *squeeze(sAtm.tas(sAtm.indtas,:,:));
 
 %Calculate melt potential using Pellicciotti's formulation: 
 %Because of conversion factor, each term has units of w/m^2

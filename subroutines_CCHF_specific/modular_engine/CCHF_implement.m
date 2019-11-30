@@ -101,11 +101,21 @@ if sMeta.useprevrun == 0
         sPath = cell(nSites, 1);
         pathGage = cell(nSites, 1);
     end
-
+    
     %Create time vector to loop over based on start date and time-step
     %If this field populated here, it wont be populated inside each model call,
     %which saves time
-    sMeta = dates_run(sMeta, 'spin');
+    if regexpbl(sMeta.runType, {'simulate', 'resume'}, 'and')
+        %When simulate_resume is being used, start immediately from
+        %previous model state
+        sMeta.spinup = '0 months';
+        sMeta = dates_run(sMeta);
+    else
+        %In all other run types, add spinup period (as defined in main
+        %script)
+        sMeta = dates_run(sMeta, 'spin');
+    end
+    
     %Ensure format of sMeta.dateRun is consistent with sMeta.dateStart and
     %regions
     if isfield(sMeta, 'dateRun')
