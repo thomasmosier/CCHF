@@ -137,9 +137,9 @@ if ~blSimpleMod
     if regexpbl(bcalbMod, 'Ming')
         %If debris grid included, set albedo to 0.15 at debris covered ice locations:
         if regexpbl(sMeta.mode,'parameter')
-            coef = cat(1,coef, icalbedo_constant());
+            coef = cat(1,coef, bcalbedo_Ming());
         else
-            icalbedo_constant(sMeta);
+            bcalbedo_Ming(sMeta);
         end
     elseif ~regexpbl(bcalbMod, 'none')
         error('cchfModules:bcalbedoUnknown', ...
@@ -254,11 +254,17 @@ elseif regexpbl(heatMod, {'TI','Kraaijenbrink'},'and')
     else
         heat_TI_Kraaijenbrink(sMeta)
     end
-elseif regexpbl(heatMod, {'ETI','debris'},'and')
+elseif regexpbl(heatMod, {'ETI','debris','Reid'},'and')
     if regexpbl(sMeta.mode,'parameter')
-        coef = cat(1,coef, heat_ETI_debris());
+        coef = cat(1,coef, heat_ETI_debris_Reid());
     else
-        heat_ETI_debris(sMeta)
+        heat_ETI_debris_Reid(sMeta)
+    end
+elseif regexpbl(heatMod, {'ETI','debris','emp'},'and')
+    if regexpbl(sMeta.mode,'parameter')
+        coef = cat(1,coef, heat_ETI_debris_emp());
+    else
+        heat_ETI_debris_emp(sMeta)
     end
 elseif regexpbl(heatMod,'Mosier')
 %         if regexpbl(sMeta.mode,'parameter')

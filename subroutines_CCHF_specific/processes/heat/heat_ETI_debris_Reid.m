@@ -18,12 +18,18 @@
 % along with the Downscaling Package.  If not, see 
 % <http://www.gnu.org/licenses/>.
 
-function varargout = heat_ETI_debris(varargin)
+function varargout = heat_ETI_debris_Reid(varargin)
 %Debris portion inspired by:
 %Reid, T. D., & Brock, B. W. (2010). An energy-balance model for 
 %debris-covered glaciers including heat conduction through the debris 
 %layer. Journal of Glaciology, 56(199), 903?916.
 
+%Enhanced Temperature Index formation inspired by Pellicciotti:
+%Pellicciotti, F., Brock, B., Strasser, U., Burlando, P., Funk, M., & 
+%Corripio, J. (2005). An enhanced temperature-index glacier melt model 
+%including the shortwave radiation balance: development and testing for 
+%Haut Glacier d'Arolla, Switzerland. Journal of Glaciology, 51(175), 
+%573-587.
 
 global sCryo sAtm
 
@@ -57,29 +63,30 @@ if isempty(indRSDT)
     error('groundwater_bucket:noPETcurr','No PET grid was calculated for the current time-step');
 end
    
-
+%Initialization temperature for ice:
 tmpIce = 0;
 
+%Calculate shortwave radiation for snow and ice:
 sCryo.hfrs  = (1-sCryo.snalb).*sAtm.rstran.*squeeze(sAtm.rsdt(indRSDT,:,:));
 sCryo.hfrsi = (1-sCryo.icalb).*sAtm.rstran.*squeeze(sAtm.rsdt(indRSDT,:,:));
 
-%Temperature melt energy:
+%Temperature sensible energy (parameterization for convenction):
 sCryo.hft  = wattperdegS*squeeze(sAtm.tas(sAtm.indtas,:,:));
-sCryo.hfti = wattperdegI *squeeze(sAtm.tas(sAtm.indtas,:,:));
+sCryo.hfti = wattperdegI*squeeze(sAtm.tas(sAtm.indtas,:,:));
 
-%Calculate melt potential using Pellicciotti's formulation: 
+%Calculate snow melt potential using Pellicciotti's formulation: 
 %Because of conversion factor, each term has units of w/m^2
 sCryo.hfnet = sCryo.hft + sCryo.hfrs;
 
 %Initialize ice heatflux:
 sCryo.hfneti = nan(size(sCryo.hfnet), 'single');
 
-%Modify heat flux based on debris cover / clean ice
+%%Modify heat flux based on debris cover / clean ice
+%Find indices of debris covered and clean ice:
 if isfield(sCryo, 'icdbr') %If debris cover information available
     %Find debris-free and clean ice indices:
     indCln = find(sCryo.icdbr == 0);
     indDeb = find(sCryo.icdbr > 0);
-    
 else
     indCln = (1:numel(sCryo.hfnet));
     indDeb = [];
@@ -171,11 +178,18 @@ if ~isempty(indCln)
     sCryo.hfneti(indCln) = sCryo.hft(indCln) + sCryo.hfrsi(indCln); 
 end
 
-%Melt enhancement for glacier grid cells with ponds
-if isfield(sCryo, 'icpndx') 
-    %Melt is enhanced by factor of 10 at locations that are entirely ponds. 
-    %Use fractional relation to account for partially ponded grid cells
-    %(when fraction is 0, there is no impact; when fraction is 1, the
-    %factor is 10)
-    sCryo.hfneti = (1+9*sCryo.icpndx).*sCryo.hfneti;
+
+%Melt is enhanced by factor of 10 at locations that are entirely ponds.
+%Use fractional relation to account for partially ponded grid cells
+%(when fraction is 0, there is no impact; when fraction is 1, the
+%factor is 10)
+fldLake = '';
+if isfield(sCryo, 'icpndx')
+    fldLake = 'icpndx';
+elseif isfield(sCryo, 'iclk')
+    fldLake = 'iclk';
+end
+
+if ~isempty(fldLake)
+    sCryo.hfneti = (1+9*sCryo.(fldLake)).*sCryo.hfneti;
 end
