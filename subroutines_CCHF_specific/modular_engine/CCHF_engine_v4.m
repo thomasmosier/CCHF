@@ -478,7 +478,8 @@ for mm = 1 : nSites
 
 
             %Initialize cryosphere structure:
-            sCryo = rmfield_x(sAtm,{'data','pr','pre','tas','tasmin','tmin','tmn','tmax','tasmax','tmx','lat','lon'});
+            sCryo = struct;
+%             sCryo = rmfield_x(sAtm,{'data','pr','pre','tas','tasmin','tmin','tmn','tmax','tasmax','tmx','lat','lon'});
 
             %INITIALIZE ICE GRID
             %Load glacier coverage data and convert to depth:
@@ -519,7 +520,8 @@ for mm = 1 : nSites
 
             %%INITIALIZE LAND ARRAY (for vegetation cover - if used, soil
             %moisture, runoff, flow, etc.)
-            sLand = rmfield_x(sAtm,{'data','pr','pre','tas','tasmin','tmin','tmn','tmax','tasmax','tmx','lat','lon','time','attTime','indCurr'});
+            sLand = struct;
+%             sLand = rmfield_x(sAtm,{'data','pr','pre','tas','tasmin','tmin','tmn','tmax','tasmax','tmx','lat','lon','time','attTime','indCurr'});
 
             sLand.mrro = zeros(szDem,'single'); %runoff out of each cell
             sLand.flow = zeros(szDem,'single'); %flowrate at each cell
@@ -544,40 +546,6 @@ for mm = 1 : nSites
 %         if ~regexpbl(sMeta.mode,'parameter')
 %             [sAtm.indCurr, ~] = geodata_time_ind(sAtm, sMeta.dateRun{mm}(ii,:));
 %         end
-
-    %%FITTING PARAMETERS FOR PRE AND TMP:
-    %     if regexpbl(sMeta.mode,'parameter')
-    %         coef = cat(1,coef,{'cfPre', 0.1, 10, 4.0, 'backbone','input'});
-    %     else
-    %         cfPre = find_att(sMeta.coef,'cfPre');
-    %         sAtm.pr = cfPre*sAtm.pr;
-    %     end
-    %     if regexpbl(sMeta.mode,'parameter')
-    %         coef = cat(1,coef,{'cfTmp', -5, 5, 1.50, 'backbone','input'});
-    %     else
-    %         cfTmp = find_att(sMeta.coef,'cfTmp');
-    %         sAtm.tas = cfTmp + sAtm.tas;
-    %     end
-
-        %Allow katabatic scaling of temperature over glaciers:
-            %Katabatic wind (cooling effect over glaciers; see Shea and Moore, 
-            %2010 or Alaya, Pellicciotti, and Shea 2015 for more complex models):
-    %     if regexpbl(sMeta.mode,'parameter')
-    %         coef = cat(1,coef,{'cfKat', -6, 0, -2.75, 'backbone','input'});
-    %     else
-    %         cfKat = find_att(sMeta.coef,'cfKat');
-    % 
-    %         indIce = find(sCryo.ice > 0);
-    %         szTmp = size(sAtm.tas);
-    %         [tIce,~] = meshgrid((1:szTmp(1)),(1:numel(indIce)));
-    %         [rIce, cIce] = ind2sub(szTmp(2:3),indIce);
-    %         [~,rIce] = meshgrid((1:szTmp(1)),rIce);
-    %         [~,cIce] = meshgrid((1:szTmp(1)),cIce);
-    %         indIce = tIce + (rIce-1)*szTmp(1) + (cIce-1)*szTmp(2)*szTmp(1);
-    % 
-    %         sAtm.tas(indIce) = sAtm.tas(indIce) + cfKat;
-    %     end
-
 
 
         %%IMPLEMENT MODULES:

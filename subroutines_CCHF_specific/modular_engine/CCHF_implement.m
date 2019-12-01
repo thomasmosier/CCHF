@@ -146,14 +146,15 @@ if sMeta.useprevrun == 0
         if isempty(sMeta.pathinputs)
             %Initialize structure for current site
             sPath{ii} = struct;
-                sPath{ii}.('dem')    = blanks(0);
-                sPath{ii}.('pr')     = blanks(0);
-                sPath{ii}.('tas')    = blanks(0);
-                sPath{ii}.('tasmin') = blanks(0);
-                sPath{ii}.('tasmax') = blanks(0);
-                sPath{ii}.('regclip')= blanks(0);
-                sPath{ii}.('output') = blanks(0);
-                sPath{ii}.('coef')   = blanks(0);
+                sPath{ii}.('dem')     = blanks(0);
+                sPath{ii}.('pr')      = blanks(0);
+                sPath{ii}.('tas')     = blanks(0);
+                sPath{ii}.('tasmin')  = blanks(0);
+                sPath{ii}.('tasmax')  = blanks(0);
+                sPath{ii}.('bcdep')   = blanks(0);
+                sPath{ii}.('regclip') = blanks(0);
+                sPath{ii}.('output')  = blanks(0);
+                sPath{ii}.('coef')    = blanks(0);
             sHydro{ii} = struct;
 
             %Digital Elevation Model (DEM) selection and display:

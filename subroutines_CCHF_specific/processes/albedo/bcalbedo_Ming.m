@@ -1,6 +1,6 @@
 function varargout = bcalbedo_Ming(varargin)
 
-global sCryo
+global sCryo sAtm
 
 
 if isempty(varargin(:))
@@ -11,6 +11,7 @@ if isempty(varargin(:))
 else
 	%sMeta = varargin{1};
 end
+
 
 %Accounts for black carbon impacts according to:
 %Ming, J., Xiao, C., Cachier, H., Qin, D., Qin, X., Li, Z., & Pu, J. (2009). 
@@ -33,27 +34,27 @@ end
 
 
 
-%Get albedo of ice
-aFresh = find_att(varargin{1}.global,'albedo_snow_fresh');
-
-%From Ming et al. (2009):
-m = 0.0757;
-b = 0.0575;
-
-albRedTop = 1 - (m*sCryo.snbctop + b)/100;
-albRedTot = 1 - (m*sCryo.bctot   + b)/100;
-
-%%Snow albedo calculation:
-sCryo.snalbbc = albRedTop*sCryo.snalb;
-
-%Set albedo limits
-sCryo.snalbbc(sCryo.snalbbc > aFresh) = aFresh;
-sCryo.snalbbc(sCryo.snalbbc < 0) = 0;
-%sCryo.snalbbc(isnan(sCryo.snalbbc)) = aUnder; 
-
-%%Ice albedo calculation:
-sCryo.icalbbc = albRedTot*sCryo.icalb;
-
-%Set albedo limits
-sCryo.snalbbc(sCryo.snalbbc > aFresh) = aFresh;
-sCryo.snalbbc(sCryo.snalbbc < 0) = 0;
+% %Get albedo of ice
+% aFresh = find_att(varargin{1}.global,'albedo_snow_fresh');
+% 
+% %From Ming et al. (2009):
+% m = 0.0757;
+% b = 0.0575;
+% 
+% albRedTop = 1 - (m*sCryo.snbctop + b)/100;
+% albRedTot = 1 - (m*sCryo.bctot   + b)/100;
+% 
+% %%Snow albedo calculation:
+% sCryo.snalbbc = albRedTop*sCryo.snalb;
+% 
+% %Set albedo limits
+% sCryo.snalbbc(sCryo.snalbbc > aFresh) = aFresh;
+% sCryo.snalbbc(sCryo.snalbbc < 0) = 0;
+% %sCryo.snalbbc(isnan(sCryo.snalbbc)) = aUnder; 
+% 
+% %%Ice albedo calculation:
+% sCryo.icalbbc = albRedTot*sCryo.icalb;
+% 
+% %Set albedo limits
+% sCryo.snalbbc(sCryo.snalbbc > aFresh) = aFresh;
+% sCryo.snalbbc(sCryo.snalbbc < 0) = 0;

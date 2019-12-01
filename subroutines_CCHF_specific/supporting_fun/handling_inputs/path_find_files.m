@@ -24,10 +24,10 @@ disp('Finding files to load during model runs. This may take several minutes (de
 
 gcmRefP = [-1,-1,-1]; dateStartP = [-1,-1,-1]; dateEndP = [-1,-1,-1];
 
-datesUse = sMeta.dateRun;
-if iscell(datesUse)
+datesMod = sMeta.dateRun;
+if iscell(datesMod)
     if isfield(sMeta, 'siteCurr')
-        datesUse = datesUse{sMeta.siteCurr};
+        datesMod = datesMod{sMeta.siteCurr};
     else
         error('pathFindFiles:noSiteCurr', ['The date field is a cellarray. '...
             'This requires the presence of a siteCurr field to determine which index to use.']);
@@ -42,103 +42,135 @@ for ll = 1 : numel(sMeta.varLd)
     end
     
     %Find files in present path:
-    fileNcTemp = find_files(sPath.(sMeta.varLd{ll}),'nc');
-    if isempty(fileNcTemp)
-	fileNcTemp = find_files(sPath.(sMeta.varLd{ll}),'asc');
+    filesTemp = find_files(sPath.(sMeta.varLd{ll}),'nc'); %Try NetCDF first
+    if isempty(filesTemp)
+        filesTemp = find_files(sPath.(sMeta.varLd{ll}),'asc'); %Gridded ASCII
     end
-    if isempty(fileNcTemp)
-	fileNcTemp = find_files(sPath.(sMeta.varLd{ll}),'txt');
+    if isempty(filesTemp)
+        filesTemp = find_files(sPath.(sMeta.varLd{ll}),'txt'); %Gridded text
     end
-    if isempty(fileNcTemp)
+    if isempty(filesTemp)
         warning('load_ts:uknownDataType',['Currently this function can '...
             'only work with netCDF, ASC, and TXT files.']);
         return
     end
     
+    
     %Test if function can read file name (based on CMIP5 convention):
-    testNc = CMIP5_time(fileNcTemp{1});
+    testNc = CMIP5_time(filesTemp{1});
 
+    
     %Files are in format that can be read by 'CMIP5_time':
     if sum(isnan(testNc(1,:))) <= 1
-            indTest = numel(datesUse(1,:));
-        testDate = CMIP5_time(fileNcTemp{1});
+        %Define dates present in files
+            indTest = numel(datesMod(1,:));
+        testDate = CMIP5_time(filesTemp{1});
             testDate = testDate(:,~isnan(testDate(1,:)));
             indTest = min(numel(testDate(1,:)),indTest); 
 
-        dateStart = nan(numel(fileNcTemp),indTest);
-        dateEnd   = nan(numel(fileNcTemp),indTest);
+        dateDataStart = nan(numel(filesTemp),indTest);
+        dateDataEnd   = nan(numel(filesTemp),indTest);
 
-        for kk = 1 : numel(fileNcTemp)
-            testDate = CMIP5_time(fileNcTemp{kk});
-            dateStart(kk,:) = testDate(1,1:indTest);
-            dateEnd(kk,:) = testDate(2,1:indTest);
-        end
-
-        if regexpbl(fileNcTemp{1}, '.nc')
-            attTime = ncinfo(fullfile(sPath.(sMeta.varLd{ll}), fileNcTemp{1}), 'time');
-                attTime = squeeze(struct2cell(attTime.Attributes))';
-
-            [gcmRef, gcmUnits] = NC_time_units(attTime);
-            cal =  NC_cal(attTime);
-
-            if ll == 1 || ~isequal(gcmRef, gcmRefP)
-                daysModRun  = days_since(gcmRef, datesUse, cal);
-            end
-            if ll == 1 || ~isequal(dateStart, dateStartP) || ~isequal(dateEnd, dateEndP)
-                daysStart = days_since(gcmRef, dateStart, cal);
-                daysEnd   = days_since(gcmRef, dateEnd, cal);
-                if regexpbl(gcmUnits,'hour')
-                    daysStart = daysStart / 24;
-                    daysEnd = daysEnd / 24;
-                end
-            end
-        else
-            gcmRef = [0, 0, 0];
-            
-            testNc = CMIP5_time(fileNcTemp{1});
-            indRem = find(isnan(testNc(1,:)));
-            if ~isempty(indRem)
-                gcmRef(   :, indRem) = [];
-            end
-            cal = 'gregorian';
-
-            daysStart   = days_since(gcmRef, dateStart, cal);
-            daysEnd     = days_since(gcmRef,   dateEnd, cal);
-            daysModRun  = days_since(gcmRef, datesUse, cal);
+        for kk = 1 : numel(filesTemp)
+            testDate = CMIP5_time(filesTemp{kk});
+            dateDataStart(kk,:) = testDate(1,1:indTest);
+            dateDataEnd(kk,:) = testDate(2,1:indTest);
         end
         
-        sPath.([sMeta.varLd{ll} 'File']) = cell(numel(datesUse(:,1)),1);
-        for kk = 1 : numel(daysModRun)
-            indUse = intersect(find(daysModRun(kk) >= daysStart), find(daysModRun(kk) <= daysEnd));
-            if numel(indUse) == 1
-                sPath.([sMeta.varLd{ll} 'File']){kk} = fullfile(sPath.(sMeta.varLd{ll}), fileNcTemp{indUse});
-            elseif numel(indUse) == 0
-                sPath.([sMeta.varLd{ll} 'File']){kk} = blanks(0);
-                error('path_file_find:nofile',['No climate file found for ' ...
-                    num2str(datesUse(kk,1)) '-' num2str(datesUse(kk,2)) ...
-                    '. May need to change start or end times.']);
+        %Check if input data are for one year or multiple years
+        if dateDataStart(1,1) == dateDataEnd(1,1) && all(diff(dateDataStart(:,1)) == 0) && all(diff(dateDataEnd(:,1)) == 0)
+            dataTyp = 'avg';
+        else
+            dataTyp = 'ts';
+        end
+        
+
+        if strcmpi(dataTyp, 'ts')
+            %Convert dates (data files and model) to common 'days_since' format
+            if regexpbl(filesTemp{1}, '.nc')
+                attTime = ncinfo(fullfile(sPath.(sMeta.varLd{ll}), filesTemp{1}), 'time');
+                    attTime = squeeze(struct2cell(attTime.Attributes))';
+
+                [gcmRef, gcmUnits] = NC_time_units(attTime);
+                cal =  NC_cal(attTime);
+
+                if ll == 1 || ~isequal(gcmRef, gcmRefP)
+                    daysModRun = days_since(gcmRef, datesMod, cal);
+                end
+                if ll == 1 || ~isequal(dateDataStart, dateStartP) || ~isequal(dateDataEnd, dateEndP)
+                    daysStart = days_since(gcmRef, dateDataStart, cal);
+                    daysEnd   = days_since(gcmRef, dateDataEnd, cal);
+                    if regexpbl(gcmUnits,'hour')
+                        daysStart = daysStart / 24;
+                        daysEnd = daysEnd / 24;
+                    end
+                end
             else
-                error('path_file_find:multfile',['Multiple climate files found for ' ...
-                    num2str(datesUse(kk,1)) '-' num2str(datesUse(kk,2)) '.' ]);
+                gcmRef = [0, 0, 0];
+
+                testNc = CMIP5_time(filesTemp{1});
+                indRem = find(isnan(testNc(1,:)));
+                if ~isempty(indRem)
+                    gcmRef(   :, indRem) = [];
+                end
+                cal = 'gregorian';
+
+                daysStart   = days_since(gcmRef, dateDataStart, cal);
+                daysEnd     = days_since(gcmRef,   dateDataEnd, cal);
+                daysModRun  = days_since(gcmRef,      datesMod, cal);
             end
+
+            %Set indices of files to use for each day of model run
+            sPath.([sMeta.varLd{ll} 'File']) = cell(numel(datesMod(:,1)),1);
+            for kk = 1 : numel(daysModRun)
+                indUse = intersect(find(daysModRun(kk) >= daysStart), find(daysModRun(kk) <= daysEnd));
+                if numel(indUse) == 1
+                    sPath.([sMeta.varLd{ll} 'File']){kk} = fullfile(sPath.(sMeta.varLd{ll}), filesTemp{indUse});
+                elseif numel(indUse) == 0
+                    sPath.([sMeta.varLd{ll} 'File']){kk} = blanks(0);
+                    error('path_file_find:nofile',['No climate file found for ' ...
+                        num2str(datesMod(kk,1)) '-' num2str(datesMod(kk,2)) ...
+                        '. May need to change start or end times.']);
+                else
+                    error('path_file_find:multfile',['Multiple climate files found for ' ...
+                        num2str(datesMod(kk,1)) '-' num2str(datesMod(kk,2)) '.' ]);
+                end
+            end
+            clear indUse
+        elseif strcmpi(dataTyp, 'avg')
+            %Set indices of files to use for each day of model run (based
+            %on day of the year, rather than full date)
+            
+            %Initialize output:
+            sPath.([sMeta.varLd{ll} 'File']) = cell(numel(datesMod(:,1)),1);
+            
+            %Loop over input files:
+            for kk = 1 : numel(dateDataStart(:,1))
+                dateDataFilledCurr = date_vec_fill(dateDataStart(kk,:), dateDataEnd(kk,:), 'gregorian');
+                
+                indUse = find(ismember(datesMod(:,2:3), dateDataFilledCurr(:,2:3), 'rows'));
+                %datesMod(indUse,2:3)
+                sPath.([sMeta.varLd{ll} 'File'])(indUse) = {fullfile(sPath.(sMeta.varLd{ll}), filesTemp{kk})};
+            end
+            clear indUse
         end
         
     else
         %Try underscore convention:
-        indUnd = regexpi(fileNcTemp{1}, '_');
+        indUnd = regexpi(filesTemp{1}, '_');
       	testDigit = zeros(numel(indUnd) + 1, 1);
         for ii = 1 : numel(testDigit)
             if ii == 1 
-                if ~isnan(str2double(fileNcTemp{1}(1:indUnd(1)-1)))
+                if ~isnan(str2double(filesTemp{1}(1:indUnd(1)-1)))
                     testDigit(ii) = 1; 
                 end
             elseif ii == numel(testDigit) 
-                indExt = regexpi(fileNcTemp{1}, '\.');
-                if ~isnan(str2double(fileNcTemp{1}(indUnd(end)+1:indExt(end)-1)))
+                indExt = regexpi(filesTemp{1}, '\.');
+                if ~isnan(str2double(filesTemp{1}(indUnd(end)+1:indExt(end)-1)))
                     testDigit(ii) = 1; 
                 end
             else
-                if ~isnan(str2double(fileNcTemp{1}(indUnd(ii-1)+1:indUnd(ii)-1)))
+                if ~isnan(str2double(filesTemp{1}(indUnd(ii-1)+1:indUnd(ii)-1)))
                     testDigit(ii) = 1;
                 end
             end
@@ -151,21 +183,21 @@ for ll = 1 : numel(sMeta.varLd)
                 'path_find_files' char(39) ' function is aborting early.']);
             continue
         else
-            dateFiles = nan(numel(fileNcTemp),sum(testDigit));
+            dateFiles = nan(numel(filesTemp),sum(testDigit));
             
             %loop over files:
-            for kk = 1 : numel(fileNcTemp)
-                indUnd = regexpi(fileNcTemp{kk}, '_');
-                indExt = regexpi(fileNcTemp{kk}, '\.');
+            for kk = 1 : numel(filesTemp)
+                indUnd = regexpi(filesTemp{kk}, '_');
+                indExt = regexpi(filesTemp{kk}, '\.');
                 if sum(testDigit) == 2
                     dateFiles(kk,:) = ...
-                        [str2double(fileNcTemp{kk}(indUnd(end-1)+1:indUnd(end)-1)), ...
-                        str2double(fileNcTemp{kk}(indUnd(end)+1:indExt(end)-1))];
+                        [str2double(filesTemp{kk}(indUnd(end-1)+1:indUnd(end)-1)), ...
+                        str2double(filesTemp{kk}(indUnd(end)+1:indExt(end)-1))];
                 elseif sum(testDigit) == 3
                     dateFiles(kk,:) = ...
-                        [str2double(fileNcTemp{kk}(indUnd(end-2)+1:indUnd(end-1)-1)), ...
-                        str2double(fileNcTemp{kk}(indUnd(end-1)+1:indUnd(end)-1)), ...
-                        str2double(fileNcTemp{kk}(indUnd(end)+1:indExt(end)-1))];
+                        [str2double(filesTemp{kk}(indUnd(end-2)+1:indUnd(end-1)-1)), ...
+                        str2double(filesTemp{kk}(indUnd(end-1)+1:indUnd(end)-1)), ...
+                        str2double(filesTemp{kk}(indUnd(end)+1:indExt(end)-1))];
                 else
                     warning('path_find_files:subdaily',['Subdaily '...
                         'time-series inputs in ASCII format have not been programmed for.']);
@@ -173,20 +205,20 @@ for ll = 1 : numel(sMeta.varLd)
             end
             
             
-            sPath.([sMeta.varLd{ll} 'File']) = cell(numel(datesUse(:,1)),1);
-            for kk = 1 : numel( datesUse(:,1))
-                indUse = find(ismember(dateFiles, datesUse(kk,:),'rows') == 1);
+            sPath.([sMeta.varLd{ll} 'File']) = cell(numel(datesMod(:,1)),1);
+            for kk = 1 : numel( datesMod(:,1))
+                indUse = find(ismember(dateFiles, datesMod(kk,:),'rows') == 1);
                 
                 if numel(indUse) == 1
-                    sPath.([sMeta.varLd{ll} 'File']){kk} = fullfile(sPath.(sMeta.varLd{ll}), fileNcTemp{indUse});
+                    sPath.([sMeta.varLd{ll} 'File']){kk} = fullfile(sPath.(sMeta.varLd{ll}), filesTemp{indUse});
                 elseif numel(indUse) == 0
                     sPath.([sMeta.varLd{ll} 'File']){kk} = blanks(0);
                     error('path_file_find:nofile',['No climate file found for ' ...
-                        num2str(datesUse(kk,1)) '-' num2str(datesUse(kk,2)) ...
+                        num2str(datesMod(kk,1)) '-' num2str(datesMod(kk,2)) ...
                         '. May need to change start or end times.']);
                 else
                     error('path_file_find:multfile',['Multiple climate files found for ' ...
-                        num2str(datesUse(kk,1)) '-' num2str(datesUse(kk,2)) '.' ]);
+                        num2str(datesMod(kk,1)) '-' num2str(datesMod(kk,2)) '.' ]);
                 end
             end
             %Put special indicator stating resolution of file:
