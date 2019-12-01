@@ -27,19 +27,33 @@ function disp_CCHF_meta_v2(sPath, sMeta)
 [dateStart, strStartTyp] = date_min(sMeta.dateStart);
 [dateEnd  ,   strEndTyp] = date_min(  sMeta.dateEnd);
 if regexpbl(strStartTyp, 'mult') || regexpbl(strEndTyp, 'mult')
-    disp(['The CCHF hydrologic model is being run in ' sMeta.runType ' mode.'...
+    disp(['The CCHF model is being run in ' sMeta.runType ' mode.'...
         char(10) 'Separate start and end dates have been selected for various sites. '...
         'The earliest start date is ' strStartTyp num2str(dateStart(2)) ...
         '/' num2str(dateStart(1)) ' and the latest end date is ' strEndTyp num2str(dateEnd(2)) ...
         '/' num2str(dateEnd(1)) ', with a spinup period of ' ...
-        num2str(sMeta.spinup) ' months prior to the start date.']);    
+        num2str(sMeta.spinup) ' months prior to the start date.' char(10)]);    
 else
     disp(['The CCHF hydrologic model is being run in ' sMeta.runType ' mode.'...
         char(10) 'The model run will begin ' strStartTyp num2str(dateStart(2)) ...
         '/' num2str(dateStart(1)) ' and will end ' strEndTyp num2str(dateEnd(2)) ...
         '/' num2str(dateEnd(1)) ', with a spinup period of ' ...
-        num2str(sMeta.spinup) ' months prior to the start date.']);
+        num2str(sMeta.spinup) ' months prior to the start date.' char(10)]);
 end
+
+if regexpbl(sMeta.runType, {'simulate','resume'}, 'and')
+    disp(['The model state is being loaded from ' char(39) sMeta.('dirloadstate') ...
+        char(39) ' instead of performing a model spinup to initialize the state (based on selected run type).'])
+end
+
+
+%Display modules chosen:
+disp('The chosen set of module representations is: ');
+for ii = 1 : numel(sMeta.module(:,1))
+    disp([sMeta.module{ii,1} ' = ' sMeta.module{ii,2}]);
+end
+disp(blanks(1));
+
 
 %DISPLAY INPUT DATA
 for ii = 1 : numel(sPath(:))
@@ -54,6 +68,9 @@ for ii = 1 : numel(sPath(:))
         disp(['Maximum temperature time-series data will be loaded from ' char(39) sPath{ii}.tasmax char(39) '.']);
     end
 end
+
+%Create blank line
+disp('');
     
     
 % %DISPLAY MODEL ROUTINE NAMES AND COEFFICIENTS USED

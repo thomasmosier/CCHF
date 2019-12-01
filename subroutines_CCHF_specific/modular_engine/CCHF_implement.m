@@ -533,19 +533,12 @@ if sMeta.useprevrun == 0
 
 
     %%DISPLAY RELEVENT CONTENT TO CONSOLE
-    %Display modules chosen:
-    disp('The chosen set of module representations is: ');
-    for ii = 1 : numel(sMeta.module(:,1))
-        disp([sMeta.module{ii,1} ' = ' sMeta.module{ii,2}]);
-    end
-    disp(blanks(1));
-
     %Display message with citation information:
     [~] = MHS_cite_v2('CCHF');
 
     %Display modeling package being used and user choices:
-    [~,dFold1,dFold2] = fileparts(pwd);
-    disp([char(39) dFold1 dFold2 char(39) ' is being used.' char(10)]);
+%     [~,dFold1,dFold2] = fileparts(pwd);
+%     disp([char(39) dFold1 dFold2 char(39) ' is being used.' char(10)]);
     disp_CCHF_meta_v2(sPath, sMeta);
 
 

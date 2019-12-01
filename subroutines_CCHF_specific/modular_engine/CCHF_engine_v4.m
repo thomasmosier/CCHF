@@ -318,7 +318,7 @@ for mm = 1 : nSites
     
     
     if regexpbl(sMeta.mode,'parameter') && mm == 1
-        disp(['The CCHF model is being run in ' char(39) sMeta.mode char(39) ' mode.']);
+%         disp(['The CCHF model is being run in ' char(39) sMeta.mode char(39) ' mode.']);
         %Define date vector of time steps to loop over:
         if iscell(sMeta.dateRun)
             if regexpbl(sMeta.dt,'month')
