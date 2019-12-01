@@ -90,22 +90,34 @@ varValOut = 'multival';
 valRt = 'output_';
             
 
-%'sMeta.useprevrun' provides option to load output from previous run (not normal
-%condition)
-if sMeta.useprevrun == 0
+% %'sMeta.useprevrun' provides option to load output from previous run (not normal
+% %condition)
+% if sMeta.useprevrun == 0
     
     %Either load path inputs or initialize arrays for assignment
+    blNewLoad = 1;
     if ~isempty(sMeta.pathinputs)
-        load(sMeta.pathinputs)
+        load(sMeta.pathinputs);
+        blNewLoad = 0;
     else
         sPath = cell(nSites, 1);
         pathGage = cell(nSites, 1);
     end
-
+    
     %Create time vector to loop over based on start date and time-step
     %If this field populated here, it wont be populated inside each model call,
     %which saves time
-    sMeta = dates_run(sMeta, 'spin');
+    if regexpbl(sMeta.runType, {'simulate', 'resume'}, 'and')
+        %When simulate_resume is being used, start immediately from
+        %previous model state
+        sMeta.spinup = '0 months';
+        sMeta = dates_run(sMeta);
+    else
+        %In all other run types, add spinup period (as defined in main
+        %script)
+        sMeta = dates_run(sMeta, 'spin');
+    end
+    
     %Ensure format of sMeta.dateRun is consistent with sMeta.dateStart and
     %regions
     if isfield(sMeta, 'dateRun')
@@ -126,6 +138,9 @@ if sMeta.useprevrun == 0
 
     %Load global constants from funtion:
     sMeta.global = global_params; %contains global parameter values (albedo of ice, etc.)
+    
+    %Identify climate variables to load:
+    [sMeta.varLd, sMeta.varLdDisp] = clm_var_load(sMeta.module);
 
 
     %LOCATE INPUTS FOR EACH SITE:
@@ -133,17 +148,18 @@ if sMeta.useprevrun == 0
     %Loop over sites:
     for ii = 1 : nSites
         %Only open UI if inputs paths not already known
-        if isempty(sMeta.pathinputs)
+        if blNewLoad == 1
             %Initialize structure for current site
             sPath{ii} = struct;
-                sPath{ii}.('dem')    = blanks(0);
-                sPath{ii}.('pr')     = blanks(0);
-                sPath{ii}.('tas')    = blanks(0);
-                sPath{ii}.('tasmin') = blanks(0);
-                sPath{ii}.('tasmax') = blanks(0);
-                sPath{ii}.('regclip')= blanks(0);
-                sPath{ii}.('output') = blanks(0);
-                sPath{ii}.('coef')   = blanks(0);
+                sPath{ii}.('dem')     = blanks(0);
+                sPath{ii}.('pr')      = blanks(0);
+                sPath{ii}.('tas')     = blanks(0);
+                sPath{ii}.('tasmin')  = blanks(0);
+                sPath{ii}.('tasmax')  = blanks(0);
+                sPath{ii}.('bcdep')   = blanks(0);
+                sPath{ii}.('regclip') = blanks(0);
+                sPath{ii}.('output')  = blanks(0);
+                sPath{ii}.('coef')    = blanks(0);
             sHydro{ii} = struct;
 
             %Digital Elevation Model (DEM) selection and display:
@@ -293,25 +309,6 @@ if sMeta.useprevrun == 0
             end
 
 
-    %         %If a binary grid is being used to clip the region:
-    %         if blClip == 1
-    %             uiwait(msgbox(sprintf(['Select the binary region grid that will be used to clip the ' ...
-    %                 sMeta.region{ii} ' region.\n']), '(Click OK to Proceed)','modal'));
-    %             [fileRegClip, foldRegClip] = uigetfile({'*.asc';'*.txt'},['Select the binary region clip grid for ' ...
-    %                 sMeta.region{ii}], startPath);
-    %             sPath{ii}.regionClip = fullfile(foldRegClip, fileRegClip);
-    %             disp([char(39) sPath{ii}.regionClip char(39) ' has been chosen as the binary region clip grid.']);
-    % 
-    %             if isempty(fileRegClip) || isequal(fileRegClip, 0)
-    %                error('CCHF_main:noClip',['No region clipping file '...
-    %                    'has been selected, even though the option was chosen.' ...
-    %                    ' Therefore, the program is aborting.']); 
-    %             end
-    %         end
-
-
-            %Identify climate variables to load:
-            [sMeta.varLd, sMeta.varLdDisp] = clm_var_load(sMeta.module);
             %Load climate variables:
             sPath{ii} = clm_path_ui(sPath{ii}, sMeta, sMeta.region{ii});
         end %End inputs UIs
@@ -369,8 +366,9 @@ if sMeta.useprevrun == 0
         end
         clear('sDem');
 
+        
         %Load observation data to use for calibration or validation:
-        if regexpbl(sMeta.runType,{'calibrat','validat','default'}) && isempty(sMeta.pathinputs)
+        if regexpbl(sMeta.runType,{'calibrat','validat','default'}) && blNewLoad == 1
             %Calibration/validation data required:
             uiwait(msgbox(sprintf(['Select the file(s) with observation data for ' ...
                 sMeta.region{ii} '.  If data does not include information such as location, you will '...
@@ -396,8 +394,13 @@ if sMeta.useprevrun == 0
                 disp([pathGage{ii}{jj} ' has been selected as observation data file ' ...
                     num2str(jj) ' of ' num2str(sMeta.nGage) ' for ' sMeta.region{ii} '.']);
             end
-        elseif ~regexpbl(sMeta.runType,{'calibrat','validat','default'}) && ~isempty(sMeta.pathinputs)
+        elseif ~regexpbl(sMeta.runType,{'calibrat','validat','default'}) && blNewLoad == 0
             pathGage{ii} = cell(0,1);
+        else
+            if isempty(pathGage{ii}(:))
+                error('cchfImplement:runTypeObsData',['The CCHF run type is ' sMeta.runType ...
+                    ', which expects observation data for model assessment, but no path to observation data was provided.']);
+            end
         end
     end %End of loop to select sites 
     clear ii
@@ -479,19 +482,36 @@ if sMeta.useprevrun == 0
     end
     clear ii
 
-
+    
     %Calculate watershed properties and load/initialize glacier data:
     for ii = 1 : nSites
         sMeta.siteCurr = ii;
 
-%         if blClip == 1 && isfield(sPath{ii}, 'regionClip') 
-%             sRegClip = read_geodata_v2(sPath{ii}.regionClip, 'data', nan(1,2), nan(1,2), nan(1,2), '0', 'out', 'none');
-%             sHydro{ii}.regionClip = sRegClip.data;
-%             clear('sRegClip');
-%         end
-
-        %Calculate fdr, fac, flow calculation order, slope, aspect, distance between neighboring centroids
-        sHydro{ii} = watershed(sHydro{ii});
+        
+        %Calculate fdr, fac, flow calculation order, slope, aspect,
+        %distance between neighboring centroids:
+        
+        %Path for saving watersheds:
+        [dirWatershed, ~, ~] = fileparts(sPath{ii}.dem);
+        fileWatershed = ['CCHF_saved_watershed_' sMeta.region{ii} '.mat'];
+        pathWatershed = fullfile(dirWatershed, fileWatershed);
+        
+        
+        if exist(pathWatershed, 'file')
+            load(pathWatershed, 'sHydroTemp');
+            sHydro{ii} = sHydroTemp;
+            clear sHydroTemp
+            
+            disp(['Processed ' sMeta.region{ii} ' watershed structure loaded from ' pathWatershed '.']);
+        else
+            sHydro{ii} = watershed(sHydro{ii});
+            
+            sHydroTemp = sHydro{ii};
+            save(pathWatershed, 'sHydroTemp', '-v7.3');
+            
+            disp(['Processed ' sMeta.region{ii} ' watershed structure saved to ' pathWatershed '.']);
+        end
+        
 
         %Initialize ice grid:
         sHydro{ii}.sIceInit = ice_grid_load_v2(sHydro{ii}, sPath{ii}, sMeta);
@@ -522,19 +542,12 @@ if sMeta.useprevrun == 0
 
 
     %%DISPLAY RELEVENT CONTENT TO CONSOLE
-    %Display modules chosen:
-    disp('The chosen set of module representations is: ');
-    for ii = 1 : numel(sMeta.module(:,1))
-        disp([sMeta.module{ii,1} ' = ' sMeta.module{ii,2}]);
-    end
-    disp(blanks(1));
-
     %Display message with citation information:
     [~] = MHS_cite_v2('CCHF');
 
     %Display modeling package being used and user choices:
-    [~,dFold1,dFold2] = fileparts(pwd);
-    disp([char(39) dFold1 dFold2 char(39) ' is being used.' char(10)]);
+%     [~,dFold1,dFold2] = fileparts(pwd);
+%     disp([char(39) dFold1 dFold2 char(39) ' is being used.' char(10)]);
     disp_CCHF_meta_v2(sPath, sMeta);
 
 
@@ -551,7 +564,7 @@ if sMeta.useprevrun == 0
     clear ii
 
     %Save input paths in file for possible future use
-    if isempty(sMeta.pathinputs)
+    if blNewLoad == 1
         [dirInputs, ~, ~] = fileparts(sPath{1}.output);
         fileInputs = 'CCHF_saved_input_paths_4';
         for ii = 1 : nSites
@@ -559,7 +572,7 @@ if sMeta.useprevrun == 0
         end
         fileInputs = [fileInputs '.mat'];
         
-        pathInputs = fullfile(dirInputs,fileInputs);
+        pathInputs = fullfile(dirInputs, fileInputs);
         save(pathInputs, 'sPath', 'pathGage');
         disp(['Paths of all input data used saved to ' pathInputs char(10) 'This path can be set in main script to supress UI for loading inputs. You can customize the file name and location.'])
     end
@@ -657,15 +670,16 @@ if sMeta.useprevrun == 0
        mkdir(sPath{1}.outputMain) 
     end
     save(fullfile(sPath{1}.outputMain, 'model_run_structs.mat'), 'sPath', 'sMeta', 'sHydro', 'sOpt', 'sObs', 'sOutput', '-v7.3');
-else %Load output structures saved during previous run
-    uiwait(msgbox(sprintf(['You have selected to load output from previous model run(s).' ...
-        '\n You will be prompted to select 1 Matlab arrays (*.mat) ' ...
-        'corresponding to these run(s).\n']), '(Click OK to Proceed)','modal'));
-    
-    [fileRun, foldRun] = uigetfile({'*.mat'}, 'Select the Matlab array containing output from the previous run', pwd);
-    load(fullfile(foldRun, fileRun));
-    nSites = numel(sMeta.region(:));
-end
+% REMOVE
+% else %Load output structures saved during previous run 
+%     uiwait(msgbox(sprintf(['You have selected to load output from previous model run(s).' ...
+%         '\n You will be prompted to select 1 Matlab arrays (*.mat) ' ...
+%         'corresponding to these run(s).\n']), '(Click OK to Proceed)','modal'));
+%     
+%     [fileRun, foldRun] = uigetfile({'*.mat'}, 'Select the Matlab array containing output from the previous run', pwd);
+%     load(fullfile(foldRun, fileRun));
+%     nSites = numel(sMeta.region(:));
+% end
 
 
 %Create function outputs

@@ -60,7 +60,7 @@ for ii = 1 : numel(path(:))
     if regexpbl(fileNm, 'cchf')
         [sGageCurr, varCurr] = read_CCHF_gagedata(path{ii}, lon, lat, mask);
         obsTypes(end+1 : end+numel(varCurr(:))) = varCurr;
-        disp('finished loading cchf gagedata')
+        disp('The model has loaded CCHF-formatted gagedata.');
     elseif regexpbl(ext, {'.csv','.txt','.xls', '.dat'}) ...
             && regexpbl(fileNm, {'flow','stream','discharge'})
         if regexpbl(fileNm, 'usgs')

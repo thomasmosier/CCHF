@@ -57,6 +57,7 @@ if iscell(datesUse)
     end
 end
 
+
 %Exit function if all requested data already loaded:
 if ~isempty(dateCurr) && ~all(isnan(dateCurr))
     for ll = 1 : numel(sMeta.varLd) %Loop over all variables to load
@@ -77,15 +78,16 @@ if ~isempty(dateCurr) && ~all(isnan(dateCurr))
                 continue
             end
         end
+        
           
         %READ DATA:
         %Use date indexing if defined previously (faster than finding 
         %file within function by providing function the date).
         if isfield(sPath, [varCurr 'File']) %Field written with function 'path_data_ind'
-            fileCurr = sPath.([varCurr 'File']){sMeta.indCurr};
+            pathCurr = sPath.([varCurr 'File']){sMeta.indCurr};
             %If climate data aligns with grid, special field will have been written for sPath (inside of "engine_v*") 
-            if regexpbl(fileCurr, '.nc')
-                nmsTemp = extract_field(ncinfo(fileCurr), 'Variables');
+            if regexpbl(pathCurr, '.nc')
+                nmsTemp = extract_field(ncinfo(pathCurr), 'Variables');
                 varInFile = extract_field(nmsTemp{1}, 'Name');
                 
                 varRead = varCurr;
@@ -132,7 +134,7 @@ if ~isempty(dateCurr) && ~all(isnan(dateCurr))
                                 varCurr ' alternative names have not been programmed for. Add in statement above.']);
                         end
                     elseif strcmpi(varCurr, 'tasmin')
-                        if any(strcmpi(varInFile, 'tasin'))
+                        if any(strcmpi(varInFile, 'tasmin'))
                             varRead = 'tasmin';
                         elseif any(strcmpi(varInFile, 'tmin'))
                             varRead = 'tmin';
@@ -142,20 +144,40 @@ if ~isempty(dateCurr) && ~all(isnan(dateCurr))
                             error('load_ts_equal:noPrePresent',['Temperature ' ...
                                 varCurr ' alternative names have not been programmed for. Add in statement above.']);
                         end
+                    elseif strcmpi(varCurr, 'bcdep')
+                        if any(strcmpi(varInFile, 'bcdep'))
+                            varRead = 'bcdep';
+                        elseif any(strcmpi(varInFile, 'totaldeposition'))
+                            varRead = 'totaldeposition';
+                        elseif any(strcmpi(varInFile, 'bc'))
+                            varRead = 'bc';
+                        elseif any(strcmpi(varInFile, 'oc'))
+                            varRead = 'oc';
+                        elseif any(strcmpi(varInFile, 'dust'))
+                            varRead = 'dust';
+                        else
+                            error('load_ts_equal:noPrePresent',['Temperature ' ...
+                                varCurr ' alternative names have not been programmed for. Add in statement above.']);
+                        end
                     else
                         error('load_ts_equal:noVarPresent',['Variable ' ...
                             varCurr ' alternative names have not been programmed for. Add in statement above.']);
                     end
                 end
+                
+                
+                %Assign supporting fields from hydrologic grid
                 sDataCurr.(varLon) = sHydro.(varLon);
                 sDataCurr.(varLat) = sHydro.(varLat);
-                sDataCurr.time = ncread(fileCurr,'time');
-                sDataCurr.attTime = ncinfo(fileCurr,'time');
+                %Assign supporting fields from NetCDf file
+                sDataCurr.time    = ncread(pathCurr,'time');
+                sDataCurr.attTime = ncinfo(pathCurr,'time');
                     sDataCurr.attTime = squeeze(struct2cell(sDataCurr.attTime.Attributes))';
-                sDataCurr.attData = ncinfo(fileCurr, varRead);
+                sDataCurr.attData = ncinfo(pathCurr, varRead);
                     sDataCurr.attData = squeeze(struct2cell(sDataCurr.attData.Attributes))';
-                sDataCurr.data = single(ncread(fileCurr,varRead));
-            elseif regexpbl(fileCurr, {'.txt','.asc'})
+                %Assign data field from NetyCDF file
+                sDataCurr.data = single(ncread(pathCurr,varRead));
+            elseif regexpbl(pathCurr, {'.txt','.asc'})
                 sDataCurr.(varLon) = sHydro.(varLon);
                 sDataCurr.(varLat) = sHydro.(varLat);
 
@@ -344,11 +366,25 @@ if ~isempty(dateCurr) && ~all(isnan(dateCurr))
         %array:
         sAtm.(varCurr) = sDataCurr.data;
         indCurr = ismember(sAtm.(['date' varCurr]), datesUse(sMeta.indCurr,:), 'rows');
-        if ~any(indCurr)
-           error('load_ts_equal:noInd',['At time indice ' num2str(sMeta.indCurr) ...
-               ' no ' varCurr ' date was found.']);
+        if any(indCurr)
+            sAtm.(['ind' varCurr]) = find(indCurr == 1, 1, 'first');
+        else
+            filesUniqCurr = unique(sPath.([varCurr 'File']));
+            filesUniqPr = unique(sPath.('prFile'));
+            if numel(filesUniqCurr) < numel(filesUniqPr) && mode(sAtm.(['date' varCurr])(:,1)) ~= datesUse(sMeta.indCurr, 1)
+                indCurr = ismember(sAtm.(['date' varCurr])(:,2:end), datesUse(sMeta.indCurr,2:end), 'rows');
+                if any(indCurr)
+                    sAtm.(['ind' varCurr]) = find(indCurr == 1, 1, 'first');
+                else
+                    error('load_ts_equal:noIndAvg',['At time indice ' num2str(sMeta.indCurr) ...
+                   ' no ' varCurr ' date was found. This is for the case of an average climate variable.']);
+                end
+            else
+               error('load_ts_equal:noIndTs',['At time indice ' num2str(sMeta.indCurr) ...
+                   ' no ' varCurr ' date was found. This is for the case of a time-series climate variable.']);
+            end 
         end
-        sAtm.(['ind' varCurr]) = find(indCurr == 1, 1, 'first');
+        
 %         if isequal(sAtm.time, sDataCurr.time)
 %             
 %         else
