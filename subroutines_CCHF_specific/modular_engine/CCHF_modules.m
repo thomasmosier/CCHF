@@ -123,6 +123,8 @@ end
 
 
 %BLACK CARBON IMPACT ON ALBEDO:
+%NOTE: THIS MUST COME AFTER SNOW AND ICE ALBEDO CALCULATIONS AND BEFORE
+%HEAT CALCULATION
 if ~blSimpleMod
     bcalbMod = find_att(sMeta.module, 'bcalbedo', 'no_warning');
     if isempty(bcalbMod)

@@ -90,13 +90,15 @@ varValOut = 'multival';
 valRt = 'output_';
             
 
-%'sMeta.useprevrun' provides option to load output from previous run (not normal
-%condition)
-if sMeta.useprevrun == 0
+% %'sMeta.useprevrun' provides option to load output from previous run (not normal
+% %condition)
+% if sMeta.useprevrun == 0
     
     %Either load path inputs or initialize arrays for assignment
+    blNewLoad = 1;
     if ~isempty(sMeta.pathinputs)
-        load(sMeta.pathinputs)
+        load(sMeta.pathinputs);
+        blNewLoad = 0;
     else
         sPath = cell(nSites, 1);
         pathGage = cell(nSites, 1);
@@ -136,6 +138,9 @@ if sMeta.useprevrun == 0
 
     %Load global constants from funtion:
     sMeta.global = global_params; %contains global parameter values (albedo of ice, etc.)
+    
+    %Identify climate variables to load:
+    [sMeta.varLd, sMeta.varLdDisp] = clm_var_load(sMeta.module);
 
 
     %LOCATE INPUTS FOR EACH SITE:
@@ -143,7 +148,7 @@ if sMeta.useprevrun == 0
     %Loop over sites:
     for ii = 1 : nSites
         %Only open UI if inputs paths not already known
-        if isempty(sMeta.pathinputs)
+        if blNewLoad == 1
             %Initialize structure for current site
             sPath{ii} = struct;
                 sPath{ii}.('dem')     = blanks(0);
@@ -304,25 +309,6 @@ if sMeta.useprevrun == 0
             end
 
 
-    %         %If a binary grid is being used to clip the region:
-    %         if blClip == 1
-    %             uiwait(msgbox(sprintf(['Select the binary region grid that will be used to clip the ' ...
-    %                 sMeta.region{ii} ' region.\n']), '(Click OK to Proceed)','modal'));
-    %             [fileRegClip, foldRegClip] = uigetfile({'*.asc';'*.txt'},['Select the binary region clip grid for ' ...
-    %                 sMeta.region{ii}], startPath);
-    %             sPath{ii}.regionClip = fullfile(foldRegClip, fileRegClip);
-    %             disp([char(39) sPath{ii}.regionClip char(39) ' has been chosen as the binary region clip grid.']);
-    % 
-    %             if isempty(fileRegClip) || isequal(fileRegClip, 0)
-    %                error('CCHF_main:noClip',['No region clipping file '...
-    %                    'has been selected, even though the option was chosen.' ...
-    %                    ' Therefore, the program is aborting.']); 
-    %             end
-    %         end
-
-
-            %Identify climate variables to load:
-            [sMeta.varLd, sMeta.varLdDisp] = clm_var_load(sMeta.module);
             %Load climate variables:
             sPath{ii} = clm_path_ui(sPath{ii}, sMeta, sMeta.region{ii});
         end %End inputs UIs
@@ -380,8 +366,9 @@ if sMeta.useprevrun == 0
         end
         clear('sDem');
 
+        
         %Load observation data to use for calibration or validation:
-        if regexpbl(sMeta.runType,{'calibrat','validat','default'}) && isempty(sMeta.pathinputs)
+        if regexpbl(sMeta.runType,{'calibrat','validat','default'}) && blNewLoad == 1
             %Calibration/validation data required:
             uiwait(msgbox(sprintf(['Select the file(s) with observation data for ' ...
                 sMeta.region{ii} '.  If data does not include information such as location, you will '...
@@ -407,8 +394,13 @@ if sMeta.useprevrun == 0
                 disp([pathGage{ii}{jj} ' has been selected as observation data file ' ...
                     num2str(jj) ' of ' num2str(sMeta.nGage) ' for ' sMeta.region{ii} '.']);
             end
-        elseif ~regexpbl(sMeta.runType,{'calibrat','validat','default'}) && ~isempty(sMeta.pathinputs)
+        elseif ~regexpbl(sMeta.runType,{'calibrat','validat','default'}) && blNewLoad == 0
             pathGage{ii} = cell(0,1);
+        else
+            if isempty(pathGage{ii}(:))
+                error('cchfImplement:runTypeObsData',['The CCHF run type is ' sMeta.runType ...
+                    ', which expects observation data for model assessment, but no path to observation data was provided.']);
+            end
         end
     end %End of loop to select sites 
     clear ii
@@ -555,7 +547,7 @@ if sMeta.useprevrun == 0
     clear ii
 
     %Save input paths in file for possible future use
-    if isempty(sMeta.pathinputs)
+    if blNewLoad == 1
         [dirInputs, ~, ~] = fileparts(sPath{1}.output);
         fileInputs = 'CCHF_saved_input_paths_4';
         for ii = 1 : nSites
@@ -563,7 +555,7 @@ if sMeta.useprevrun == 0
         end
         fileInputs = [fileInputs '.mat'];
         
-        pathInputs = fullfile(dirInputs,fileInputs);
+        pathInputs = fullfile(dirInputs, fileInputs);
         save(pathInputs, 'sPath', 'pathGage');
         disp(['Paths of all input data used saved to ' pathInputs char(10) 'This path can be set in main script to supress UI for loading inputs. You can customize the file name and location.'])
     end
@@ -661,15 +653,16 @@ if sMeta.useprevrun == 0
        mkdir(sPath{1}.outputMain) 
     end
     save(fullfile(sPath{1}.outputMain, 'model_run_structs.mat'), 'sPath', 'sMeta', 'sHydro', 'sOpt', 'sObs', 'sOutput', '-v7.3');
-else %Load output structures saved during previous run
-    uiwait(msgbox(sprintf(['You have selected to load output from previous model run(s).' ...
-        '\n You will be prompted to select 1 Matlab arrays (*.mat) ' ...
-        'corresponding to these run(s).\n']), '(Click OK to Proceed)','modal'));
-    
-    [fileRun, foldRun] = uigetfile({'*.mat'}, 'Select the Matlab array containing output from the previous run', pwd);
-    load(fullfile(foldRun, fileRun));
-    nSites = numel(sMeta.region(:));
-end
+% REMOVE
+% else %Load output structures saved during previous run 
+%     uiwait(msgbox(sprintf(['You have selected to load output from previous model run(s).' ...
+%         '\n You will be prompted to select 1 Matlab arrays (*.mat) ' ...
+%         'corresponding to these run(s).\n']), '(Click OK to Proceed)','modal'));
+%     
+%     [fileRun, foldRun] = uigetfile({'*.mat'}, 'Select the Matlab array containing output from the previous run', pwd);
+%     load(fullfile(foldRun, fileRun));
+%     nSites = numel(sMeta.region(:));
+% end
 
 
 %Create function outputs

@@ -52,25 +52,22 @@ disp('The chosen set of module representations is: ');
 for ii = 1 : numel(sMeta.module(:,1))
     disp([sMeta.module{ii,1} ' = ' sMeta.module{ii,2}]);
 end
-disp(blanks(1));
+disp(blanks(1)); %Create blank line
 
 
 %DISPLAY INPUT DATA
 for ii = 1 : numel(sPath(:))
     disp(['FOR SITE ' num2str(ii) ' of ' num2str(numel(sPath(:))) ':']);
     disp(['Digital elevation model (DEM) data will be loaded from ' char(39) sPath{ii}.dem char(39) '.']);
-    disp(['Precipitation time-series data will be loaded from ' char(39) sPath{ii}.pr char(39) '.']);
-    disp(['Mean temperature time-series data will be loaded from ' char(39) sPath{ii}.tas char(39) '.']);
-    if isfield(sPath{ii},'tasmin') && ~isempty(sPath{ii}.tasmin)
-        disp(['Minimum temperature time-series data will be loaded from ' char(39) sPath{ii}.tasmin char(39) '.']);
+    
+    for jj = 1 : numel(sMeta.varLd)
+        disp([up_first(sMeta.varLdDisp{jj}) ' data will be loaded from ' char(39) sPath{ii}.(sMeta.varLd{jj}) char(39) '.']);
     end
-    if isfield(sPath{ii},'tasmax') && ~isempty(sPath{ii}.tasmax)
-        disp(['Maximum temperature time-series data will be loaded from ' char(39) sPath{ii}.tasmax char(39) '.']);
-    end
+    
+    disp(blanks(1)); %Create blank line
 end
 
-%Create blank line
-disp('');
+
     
     
 % %DISPLAY MODEL ROUTINE NAMES AND COEFFICIENTS USED
