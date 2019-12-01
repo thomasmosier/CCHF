@@ -482,19 +482,36 @@ valRt = 'output_';
     end
     clear ii
 
-
+    
     %Calculate watershed properties and load/initialize glacier data:
     for ii = 1 : nSites
         sMeta.siteCurr = ii;
 
-%         if blClip == 1 && isfield(sPath{ii}, 'regionClip') 
-%             sRegClip = read_geodata_v2(sPath{ii}.regionClip, 'data', nan(1,2), nan(1,2), nan(1,2), '0', 'out', 'none');
-%             sHydro{ii}.regionClip = sRegClip.data;
-%             clear('sRegClip');
-%         end
-
-        %Calculate fdr, fac, flow calculation order, slope, aspect, distance between neighboring centroids
-        sHydro{ii} = watershed(sHydro{ii});
+        
+        %Calculate fdr, fac, flow calculation order, slope, aspect,
+        %distance between neighboring centroids:
+        
+        %Path for saving watersheds:
+        [dirWatershed, ~, ~] = fileparts(sPath{ii}.dem);
+        fileWatershed = ['CCHF_saved_watershed_' sMeta.region{ii} '.mat'];
+        pathWatershed = fullfile(dirWatershed, fileWatershed);
+        
+        
+        if exist(pathWatershed, 'file')
+            load(pathWatershed, 'sHydroTemp');
+            sHydro{ii} = sHydroTemp;
+            clear sHydroTemp
+            
+            disp(['Processed ' sMeta.region{ii} ' watershed structure loaded from ' pathWatershed '.']);
+        else
+            sHydro{ii} = watershed(sHydro{ii});
+            
+            sHydroTemp = sHydro{ii};
+            save(pathWatershed, 'sHydroTemp', '-v7.3');
+            
+            disp(['Processed ' sMeta.region{ii} ' watershed structure saved to ' pathWatershed '.']);
+        end
+        
 
         %Initialize ice grid:
         sHydro{ii}.sIceInit = ice_grid_load_v2(sHydro{ii}, sPath{ii}, sMeta);
