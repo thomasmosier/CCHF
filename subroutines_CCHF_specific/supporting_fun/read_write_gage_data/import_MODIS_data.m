@@ -340,7 +340,7 @@ else %Process from scratch
     end
 
     %Save for use next time:
-    save(pathOut, 'sGageCurr');
+    save(pathOut, 'sGageCurr', '-v7.3');
     disp(['Processed MODIS images have been saved to ' pathOut]);
 end
 
