@@ -62,7 +62,7 @@ elseif regexpbl(sMeta.dt,{'day','daily'}) && regexpbl(sMeta.dataTsRes,'month') %
         datesInterp = nan(1,3);
     end
     
-    [sInput.pr, timeInterp] = quad_fit_exact(sInput, 'pr', datesInterp, 1);
+    [sInput.pr,  timeInterp] = quad_fit_exact(sInput,  'pr', datesInterp, 1);
     [sInput.tas,          ~] = quad_fit_exact(sInput, 'tas', datesInterp, 0);
 
     if isfield(sPath,'tasmin') && ~isempty(sPath.tasmin)

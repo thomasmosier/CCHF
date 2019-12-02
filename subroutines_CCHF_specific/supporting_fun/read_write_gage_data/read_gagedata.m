@@ -60,42 +60,27 @@ for ii = 1 : numel(path(:))
     if regexpbl(fileNm, 'cchf')
         [sGageCurr, varCurr] = read_CCHF_gagedata(path{ii}, lon, lat, mask);
         obsTypes(end+1 : end+numel(varCurr(:))) = varCurr;
-        disp('finished loading cchf gagedata')
-    elseif regexpbl(ext, {'.csv','.txt','.xls', '.dat'}) ...
-            && regexpbl(fileNm, {'flow','stream','discharge'})
+        disp('The model has loaded CCHF-formatted gagedata.');
+    elseif regexpbl(ext, {'.csv','.txt','.xls'}) && regexpbl(fileNm, {'flow','stream','discharge'})
         if regexpbl(fileNm, 'usgs')
             unitsIn = 'ft3/s';
         else
             unitsIn = 'm3/s';
         end
         
-        warning('read_gagedata:flowUnits', ...
-            ['It is being assumed that the units of ' fileNm ...
-            ' are ' unitsIn '.']);
+        warning('read_gagedata:flowUnits', ['It is being assumed that the units of ' fileNm ' are ' unitsIn '.']);
         
         flagWrt = 1; %If non-CCHF data being input, combine all data into one CCHF file after loading all.
         
-        [dataGage, dateGage, latCurr, lonCurr] = ...
-            read_ts_table_data(path{ii}, unitsIn);
+        [dataGage, dateGage] = read_ts_table_data(path{ii}, unitsIn);
 
         %Check order of date array and reanarrange (year, month, day):
-        indDate = [find(max(dateGage) > 50), ...
-            find(max(dateGage) <= 12), ...
-            find(max(dateGage) > 12 & max(dateGage) < 50)];
+        indDate = [find(max(dateGage) > 50), find(max(dateGage) <= 12), find(max(dateGage) > 12 & max(dateGage) < 50)];
         dateGage = dateGage(:,indDate); 
         
-        % Query for user to enter coordinates if they can't be
-        % figured out from the file:
-        if isnan(latCurr) || isnan(lonCurr)
-            lonCurr = input(['Enter the longitude to the data at ' ...
-                char(39) path{ii} char(39) ':' char(10)]);
-            latCurr = input(['Enter the latitude to the data at ' ...
-                char(39) path{ii} char(39) ':' char(10)]);
-        else
-            warning('readgagedata:gageLocation', ...
-                ['Gage location has been read from the data at ' ...
-                char(39) path{ii} char(39) ':' char(10)]);
-        end
+        %User inputs coordinates of station since this not in USGS metadata:
+        lonCurr = input(['Enter the longitude to the data at ' char(39) path{ii} char(39) ':' char(10)]);
+        latCurr = input(['Enter the latitude to the data at ' char(39) path{ii} char(39) ':' char(10)]);
 
         varFlow = 'flow';
         sGageCurr = struct(...
@@ -120,7 +105,7 @@ for ii = 1 : numel(path(:))
         elseif regexpbl(path{ii},{'snow','radar'},'and') || regexpbl(path{ii},'swe')
             obsTypes{end+1} = 'radar';
         end
-    elseif ~isempty(regexp(path{ii}, 'MOD')) && regexpbl(path{ii}, {'hdf','nc'}) %MODIS DATA
+    elseif ~isempty(regexpi(path{ii}, 'MOD')) && regexpbl(path{ii}, {'hdf','nc'}) %MODIS DATA
         flagWrt = 1;
         
         if all2d(isnan(lon)) && all2d(isnan(lat)) 
@@ -234,12 +219,11 @@ if flagWrt == 1
     pathOutMat = fullfile(dirOut, [ccfhFileRt '.mat']);
     
     disp(['All the input gage data are being written to ' char(39) ...
-        strrep(pathOutTxt, '\', '/') char(39) '.' newline 'This file can '...
-        'be used in place of all of the current gage files.' newline ...
+        strrep(pathOutTxt, '\', '/') char(39) '.' char(10) 'This file can '...
+        'be used in place of all of the current gage files.' char(10) ...
         'This file can be moved to a preferred directory for future use.']);
     save(pathOutMat, 'sObs', 'obsTypes');
     write_CCHF_gagedata(pathOutTxt, sObs);
-
 end
 
 if nargout > 1

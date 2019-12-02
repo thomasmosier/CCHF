@@ -15,7 +15,7 @@
 % Public License for more details.
 % 
 % You should have received a copy of the GNU General Public License
-% along with the Downscaling Package.  If not, see 
+% along with the Downscabolling Package.  If not, see 
 % <http://www.gnu.org/licenses/>.
 
 function sGageCurr = import_geodetic_data(path, lon, lat, mask, varargin)

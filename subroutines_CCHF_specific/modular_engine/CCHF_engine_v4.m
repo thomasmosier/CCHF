@@ -239,21 +239,86 @@ end
 for mm = 1 : nSites
     sMeta.siteCurr = mm;
     
+    %Set folder to store model process run information (e.g. grids that 
+    %can reduce processing time for subsequent runs):
     [foldTemp, ~, ~] = fileparts(sPath{mm}.dem);
     sMeta.foldstorage = fullfile(foldTemp, 'model_process_storage');
     
-    %Declare global variables (must clear them because model run in parallel)
-    if ~regexpbl(sMeta.runType,'sim') %Don't clear land structure array if running simulation (may be dangerous but saves multiple hours for large grids)
-        clear global sLand %Possibly simply initialize instead of clearing
-    end
-
-    clear global sAtm sCryo
+    
+    %Clear global variables to ensure no residual from previous or parallel runs
+    clear global sAtm sCryo sLand
+    %Declare as global variables:
     global sAtm sCryo sLand
-    sLand.indCurr = 1; %Necessary if sLand not cleared above.
+    
+    %Load previous model state (if requested)
+    %Set file and folder for saving model state (if selected)
+    fileSaveStateRt = ['model_state_' sMeta.strModule '_' sMeta.region{mm} ...
+        '_state-'];
+    if regexpbl(sMeta.runType, {'simulate', 'resume'}, 'and') && ~strcmpi(sMeta.mode, 'parameter')
+        varLoadState = 'dirloadstate';
+        
+        if isfield(sMeta, varLoadState)
+            dirSaveState = fullfile(sMeta.(varLoadState), sMeta.region{mm});
+            if ~exist(dirSaveState, 'dir')
+                error('ccchfEngine:missingDirStateSave', ['The directory pointing to the saved model state does not exist: ', ...
+                    dirSaveState]);
+            end
+            pathLoadStateSrch = fullfile(dirSaveState, [fileSaveStateRt '*.mat']);
+            fileLoadStateTemp = dir(pathLoadStateSrch);
+            
+            if isstruct(fileLoadStateTemp)
+                fileLoadState = extract_field(fileLoadStateTemp, 'name');
+                
+                if iscell(fileLoadState)
+                    if numel(fileLoadState(:)) == 1
+                        fileLoadState = fileLoadState{1};
+                    else
+                        error('ccchfEngine:fileStateSaveLength', ...
+                            ['The file for the saved model state is a cell with length ' ...
+                            num2str(numel(fileLoadState(:))) '. Length 1 is required.']);
+                    end
+                elseif ~ischar(fileLoadState)
+                    error('ccchfEngine:fileStateSaveClass', ['The saved model state file is class ' ...
+                        class(fileLoadState) ', which has not been programmed for.'])
+                end
+            elseif ischar(fileLoadStateTemp)
+                fileLoadState = fileLoadStateTemp;
+            else
+                error('ccchfEngine:pathStateSaveClass', ['The saved model state path is class ' ...
+                    class(fileLoadStateTemp) ', which has not been programmed for.']);
+            end
+            
+            pathLoadState = fullfile(dirSaveState, fileLoadState);
+            if exist(pathLoadState, 'file')
+                load(pathLoadState, '-mat', 'sAtm', 'sCryo', 'sLand');
+                
+                %Check for time consistency
+                dateLast = sAtm.datepr(end,:);
+                dateCurr = sMeta.dateStart{mm};
+                dayGap = days_since(dateLast, dateCurr, 'gregorian');
+                
+                if dayGap ~= 1
+                   warning('cchfEngine:simulateResumeDateGap', ['The ' char(39) 'simulate_resume'  ...
+                       char(39) ' run type is being used, but there is a ' ...
+                       'gap between the end of the previous run (' date_2_string(dateLast) ...
+                       ') and the start of the current run  (' date_2_string(dateCurr) ').']); 
+                end
+            else
+               error('cchfEngine:pathSimulateResumeMissing',['The path '...
+                   'for the simulation resume state has been set but '...
+                   'does not exist: ' pathLoadState]);
+            end
+        else
+            error('cchfEngine:pathsimulateResumeNotSet', ['The path for '...
+                'the simulation resume state has not been set.']);
+        end
+    end %End of simulate_resume variable load
+    
+    sLand.indCurr = 1;
     
     
     if regexpbl(sMeta.mode,'parameter') && mm == 1
-        disp(['The CCHF model is being run in ' char(39) sMeta.mode char(39) ' mode.']);
+%         disp(['The CCHF model is being run in ' char(39) sMeta.mode char(39) ' mode.']);
         %Define date vector of time steps to loop over:
         if iscell(sMeta.dateRun)
             if regexpbl(sMeta.dt,'month')
@@ -377,8 +442,8 @@ for mm = 1 : nSites
     szDem = size(sHydro{mm}.dem);
     nTS  = numel(sMeta.dateRun{mm}(:,1));
 
-
-    %Enter time loop:
+    
+    %Enter time loop for current site:
     for ii = 1 : nTS
         sMeta.dateCurr = sMeta.dateRun{mm}(ii,:);
         sMeta.indCurr = ii;
@@ -413,7 +478,8 @@ for mm = 1 : nSites
 
 
             %Initialize cryosphere structure:
-            sCryo = rmfield_x(sAtm,{'data','pr','pre','tas','tasmin','tmin','tmn','tmax','tasmax','tmx','lat','lon'});
+            sCryo = struct;
+%             sCryo = rmfield_x(sAtm,{'data','pr','pre','tas','tasmin','tmin','tmn','tmax','tasmax','tmx','lat','lon'});
 
             %INITIALIZE ICE GRID
             %Load glacier coverage data and convert to depth:
@@ -454,7 +520,8 @@ for mm = 1 : nSites
 
             %%INITIALIZE LAND ARRAY (for vegetation cover - if used, soil
             %moisture, runoff, flow, etc.)
-            sLand = rmfield_x(sAtm,{'data','pr','pre','tas','tasmin','tmin','tmn','tmax','tasmax','tmx','lat','lon','time','attTime','indCurr'});
+            sLand = struct;
+%             sLand = rmfield_x(sAtm,{'data','pr','pre','tas','tasmin','tmin','tmn','tmax','tasmax','tmx','lat','lon','time','attTime','indCurr'});
 
             sLand.mrro = zeros(szDem,'single'); %runoff out of each cell
             sLand.flow = zeros(szDem,'single'); %flowrate at each cell
@@ -480,40 +547,6 @@ for mm = 1 : nSites
 %             [sAtm.indCurr, ~] = geodata_time_ind(sAtm, sMeta.dateRun{mm}(ii,:));
 %         end
 
-    %%FITTING PARAMETERS FOR PRE AND TMP:
-    %     if regexpbl(sMeta.mode,'parameter')
-    %         coef = cat(1,coef,{'cfPre', 0.1, 10, 4.0, 'backbone','input'});
-    %     else
-    %         cfPre = find_att(sMeta.coef,'cfPre');
-    %         sAtm.pr = cfPre*sAtm.pr;
-    %     end
-    %     if regexpbl(sMeta.mode,'parameter')
-    %         coef = cat(1,coef,{'cfTmp', -5, 5, 1.50, 'backbone','input'});
-    %     else
-    %         cfTmp = find_att(sMeta.coef,'cfTmp');
-    %         sAtm.tas = cfTmp + sAtm.tas;
-    %     end
-
-        %Allow katabatic scaling of temperature over glaciers:
-            %Katabatic wind (cooling effect over glaciers; see Shea and Moore, 
-            %2010 or Alaya, Pellicciotti, and Shea 2015 for more complex models):
-    %     if regexpbl(sMeta.mode,'parameter')
-    %         coef = cat(1,coef,{'cfKat', -6, 0, -2.75, 'backbone','input'});
-    %     else
-    %         cfKat = find_att(sMeta.coef,'cfKat');
-    % 
-    %         indIce = find(sCryo.ice > 0);
-    %         szTmp = size(sAtm.tas);
-    %         [tIce,~] = meshgrid((1:szTmp(1)),(1:numel(indIce)));
-    %         [rIce, cIce] = ind2sub(szTmp(2:3),indIce);
-    %         [~,rIce] = meshgrid((1:szTmp(1)),rIce);
-    %         [~,cIce] = meshgrid((1:szTmp(1)),cIce);
-    %         indIce = tIce + (rIce-1)*szTmp(1) + (cIce-1)*szTmp(2)*szTmp(1);
-    % 
-    %         sAtm.tas(indIce) = sAtm.tas(indIce) + cfKat;
-    %     end
-
-
 
         %%IMPLEMENT MODULES:
         if regexpbl(sMeta.mode,'parameter')
@@ -537,9 +570,7 @@ for mm = 1 : nSites
         end
 
 
-
-
-    %%FIND AND WRITE OUTPUT FIELDS:
+        %%FIND AND WRITE OUTPUT FIELDS:
         if isfield(sMeta,'output') && ~regexpbl(sMeta.mode,'parameter') && ii >= sMeta.indWrite
             %Only tranasfer output structure array from 'print_model_state'
             %to this function on select time steps because it is very slow.
@@ -551,8 +582,9 @@ for mm = 1 : nSites
 %            sOutput{mm} = print_model_state_v4(sHydro{mm}, sMeta, sPath{mm}.output); 
         end
 
-    %%ALLOW EARLY TERMINATION IF CALIBRATION AND REPRESENTATIVE PERIOD HAS BEEN
-    %%SURVEYED
+        %%ALLOW EARLY TERMINATION IF RUN TYPE IS CALIBRATION, REPRESENTATIVE 
+        %PERIOD HAS BEEN SURVEYED, AND PERFORMANCE IS BELOW ACCEPTABLE
+        %THRESHOLD
         if ii > indEval && ~isempty(fieldnames(sObs{mm})) && blEval == 0
             blEval = 1;
             modErrorTemp = nanmean(mod_v_obs_v2(sObs{mm}, sOutput{mm}, fitTest, 'combineType', 'rmMod'));
@@ -562,6 +594,21 @@ for mm = 1 : nSites
             end
         end
     end %End of time loop
+    
+    
+    %%SAVE MODEL STATE
+    if sMeta.blSaveState == 1 && ~strcmpi(sMeta.mode, 'parameter') && ~regexpbl(sMeta.runType, 'calibrate')
+        fileSaveStateExt = [date_2_string(sMeta.dateEnd{mm}) '.mat'];
+        pathSaveState = fullfile(sPath{mm}.output, [fileSaveStateRt, fileSaveStateExt]);
+        
+        if ~exist(sPath{mm}.output, 'dir')
+            mkdir(sPath{mm}.output);
+        end
+        save(pathSaveState, 'sAtm', 'sCryo', 'sLand', '-v7.3');
+        
+        disp(['Model state for ' sMeta.region{mm} ' corresponding to ' ...
+            date_2_string(sMeta.dateEnd{mm}) ' has been saved to ' pathSaveState]);
+    end
 end %End of site loop
 
 

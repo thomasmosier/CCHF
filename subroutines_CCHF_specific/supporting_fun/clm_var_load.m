@@ -49,7 +49,7 @@ end
 if sum(strcmpi(modules(:,1), 'bcalbedo')) > 0 ...
         && ~regexpbl(find_att(modules, 'bcalbedo'), {'none'})
     varLd = [varLd, 'bcdep'];
-    varDisp = [varDis, 'black carbon deposition (micrograms per day)'];
+    varDisp = [varDisp, 'black carbon deposition (micrograms per day)'];
 end
 
 %Some variable abbreviation that may be of interest:
