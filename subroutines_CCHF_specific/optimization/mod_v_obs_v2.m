@@ -1358,6 +1358,7 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                         end
                     end
                 end
+                
                 %Write time-cumulative grid:
                 switch evalCurr
                     case 'mean'
