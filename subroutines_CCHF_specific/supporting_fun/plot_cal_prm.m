@@ -49,12 +49,11 @@ szFrame = [12,7];
 %     colorsUse = distinguishable_colors( numel(prm) );
 % end
 
-if ismatrix(prmIn) && ~iscell(prmIn)
-    temp = prmIn;
-    prmIn = cell(1,1);
-    prmIn{1} = temp;
-    indStage = cell(1,1);
-    indStage{1} = (1:numel(temp(1,:)));
+if ~iscell(prmIn)
+    prmIn = {prmIn}; 
+end
+if ~iscell(indStage)
+    indStage = {indStage};
 end
 
 nStage = numel(prmIn(:));

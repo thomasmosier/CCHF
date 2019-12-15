@@ -831,7 +831,7 @@ for ss = indStgStrt : nStage
         ', ' char(10) 'which occured during iteration ' num2str(indGenFit) ...
         ' of ' num2str(nGen) ' total iterations.' char(10)]);
     
-    
+
     %RECORD N BEST PERFORMING PARAMETER SETS:
     %This is potentially useful for assessing equifinality
     bestPrmSets{ss} = reshape(coefFamily,[], numel(sMeta.coef(:,1))); %indices are: (generation, pop member, parameter)
@@ -843,6 +843,8 @@ for ss = indStgStrt : nStage
     if ~isfield(sOpt, 'nbest')
        sOpt.nbest = max(0.005*nGen*nPop, 50); 
     end
+    sOpt.nbest = min(sOpt.nbest, numel(bestPrmSets{ss}(:,1)));
+    
     bestPrmSets{ss} = bestPrmSets{ss}(1:sOpt.nbest,:);
     bestPrfm = bestPrfm(1:sOpt.nbest);
     
