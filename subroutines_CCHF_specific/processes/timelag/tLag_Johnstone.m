@@ -52,7 +52,7 @@ sztLag = size(sHydro.dl);
 %Determine if array exists or needs to be calculated:
 if ~isfield(sLand, 'tlag')
     %Create path for saving/loading tlag (this matters because for large
-    %domains can take many hours to calculate
+    %domains can take many hours to calculate)
     if isfield(sMeta,'runType') && ~regexpbl(sMeta.runType, 'calib')
         dirTlag = sMeta.foldstorage;
         if ~exist(dirTlag, 'dir')

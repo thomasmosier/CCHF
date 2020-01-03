@@ -34,7 +34,7 @@ if isempty(varargin(:))
 else
     sMeta = varargin{1};
     angCrit = find_att(varargin{1}.coef, 'angle_critical');  
-    angCritDisp = angCrit;
+    angCritDisp = round2(angCrit, 3);
     %Stored as degrees for readability. Convert to rise over run:
     angCrit = tand(angCrit);
 end
@@ -61,7 +61,8 @@ end
 %Create or load avalnche flow direction array
 if ~isfield(sCryo,'snavfdr')
     %Create storage path:
-    dirStore = sMeta.foldstorage;
+    angCritDispFlr = floor(angCritDisp);
+    dirStore = fullfile(sMeta.foldstorage, 'avalanche_angle', [num2str(angCritDispFlr) 'to' num2str(angCritDispFlr+1)]);
     if ~exist(dirStore, 'dir')
        mkdir(dirStore); 
     end
