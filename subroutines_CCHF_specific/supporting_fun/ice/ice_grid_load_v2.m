@@ -67,6 +67,8 @@ if isfield(sPath, 'ice') %&& ~regexpbl(sMeta.mode, 'parameter')
 
     
     if exist(pathIceStruct, 'file')
+        disp(['Loading ice grid data from previously created file ' ...
+            pathIceStruct '...']);
        load(pathIceStruct);
     else
         %Ice grid can either be 'same' as the main model grid or can be
@@ -331,7 +333,7 @@ if isfield(sPath, 'ice') %&& ~regexpbl(sMeta.mode, 'parameter')
         sIceInit.icdwe = sparse(szMain(1),szMain(2));
         sIceInit.igrddwe = sparse( szIce(1), szIce(2));
         
-        save(pathIceStruct, 'sIceInit');
+        save(pathIceStruct, 'sIceInit', '-v7.3');
     end
 else %In this case, ice grid same as main grid
     sIceInit.igrddem = sHydro.dem; %Ice grid DEM
@@ -418,7 +420,7 @@ if isfield(sPath, 'icwe')
         iGrdWeTemp(isnan(iGrdWeTemp)) = 0;
         icWeTemp(isnan(icWeTemp)) = 0;
         
-        save(pathIcweSv, 'iGrdWeTemp', 'icWeTemp');
+        save(pathIcweSv, 'iGrdWeTemp', 'icWeTemp', '-v7.3');
     end
 
     %Populate matrices:
@@ -459,7 +461,7 @@ if isfield(sPath, 'icdbr')
             end
         end
         
-        save(pathDbrSv, 'sDebris');
+        save(pathDbrSv, 'sDebris', '-v7.3');
     end
 
     sIceInit.icdbr = sDebris.data;
@@ -500,7 +502,7 @@ if isfield(sPath, 'icpndx')
             end
         end
         
-        save(pathPndSv, 'sPond');
+        save(pathPndSv, 'sPond', '-v7.3');
     end
 
     sIceInit.icpndx = sPond.data;
