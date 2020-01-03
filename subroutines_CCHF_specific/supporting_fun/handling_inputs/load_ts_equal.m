@@ -72,10 +72,26 @@ if ~isempty(dateCurr) && ~all(isnan(dateCurr))
         %Check if sAtm already contains needed data
         %If so, skip rest of this function (do not re-load data)
         if isfield(sAtm, varCurr) && isfield(sAtm, ['date' varCurr])
-            indCurr = ismember(sAtm.(['date' varCurr]), datesUse(sMeta.indCurr,:),'rows');
-            if any(indCurr == 1)
-                sAtm.(['ind' varCurr]) = find(indCurr == 1, 1, 'first');
+            indDateLded = ismember(sAtm.(['date' varCurr]), datesUse(sMeta.indCurr,:),'rows');
+            if any(indDateLded == 1) %Expected time-series for full duration of model run
+                %Update time indice for current variable and skip to next variable
+                sAtm.(['ind' varCurr]) = find(indDateLded == 1, 1, 'first');
                 continue
+            elseif sAtm.(['date' varCurr])(sAtm.(['ind' varCurr]), 1) ~= datesUse(sMeta.indCurr, 1) %Check abnormal case (such as one year of representative time-series that are repeated)
+                [~, fileCurr, ~] = fileparts(sPath.([varCurr 'File']){sMeta.indCurr});
+                timeCheck = CMIP5_time(fileCurr);
+                
+                %If the file that is supposed to be loaded is for a
+                %different year, but has same other time elements as
+                %current model run time
+                if ~any(timeCheck(:,1) == datesUse(sMeta.indCurr, 1)) && any(timeCheck(:,1) == sAtm.(['date' varCurr])(1, 1))
+                    indDateLded = ismember(sAtm.(['date' varCurr])(:,2:end), datesUse(sMeta.indCurr,2:end),'rows');
+                    if any(indDateLded == 1) 
+                        %Update time indice for current variable and skip to next variable
+                        sAtm.(['ind' varCurr]) = find(indDateLded == 1, 1, 'first');
+                        continue
+                    end
+                end
             end
         end
         
@@ -365,16 +381,16 @@ if ~isempty(dateCurr) && ~all(isnan(dateCurr))
         %Transfer data from current variable to combined data structure
         %array:
         sAtm.(varCurr) = sDataCurr.data;
-        indCurr = ismember(sAtm.(['date' varCurr]), datesUse(sMeta.indCurr,:), 'rows');
-        if any(indCurr)
-            sAtm.(['ind' varCurr]) = find(indCurr == 1, 1, 'first');
+        indDateLded = ismember(sAtm.(['date' varCurr]), datesUse(sMeta.indCurr,:), 'rows');
+        if any(indDateLded)
+            sAtm.(['ind' varCurr]) = find(indDateLded == 1, 1, 'first');
         else
             filesUniqCurr = unique(sPath.([varCurr 'File']));
             filesUniqPr = unique(sPath.('prFile'));
             if numel(filesUniqCurr) < numel(filesUniqPr) && mode(sAtm.(['date' varCurr])(:,1)) ~= datesUse(sMeta.indCurr, 1)
-                indCurr = ismember(sAtm.(['date' varCurr])(:,2:end), datesUse(sMeta.indCurr,2:end), 'rows');
-                if any(indCurr)
-                    sAtm.(['ind' varCurr]) = find(indCurr == 1, 1, 'first');
+                indDateLded = ismember(sAtm.(['date' varCurr])(:,2:end), datesUse(sMeta.indCurr,2:end), 'rows');
+                if any(indDateLded)
+                    sAtm.(['ind' varCurr]) = find(indDateLded == 1, 1, 'first');
                 else
                     error('load_ts_equal:noIndAvg',['At time indice ' num2str(sMeta.indCurr) ...
                    ' no ' varCurr ' date was found. This is for the case of an average climate variable.']);
