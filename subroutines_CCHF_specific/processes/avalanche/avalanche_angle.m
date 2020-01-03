@@ -70,6 +70,10 @@ if ~isfield(sCryo,'snavfdr')
         [sMeta.region{sMeta.siteCurr}, '_avalanche_', sMeta.iceGrid '_' ...
         num2str(szMn(1)) 'x' num2str(szMn(2)) '_' num2str(szIce(1)) 'x' ...
         num2str(szIce(2))  '_critical_angle_' num2str(angCritDisp) '.mat']);
+    
+    varIndF = 'indMnF';
+    varIndT = 'indMnT'; 
+    varFrac = 'fracMnF';
 
     if ~exist(pathStore, 'file') %File does not exist, so create
         %display message that this will take a long time
@@ -99,9 +103,13 @@ if ~isfield(sCryo,'snavfdr')
             end
         end
     
-        save(pathStore, 'indMnF', 'indMnT', 'fracMnF');
+        save(pathStore, varIndF, varIndT, varFrac);
     else %File exists, so load
-       load(pathStore) 
+       sLd = load(pathStore);
+       
+       indMnF  = sLd.(varIndF);
+       indMnT  = sLd.(varIndT);
+       fracMnF = sLd.(varFrac);
     end
 
     
