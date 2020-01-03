@@ -53,17 +53,13 @@ sztLag = size(sHydro.dl);
 if ~isfield(sLand, 'tlag')
     %Create path for saving/loading tlag (this matters because for large
     %domains can take many hours to calculate)
-    if isfield(sMeta,'runType') && ~regexpbl(sMeta.runType, 'calib')
-        dirTlag = sMeta.foldstorage;
-        if ~exist(dirTlag, 'dir')
-           mkdir(dirTlag); 
-        end
-        pathTlag = fullfile(dirTlag, [sMeta.region{sMeta.siteCurr} '_timelag_Johnstone_pwr=' num2str(round2(a,3)), '.mat']);
-
-       varTLag = 'tlag';
-    else
-        pathTlag = '';
+    dirTlag = fullfile(sMeta.foldstorage, 'tLag_Johnstone');
+    if ~exist(dirTlag, 'dir')
+       mkdir(dirTlag); 
     end
+    pathTlag = fullfile(dirTlag, [sMeta.region{sMeta.siteCurr} '_timelag_Johnstone_pwr=' num2str(round2(a,3)), '.mat']);
+
+    varTLag = 'tlag';
 
     %Boolean value to indicate that time-lag array must be calculated
     blCalc = 0;
