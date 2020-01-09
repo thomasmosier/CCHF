@@ -48,7 +48,6 @@ aSnowFresh = find_att(varargin{1}.global,'albedo_snow_fresh');
 aIce       = find_att(varargin{1}.global,       'albedo_ice');
 % aDebris    = find_att(varargin{1}.global,    'albedo_debris');
 
-
 %Assume density of fresh snow is ~350 kg/m^3
 dSnow = 350; %Based on mid-point density of fresh snow on Yala Glacier
 %Assume density of ice is ~850 kg/m^3
@@ -86,6 +85,8 @@ varSnAlbNoBC = 'snalbnobc';
 varIcAlb = 'icalb';
 varIcAlbNoBC = 'icalbnobc';
 varBcIce = 'icbc';
+varAlbRedTop = 'albRedTop';
+varAlbRedIce = 'albRedIce';
 
 %Set indices of entire spatial grid
 indAll = (1:numel(sAtm.prsn));
@@ -134,19 +135,19 @@ xSn = sclBc*sCryo.(varBcSnow)./(dSnow*sCryo.(varTopSnow));
 xSn(xSn > bcMax) = bcMax;
 
 %Calculate snow layer albedo reduction based on Ming's equation:
-albRedTop = Ming(xSn)/100; %Units are fraction (same as albedo)
+sCryo.(varAlbRedTop) = Ming(xSn)/100; %Units are fraction (same as albedo)
 %Set limits:
-albRedTop(albRedTop < 0) = 0;
-albRedTop(sCryo.(varBcSnow) == 0) = 0;
-albRedTop(isinf(albRedTop)) = 0;
+sCryo.(varAlbRedTop)(sCryo.(varAlbRedTop) < 0) = 0;
+sCryo.(varAlbRedTop)(sCryo.(varBcSnow) == 0) = 0;
+sCryo.(varAlbRedTop)(isinf(sCryo.(varAlbRedTop))) = 0;
 
 %For diagnostics:
 %xSn(1:10,1:10)
 %max(xSn(:))
-%albRedTop(1:10,1:10)
+%sCryo.(varAlbRedTop)(1:10,1:10)
 
 %Apply albedo reduction (fraction of original albedo):
-sCryo.(varSnAlb) = sCryo.(varSnAlbNoBC).*(1-albRedTop);
+sCryo.(varSnAlb) = sCryo.(varSnAlbNoBC).*(1-sCryo.(varAlbRedTop));
 
 %Set max ice albedo for threshold
 mxSnAlb = max(max(sCryo.(varSnAlbNoBC)(:)), aSnowFresh);
@@ -177,19 +178,19 @@ xIc = sclBc*sCryo.(varBcIce)./(dIceLmt*dIce);
 xIc(xIc > bcMax) = bcMax;
 
 %Calculate ice layer albedo reduction:
-albRedIce = Ming(xIc)/100; %Units are fraction (same as albedo)
+sCryo.(varAlbRedIce) = Ming(xIc)/100; %Units are fraction (same as albedo)
 %Set limits:
-albRedIce(albRedIce < 0) = 0;
-albRedIce(sCryo.(varBcIce) == 0) = 0;
-albRedIce(isinf(albRedIce)) = 0;
+sCryo.(varAlbRedIce)(sCryo.(varAlbRedIce) < 0) = 0;
+sCryo.(varAlbRedIce)(sCryo.(varBcIce) == 0) = 0;
+sCryo.(varAlbRedIce)(isinf(sCryo.(varAlbRedIce))) = 0;
 
 %For diagnostics:
 %xIc(1:10,1:10)
 %max(xIc(:))
-%albRedIce(1:10,1:10)
+%sCryo.(varAlbRedIce)(1:10,1:10)
 
 %Apply albedo reduction (fraction of original albedo):
-sCryo.(varIcAlb) = sCryo.(varIcAlbNoBC).*(1-albRedIce);
+sCryo.(varIcAlb) = sCryo.(varIcAlbNoBC).*(1-sCryo.(varAlbRedIce));
 
 %Set max ice albedo for threshold
 mxIcAlb = max(max(sCryo.(varIcAlbNoBC)(:)), aIce);

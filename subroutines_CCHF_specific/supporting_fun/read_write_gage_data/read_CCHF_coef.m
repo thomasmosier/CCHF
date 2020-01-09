@@ -29,14 +29,18 @@ end
 
 fid = fopen(path,'rt');
 
-
 hdr = cell(0,1);
-for ii = 1 : 10
+cntLp = 1;
+ii = 1;
+while cntLp == 1
     hdr{ii,1}   = fgets(fid);
-    if strcmpi(hdr{ii},char(10))
+    if strcmpi(hdr{ii}, char(10)) || isempty(hdr{ii}) || strcmpi(hdr{ii}, [char(13) char(10)])
         rHdr = ii;
-        break 
+        break
+    elseif hdr{ii,1} == -1
+        break
     end 
+    ii = ii + 1;
 end
 hdr = hdr(1:rHdr-1,:);
 
