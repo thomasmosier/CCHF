@@ -11,7 +11,7 @@ else
 end
 
 %Convert start and end dates to cell arrays (this allows different start
-%and end dates for each site being modelled)
+%and end dates for each site being modelle d)
 if isnumeric(sMeta.dateStart)
     dateStartTemp = sMeta.dateStart;
     if numel(dateStartTemp) == 2
@@ -422,20 +422,34 @@ valRt = 'output_';
 
     %GET PARAMETER FILE (IF VALIDATION OR SIMULATION RUN)
     if regexpbl(sMeta.runType,{'valid','sim'})
-        %Load parameters from file:
-        uiwait(msgbox(sprintf(['Select the set of parameter coefficients ' ...
-            'written during a calibration run of the CCHF model for ' ...
-            sMeta.region{1} '.\n']), '(Click OK to Proceed)','modal'));
-        [fileCoef, foldCoef] = uigetfile({'*.txt'; '*.csv'}, ['Select the set of parameter coefficients for ' ...
-            sMeta.region{1}], startPath);
-        if isempty(fileCoef) || isempty(foldCoef)
-            error('CCHF_main:noCoefFile',['No file containing a set of '...
-                'model coefficients has been selected. This is a requirement.' ...
-               ' Therefore the program is aborting.']); 
+        if ~isempty(sMeta.pathcoef)
+            pathCoef = sMeta.pathcoef;
+        else
+            %Load parameters from file:
+            uiwait(msgbox(sprintf(['Select the set of parameter coefficients ' ...
+                'written during a calibration run of the CCHF model for ' ...
+                sMeta.region{1} '.\n']), '(Click OK to Proceed)','modal'));
+            [fileCoef, foldCoef] = uigetfile({'*.txt'; '*.csv'}, ['Select the set of parameter coefficients for ' ...
+                sMeta.region{1}], startPath);
+            
+            if isempty(fileCoef) || isempty(foldCoef)
+                error('CCHF_main:noCoefFile',['No file containing a set of '...
+                    'model coefficients has been selected. This is a requirement.' ...
+                   ' Therefore the program is aborting.']); 
+            end
+            
+            pathCoef = fullfile(foldCoef, fileCoef);
         end
         
+        if isempty(pathCoef) || ~exist(pathCoef, 'file')
+            error('CCHF_main:noCoefFileExist',['No file containing a set of '...
+                    'model coefficients exists at the selected path (' pathCoef ').' char(10) ...
+                    'This is a requirement. Therefore the program is aborting.']); 
+        end
+        
+        
         for ii = 1 : nSites
-            sPath{ii}.coef = fullfile(foldCoef, fileCoef);
+            sPath{ii}.coef = pathCoef;
         end
         clear ii
         disp([char(39) sPath{1}.coef char(39) ' has been chosen as the set of parameter coefficients.']);
@@ -969,7 +983,7 @@ if numel(sOutput) == nSites
         plot_CCHF(sOutput{mm}, {'lwsnl','snlh','snlr','iclr','lhpme','sndwe'}, sMeta, [pathOutRt '_snowpack'],'avg', strDispOut);
         plot_CCHF(sOutput{mm}, {'tas','tsis','tsn'}, sMeta, [pathOutRt '_temperature'], strDispOut);
         plot_CCHF(sOutput{mm}, {'prsn','rain'}, sMeta, [pathOutRt '_rain'], strDispOut);
-        plot_CCHF(sOutput{mm}, {'albredTop','albRedIce'}, sMeta, [pathOutRt '_bcalbedo_impact'], strDispOut);
+        plot_CCHF(sOutput{mm}, {'albRedTop','albRedIce'}, sMeta, [pathOutRt '_bcalbedo_impact'], strDispOut);
         plot_CCHF(sOutput{mm}, {'albedoS', 'albedoI'}, sMeta, [pathOutRt '_albedo'], strDispOut);
         % plot_CCHF(sOutput{mm}, 'flow', sMeta, [pathOutRt '_flowrate'], strDispOut);
     end

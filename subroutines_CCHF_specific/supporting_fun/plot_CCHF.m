@@ -92,7 +92,7 @@ if ~isempty(fieldsPlot(:))
         end
     end
     
-
+    
     indFieldsPlot = cell(numel(fieldsPlot),1);
     for ii = 1 : numel(fieldsPlot)
         cntrData = 0;
@@ -100,7 +100,7 @@ if ~isempty(fieldsPlot(:))
             %Find if any of the fields at the current point have data
             %If points with data exist, record index:
             if any(cellfun(@(x) strcmpi(fieldsPlot{ii},x), fieldnames(sData.(fldsData{jj}))))
-                if any2d(sData.(char(fldsData{jj})).(fieldsPlot{ii}) ~= 0) && all2d(~isnan(sData.(char(fldsData{jj})).(fieldsPlot{ii})))
+                if isfield(sData.(char(fldsData{jj})), fieldsPlot{ii}) && any2d(sData.(char(fldsData{jj})).(fieldsPlot{ii}) ~= 0) && all2d(~isnan(sData.(char(fldsData{jj})).(fieldsPlot{ii})))
                     flagDataExists = 1;
                 end
                 cntrData = cntrData + 1;
@@ -109,7 +109,7 @@ if ~isempty(fieldsPlot(:))
         end
     end
 else
-    warning('plot_CCHF:noFields','No plot fields were provided.  Therefore the plot function is exiting.');
+    warning('plot_CCHF:noFields','No plot fields were provided. Therefore the plot function is exiting.');
     return
 end
 
