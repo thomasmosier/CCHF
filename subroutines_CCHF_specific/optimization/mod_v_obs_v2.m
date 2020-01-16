@@ -1472,41 +1472,43 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                 colorsUse = distinguishable_colors(nSeries);
             end
             
+            
             %Plot each series for the given data type:
             for indCurr = 1 : nSeries
-                szModData = size(dataAll{indCurrType{ll}(indCurr),iMData});
-                szObsData = size(dataAll{indCurrType{ll}(indCurr),iOData});
-                
-                if flagScatter %Display data as scatter plot, otherwise make time-series
-                    if numel(szModData) == 2 && numel(szObsData) == 2 
-                        plotModData = dataAll{indCurrType{ll}(indCurr),iMData};
-                        plotObsData = dataAll{indCurrType{ll}(indCurr),iOData};
-                        
-                        plotModData(isnan(plotModData) | isnan(plotObsData)) = nan;
-                        plotObsData(isnan(plotModData) | isnan(plotObsData)) = nan;
-                    elseif numel(szModData) == 3 && numel(szObsData) == 3 
-                        plotModData = nan(numel(dataAll{indCurrType{ll}(indCurr),iMData}(:,1,1)),1);
-                        plotObsData = nan(numel(dataAll{indCurrType{ll}(indCurr),iOData}(:,1,1)),1);
-                        
-                        for mm = 1 : numel(dataAll{indCurrType{ll}(indCurr),iMData}(:,1,1))
-                            plotModDataTemp = squeeze(dataAll{indCurrType{ll}(indCurr),iMData}(mm,:,:));
-                            plotObsDataTemp = squeeze(dataAll{indCurrType{ll}(indCurr),iOData}(mm,:,:));
-                            
-                            plotModDataTemp(isnan(plotModDataTemp) | isnan(plotObsDataTemp)) = nan;
-                            plotObsDataTemp(isnan(plotModDataTemp) | isnan(plotObsDataTemp)) = nan;
-                            
-                            plotModData(mm) = mean2d(plotModDataTemp);
-                            plotObsData(mm) = mean2d(plotObsDataTemp);
-                        end
-                    else
-                        warning('modVObs:dimDifferentScatter', 'The model and observation data have different dimensions, so plot cannot be produced.');
-                        continue
-                    end
-                    
-                    xMin = nanmin(real([plotModData(:); plotObsData(:); xMin]));
-                    xMax = nanmax(real([plotModData(:); plotObsData(:); xMax]));
+                %Aggregate spatial data for scatter or time-series plots
+                szModData = size(dataAll{indCurrType{ll},iMData});
+                szObsData = size(dataAll{indCurrType{ll},iOData});
 
-                    hTs(indCurr) = scatter(plotObsData, plotModData, ...
+                if numel(szModData) == 2 && numel(szObsData) == 2 
+                    spatAggModData = dataAll{indCurrType{ll}(indCurr),iMData};
+                    spatAggObsData = dataAll{indCurrType{ll}(indCurr),iOData};
+
+                    spatAggModData(isnan(spatAggModData) | isnan(spatAggObsData)) = nan;
+                    spatAggObsData(isnan(spatAggModData) | isnan(spatAggObsData)) = nan;
+                elseif numel(szModData) == 3 && numel(szObsData) == 3 
+                    spatAggModData = nan(numel(dataAll{indCurrType{ll}(indCurr),iMData}(:,1,1)),1);
+                    spatAggObsData = nan(numel(dataAll{indCurrType{ll}(indCurr),iOData}(:,1,1)),1);
+
+                    for mm = 1 : szModData(1)
+                        plotModDataTemp = squeeze(dataAll{indCurrType{ll}(indCurr),iMData}(mm,:,:));
+                        plotObsDataTemp = squeeze(dataAll{indCurrType{ll}(indCurr),iOData}(mm,:,:));
+
+                        plotModDataTemp(isnan(plotModDataTemp) | isnan(plotObsDataTemp)) = nan;
+                        plotObsDataTemp(isnan(plotModDataTemp) | isnan(plotObsDataTemp)) = nan;
+
+                        spatAggModData(mm) = mean2d(plotModDataTemp);
+                        spatAggObsData(mm) = mean2d(plotObsDataTemp);
+                    end
+                else
+                    warning('modVObs:dimDifferentScatter', 'The model and observation data have different dimensions, so plot cannot be produced.');
+                    continue
+                end
+            
+                if flagScatter %Display data as scatter plot, otherwise make time-series                  
+                    xMin = nanmin(real([spatAggModData(:); spatAggObsData(:); xMin]));
+                    xMax = nanmax(real([spatAggModData(:); spatAggObsData(:); xMax]));
+
+                    hTs(indCurr) = scatter(spatAggObsData, spatAggModData, ...
                         2*ftSz, 'MarkerEdgeColor',[0 0 0], 'MarkerFaceColor',colorsUse(mod(indCurr-1, nSeries)+1,:));
 
                     %Create legend entries:
@@ -1523,20 +1525,27 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                         error('modVObs:gridLabelClass', [class(lgdCurr) ' is not a recognized format for the observation location label.']);
                     end
                     
-                else %time-series without linear time-step increases (such as glacier stakes)
+                else %time-series
                     cntrTs = 2*(indCurr-1) + 1 : 2*indCurr;
                     
-                    if iscell(dataAll{indCurrType{ll}(indCurr),iMDate})
+                    if iscell(dataAll{indCurrType{ll}(indCurr),iMDate}) %Time-series with irregular temporal spacing (e.g. 8-day MODIS or glacier stake)
                         plotDates = [];
-                        plotModData  = [];
-                        plotObsData  = [];
                         
-                        nTsMod = numel(dataAll{indCurrType{ll}(indCurr),iMDate}{1});
-                        nTsObs = numel(dataAll{indCurrType{ll}(indCurr),iODate}{1});
+                        nTsMod = szModData(1);
+                        nTsObs = szObsData(1);
                         
                         if nTsMod ~= nTsObs
                            error('modVObs:diffNumberTs','The observations and model data have different numbers of time-series elements.');
                         end
+                        
+                        %Need to update time-series so that it has same number of
+                        %indices as dates:
+                        spatAggModDataTemp = spatAggModData;
+                        spatAggObsDataTemp = spatAggObsData;
+
+                        spatAggModData = [];
+                        spatAggObsData = [];
+                        cntr = 1;    
                         
                         for kk = 1 : nTsMod
                             %Get time-series
@@ -1548,36 +1557,18 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                             end
                             
                             plotDates = [plotDates, tempModDates];
-                            if numel(szModData) == 2 && numel(szObsData) == 2 
-                                plotModDataTemp = dataAll{indCurrType{ll}(indCurr),iMData}(kk)*ones(1, numel(tempModDates));
-                                plotObsDataTemp = dataAll{indCurrType{ll}(indCurr),iOData}(kk)*ones(1, numel(tempObsDates));
-                                
-                                plotModDataTemp(isnan(plotModDataTemp) | isnan(plotObsDataTemp)) = nan;
-                                plotObsDataTemp(isnan(plotModDataTemp) | isnan(plotObsDataTemp)) = nan;
-                                
-                                plotModData  = [plotModData, plotModDataTemp];
-                                plotObsData  = [plotObsData, plotObsDataTemp];
-                            elseif numel(szModData) == 3 && numel(szObsData) == 3 
-                                plotModDataTemp = squeeze(dataAll{indCurrType{ll}(indCurr),iMData}(kk,:,:));
-                                plotObsDataTemp = squeeze(dataAll{indCurrType{ll}(indCurr),iOData}(kk,:,:));
-                                
-                                plotModDataTemp(isnan(plotModDataTemp) | isnan(plotObsDataTemp)) = nan;
-                                plotObsDataTemp(isnan(plotModDataTemp) | isnan(plotObsDataTemp)) = nan;
-                                
-                                plotModData  = [plotModData, mean2d(plotModDataTemp)*ones(1, numel(tempModDates))];
-                                plotObsData  = [plotObsData, mean2d(plotObsDataTemp)*ones(1, numel(tempModDates))];
-                            else
-                                warning('modVObs:dimDifferentScatter', 'The model and observation data have different dimensions, so plot cannot be produced.');
-                                continue
-                            end
+                            
+                            %Replicate matrix so consistent with dates:
+                            spatAggModData(cntr:cntr+numel(tempModDates)-1) = spatAggModDataTemp(kk);
+                            spatAggObsData(cntr:cntr+numel(tempModDates)-1) = spatAggObsDataTemp(kk);
+                            
+                            %Update counter:
+                            cntr = cntr + numel(tempModDates);
                         end
+                        clear cntr
 
-                        hTs(cntrTs) = plot(plotDates, plotModData, 'x', plotDates, plotObsData, 'o'); 
-
-                        %Find min and max dates:                       
-                        xMin = nanmin([nanmin(plotDates), xMin]);
-                        xMax = nanmax([nanmax(plotDates), xMax]);
-                    else %Regular time-series
+                        hTs(cntrTs) = plot(plotDates, spatAggModData, 'x', plotDates, spatAggObsData, 'o'); 
+                    else %Time-series with regular spacing (each time step)
                         plotModDates = dataAll{indCurrType{ll}(indCurr), iMDate};
                         plotObsDates = dataAll{indCurrType{ll}(indCurr), iODate}; 
                         
@@ -1585,18 +1576,22 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                             error('modVObs:diffDatesRegTs','The observations and model data to be plotted have different dates.');
                         end
                         
-                        plotModDataTemp = dataAll{indCurrType{ll}(indCurr), iMData};
-                        plotObsDataTemp = dataAll{indCurrType{ll}(indCurr), iOData};
-                        
-                        plotModDataTemp(isnan(plotModDataTemp) | isnan(plotObsDataTemp)) = nan;
-                        plotObsDataTemp(isnan(plotModDataTemp) | isnan(plotObsDataTemp)) = nan;
+%                         plotModDataTemp = dataAll{indCurrType{ll}(indCurr), iMData};
+%                         plotObsDataTemp = dataAll{indCurrType{ll}(indCurr), iOData};
+%                         
+%                         plotModDataTemp(isnan(plotModDataTemp) | isnan(plotObsDataTemp)) = nan;
+%                         plotObsDataTemp(isnan(plotModDataTemp) | isnan(plotObsDataTemp)) = nan;
                                 
-                        hTs(cntrTs) = plot(plotModDates, plotModDataTemp, '-x', plotObsDates, plotObsDataTemp, '-o'); 
+                        hTs(cntrTs) = plot(plotModDates, spatAggModData, '-x', plotObsDates, spatAggObsData, '-o'); 
 
-                        %Find min and max dates:
-                        xMin = nanmin([dataAll{indCurrType{ll}(indCurr),iMDate}(1), xMin]);
-                        xMax = nanmax([dataAll{indCurrType{ll}(indCurr),iMDate}(end), xMax]);
+%                         %Find min and max dates:
+%                         xMin = nanmin([dataAll{indCurrType{ll}(indCurr),iMDate}(1), xMin]);
+%                         xMax = nanmax([dataAll{indCurrType{ll}(indCurr),iMDate}(end), xMax]);
                     end
+                    
+                    %Find min and max dates:                       
+                    xMin = nanmin([nanmin(plotDates), xMin]);
+                    xMax = nanmax([nanmax(plotDates), xMax]);
 
                     %Set properties of current series:
                     set(hTs(cntrTs(1)),'Color',([0.5,0.5,0.5] + 0.5*colorsUse(mod(indCurr-1, nSeries)+1,:)),'LineWidth',lnWdA);
