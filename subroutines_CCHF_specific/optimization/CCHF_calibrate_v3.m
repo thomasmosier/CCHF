@@ -645,6 +645,8 @@ for ss = indStgStrt : nStage
             switch siteCombine
                 case 'linear'
                     fitCurr(jj) = mean(fitCurrSites);
+                case 'linearnan'
+                    fitCurr(jj) = nanmean(fitCurrSites);
                 case 'square'
                     fitCurr(jj) = sqrt(sum(fitCurrSites.^2));
             end

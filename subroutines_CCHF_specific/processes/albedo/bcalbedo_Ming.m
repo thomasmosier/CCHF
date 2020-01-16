@@ -68,8 +68,10 @@ dSnwLmt = 0.02; %2 cm (taken from Yasunari et al. 2010)]
 dIceLmt = 0.1; %10 cm (this is hypothesis based on the holes that bc creates in ice)
 %Set maximum BC value:
 bcMax = 500; %Units = micrograms per kg
-%THINK ABOUT REASONABLE MAXIMUM (defines maximum effect for albedo
-%reduction)
+%This threshold is maximum BC deposition recorded in Table 3 of:
+%Ming, J., Xiao, C., Du, Z., & Yang, X. (2013). An overview of black carbon 
+%deposition in High Asia glaciers and its impacts on radiation balance. 
+%Advances in Water Resources, 55, 80-87.
 
 %Ming empirical formulation assumes "x" has units of micrograms per kg. The
 %input is new BC deposition in units of micrograms per day per meter
@@ -198,4 +200,3 @@ mxIcAlb = max(max(sCryo.(varIcAlbNoBC)(:)), aIce);
 %Set albedo limits:
 sCryo.(varIcAlb)(sCryo.(varIcAlb) > mxIcAlb) = mxIcAlb;
 sCryo.(varIcAlb)(sCryo.(varIcAlb) < 0) = 0; 
-%THINK ABOUT LOWER SATURATION LIMIT
