@@ -491,6 +491,7 @@ for mm = 1 : nSites
                 end
                 if issparse(sCryo.icx)
                     sCryo.icx = full(sCryo.icx);
+                        sCryo.icx(isnan(sHydro{mm}.dem)) = nan;
                 end
             else
                 error('cchfEngine:noIceGrid','No ice grid available. This should have been created in the main script.');
@@ -524,17 +525,23 @@ for mm = 1 : nSites
 %             sLand = rmfield_x(sAtm,{'data','pr','pre','tas','tasmin','tmin','tmn','tmax','tasmax','tmx','lat','lon','time','attTime','indCurr'});
 
             sLand.mrro = zeros(szDem,'single'); %runoff out of each cell
+                sLand.mrro(isnan(sHydro{mm}.dem)) = nan;
             sLand.flow = zeros(szDem,'single'); %flowrate at each cell
+                sLand.flow(isnan(sHydro{mm}.dem)) = nan;
             sLand.sm   = zeros(szDem,'single'); %Soil moisture field
+                sLand.sm(isnan(sHydro{mm}.dem)) = nan;
             sLand.et   = zeros(szDem,'single'); %evapotranspiration field
+                sLand.et(isnan(sHydro{mm}.dem)) = nan;
         end
 
     %%DO EVERY ITERATION:
         %Reset some fields every iteration:
         sLand.mrro = zeros(szDem,'single'); %runoff out of each cell
+            sLand.mrro(isnan(sHydro{mm}.dem)) = nan;
 
         if isfield(sCryo,'ice')
             sCryo.icdwe = zeros(szDem,'single');
+                sCryo.icdwe(isnan(sHydro{mm}.dem)) = nan;
         else
             sCryo.icdwe = nan(szDem,'single');
         end

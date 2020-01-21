@@ -60,8 +60,10 @@ minTemp = find_att(sMeta.global,'snow_temp_min');
 
 %Initialize release field:
 sCryo.lhsnme = zeros(size(sCryo.snw),'single');
+    sCryo.lhsnme(isnan(sCryo.icx)) = nan;
 if ~isfield(sCryo, 'snlw')
     sCryo.snlw = zeros(size(sCryo.snw),'single');
+        sCryo.snlw(isnan(sCryo.icx)) = nan;
 end
 
 
@@ -72,6 +74,7 @@ end
 
 %Calculate melt potential using simple degree indec formulation (units of m): 
 sCryo.lhpme = time2sec(1,sMeta.dt,sMeta.dateCurr)*sCryo.hfnet/cLate;
+    sCryo.lhpme(isnan(sCryo.icx)) = nan;
 sCryo.lhpme(sCryo.lhpme < 0) = 0;
 
 sCryo.lhsnme = sCryo.lhpme;

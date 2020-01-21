@@ -1,5 +1,6 @@
 function sModOut = print_model_grid(sModOut, sData, nmCurr, ptWrtCurr, indTsPrintCurr, sMeta, lon, lat, varargin)
 
+%Indices that should be used (not set to nan):
 if ~isempty(varargin(:))
     indInGrid2d = varargin{1};
 else
@@ -16,31 +17,24 @@ if isstruct(sData)
             error('printModelGrid:Array3dNoTime', ['A time field cannot be found for ' nmCurr '.']);
         end
 
-        if ~isempty(indInGrid2d)
-            szCurr = size(sData.(nmCurr));
-            tempOut = nan(szCurr(2:3), 'single');
-            tempData = squeeze(sData.(nmCurr)(indInputTsCurr,:,:));
-            tempOut(indInGrid2d) = tempData(indInGrid2d);
-            sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:) = tempOut;
+        if ~isempty(indInGrid2d) %The selected indices to be used (not nan)
+            sModOut.(ptWrtCurr).(nmCurr)(ind2_3d(size(sModOut.(ptWrtCurr).(nmCurr)), indInGrid2d, indTsPrintCurr)) = ...
+                single(squeeze(sData.(nmCurr)(ind2_3d(size(sData.(nmCurr)), indInGrid2d, indInputTsCurr))));
         else
-            sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:) = squeeze(sData.(nmCurr)(indInputTsCurr,:,:));
+            sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:) = single(squeeze(sData.(nmCurr)(indInputTsCurr,:,:)));
         end
     else
-        if ~isempty(indInGrid2d)
-            tempOut = nan(size(sData.(nmCurr)), 'single');
-            tempOut(indInGrid2d) = sData.(nmCurr)(indInGrid2d);
-            sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:) = tempOut;
+        if ~isempty(indInGrid2d) %The selected indices to be used (not nan)
+            sModOut.(ptWrtCurr).(nmCurr)(ind2_3d(size(sModOut.(ptWrtCurr).(nmCurr)),indInGrid2d,indTsPrintCurr)) = single(sData.(nmCurr)(indInGrid2d));
         else
-            sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:) = sData.(nmCurr);
+            sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:) = single(sData.(nmCurr));
         end
     end
 elseif isnumeric(sData) && ismatrix(sData)
-    if ~isempty(indInGrid2d)
-        tempOut = nan(size(sData.(nmCurr)), 'single');
-        tempOut(indInGrid2d) = sData(indInGrid2d);
-        sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:) = tempOut;
+    if ~isempty(indInGrid2d) %The selected indices to be used (not nan)
+        sModOut.(ptWrtCurr).(nmCurr)(ind2_3d(size(sModOut.(ptWrtCurr).(nmCurr)),indInGrid2d,indTsPrintCurr)) = single(sData(indInGrid2d));
     else
-        sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:) = sData;
+        sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:) = single(sData);
     end
 else
     error('printModelGrid:numericArray3d','The input data is a numeric array with 3 dim. Numeric arrays must only have 2 dim.')

@@ -105,7 +105,9 @@ indNew = find(sAtm.prsn > 0);
 if ~isfield(sCryo, varTopSnow) 
     indNew = indAll;
     sCryo.(varTopSnow) = zeros(size(sAtm.prsn));
+        sCryo.(varTopSnow)(isnan(sCryo.icx)) = nan;
     sCryo.(varBcSnow)  = zeros(size(sAtm.prsn));
+        sCryo.(varBcSnow)(isnan(sCryo.icx)) = nan;
 end
 
 %Set depth of new snow layer
@@ -138,6 +140,7 @@ xSn(xSn > bcMax) = bcMax;
 
 %Calculate snow layer albedo reduction based on Ming's equation:
 sCryo.(varAlbRedTop) = Ming(xSn)/100; %Units are fraction (same as albedo)
+    sCryo.(varAlbRedTop)(isnan(sCryo.icx)) = nan;
 %Set limits:
 sCryo.(varAlbRedTop)(sCryo.(varAlbRedTop) < 0) = 0;
 sCryo.(varAlbRedTop)(sCryo.(varBcSnow) == 0) = 0;
@@ -166,6 +169,7 @@ sCryo.(varSnAlb)(sCryo.(varSnAlb) < 0) = 0;
 %Iniitialize ice BC grid
 if ~isfield(sCryo, varBcIce) 
     sCryo.(varBcIce) = zeros(size(sAtm.prsn));
+        sCryo.(varBcIce)(isnan(sCryo.icx)) = nan;
 end
 
 sCryo.(varBcIce) = sCryo.(varBcIce) + newBC;
@@ -181,6 +185,7 @@ xIc(xIc > bcMax) = bcMax;
 
 %Calculate ice layer albedo reduction:
 sCryo.(varAlbRedIce) = Ming(xIc)/100; %Units are fraction (same as albedo)
+    sCryo.(varAlbRedIce)(isnan(sCryo.icx)) = nan;
 %Set limits:
 sCryo.(varAlbRedIce)(sCryo.(varAlbRedIce) < 0) = 0;
 sCryo.(varAlbRedIce)(sCryo.(varBcIce) == 0) = 0;

@@ -45,8 +45,10 @@ end
 %Initialize melt release array:
 if ~isfield(sCryo,'snlr')
     sCryo.snlr = zeros(size(sCryo.snw), 'single');
+        sCryo.snlr(isnan(sCryo.icx)) = nan;
 else
     sCryo.snlr(:) = 0; 
+        sCryo.snlr(isnan(sCryo.icx)) = nan;
 end
 
 %%Release liquid in excess of snow holding capacity:

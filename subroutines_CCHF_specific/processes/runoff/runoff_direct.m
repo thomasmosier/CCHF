@@ -34,7 +34,8 @@ end
 
 
 %Reset runoff field:
-sLand.mrro = zeros(size(sLand.mrro));
+sLand.mrro(:) = 0;
+    sLand.mrro(isnan(sCryo.icx)) = 0;
 
 indX = [];
 if isfield(sCryo, 'ice')
@@ -50,6 +51,7 @@ if isfield(sLand,'pet')
     end
     
     sLand.et = squeeze(sLand.pet(indPET,:,:));
+        sLand.et(isnan(sCryo.icx)) = 0;
     
     %Set ET to 0 when snowpack or glaciers exist:
     sLand.et(sCryo.snw > 0) = 0;

@@ -39,9 +39,13 @@ end
 densW = find_att(sMeta.global,'density_water'); 
 cLate = densW*find_att(sMeta.global,'latent_water');  %Density water * Latent heat fusion ice; %Units = J/m^3
 
+
 sCryo.lhicme  = zeros(size(sCryo.snw),'single');
+    sCryo.lhicme(isnan(sCryo.icx)) = nan;
 sCryo.icdwe   = zeros(size(sCryo.snw),'single');
+    sCryo.icdwe(isnan(sCryo.icx)) = nan;
 sCryo.iclr    = zeros(size(sCryo.snw),'single'); %Ice liquid release
+    sCryo.iclr(isnan(sCryo.icx)) = nan;
 
 
 %if snowpack has ice field, allow additional melt at those locations:
@@ -61,9 +65,16 @@ if ~isempty(indIceMlt)
     sCryo.lhicme(indIceMlt) = time2sec(1,sMeta.dt,sMeta.dateCurr)*sCryo.hfneti(indIceMlt)/cLate;
         sCryo.lhpme(indIceMlt) = 0;
         
-    sCryo.lhicme( sCryo.lhicme < 0) = 0;
+    %Physical constraints:
+    sCryo.lhicme(isnan(sCryo.lhicme)) = 0;
+    sCryo.lhicme(indIceMlt(sCryo.lhicme(indIceMlt) < 0)) = 0;
+    
     sCryo.iclr(indIceMlt) = sCryo.icx(indIceMlt).*sCryo.lhicme(indIceMlt);
     sCryo.icdwe(indIceMlt) = -sCryo.lhicme(indIceMlt);
+    
+    %Update ice water equivalent based on melt:
+    sCryo.icwe(indIceMlt) = sCryo.icwe(indIceMlt) - sCryo.lhicme(indIceMlt);
+        sCryo.icwe(indIceMlt(sCryo.icwe(indIceMlt) < 0)) = 0;
 end
 
 

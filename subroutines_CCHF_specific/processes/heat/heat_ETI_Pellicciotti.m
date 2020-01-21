@@ -53,18 +53,24 @@ end
     
 
 sCryo.hfrs  = 10^(srf)*(1-sCryo.snalb).*sAtm.rstran.*squeeze(sAtm.rsdt(indRSDT,:,:));
-
+    sCryo.hfrs(isnan(sCryo.icx)) = nan;
+    
 %Temperature melt energy:
 sCryo.hft = wattperdeg*squeeze(sAtm.tas(sAtm.indtas,:,:));
+    sCryo.hft(isnan(sCryo.icx)) = nan;
 
 %Calculate melt potential using Pellicciotti's formulation: 
 %Because of conversion factor, each term has units of w/m^2
 sCryo.hfnet = sCryo.hft + sCryo.hfrs;
+    sCryo.hfnet(isnan(sCryo.icx)) = nan;
 
 %Calculate heat for glaciers (if present)
 if ~strcmpi(sMeta.iceGrid, 'none') 
     sCryo.hfrsi = 10^(srf)*(1-sCryo.icalb).*sAtm.rstran.*squeeze(sAtm.rsdt(indRSDT,:,:));
+        sCryo.hfrsi(isnan(sCryo.icx)) = nan;
     sCryo.hfneti = sCryo.hft + sCryo.hfrsi;
 else
     sCryo.hfneti = sCryo.hfnet;
 end
+
+sCryo.hfneti(isnan(sCryo.icx)) = nan;

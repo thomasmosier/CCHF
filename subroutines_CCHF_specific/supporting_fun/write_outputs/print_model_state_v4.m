@@ -60,6 +60,7 @@ else
     sMeta.foldWrtData = fullfile(pathOut, 'model_output_grids');
         
     %Indices in 2d model domain:
+    indNan2d = find(isnan(sHydro.dem));
     indNNan2d = find(~isnan(sHydro.dem));
     
     %On first iteration, create output structure array:
@@ -104,17 +105,29 @@ else
                 if strcmpi(ptCurr,'avg')
                     if ~isfield(sModOut,'avg') || isempty(sModOut.avg)
                         sModOut.avg = struct;
-                            sModOut.avg.(varLon) = nan;
-                            sModOut.avg.(varLat) = nan;
+                            sModOut.avg.(varLon) = 'nan';
+                            sModOut.avg.(varLat) = 'nan';
                             sModOut.avg.date = outDate;
                             sModOut.avg.indGage = indNNan2d;
                             sModOut.avg.fields = cell(0,1);
 %                         sModOut.avg = struct('lon', nan, 'lat', nan, ...
 %                             'date', outDate, 'indGage', (1:numel(sHydro.dem)), 'fields', cell(0,1));
                     end
-                    sModOut.avg.(varCurr) = nan(szInitPt);
+                    
                     sModOut.avg.fields{end+1} = varCurr;
-
+                    
+                    if regexpbl(varCurr, 'mb') %Initialize gridded mass balance (uses start and end dates)
+                        varMbDateStrt = [varCurr '_dateStart'];
+                        varMbDateEnd  = [varCurr '_dateEnd'];
+                        
+                        %Assign mb dates:
+                        [sModOut.avg.(varMbDateStrt), sModOut.avg.(varMbDateEnd)] = glac_measurement_dates(datesUse, 'dateGlac', sMeta);
+                        
+                        %Initialize output:
+                        sModOut.avg.(varCurr) = nan([numel(sModOut.avg.(varMbDateStrt)(:,1)), 1], 'single');
+                    else
+                        sModOut.avg.(varCurr) = nan(szInitPt, 'single');
+                    end
                 elseif strcmpi(ptCurr,'all')
                     if ~isfield(sModOut,'all') || isempty(sModOut.all)
                         sModOut.all = struct;
@@ -131,31 +144,11 @@ else
                         varMbDateStrt = [varCurr '_dateStart'];
                         varMbDateEnd  = [varCurr '_dateEnd'];
 
-                        %Find mb dates (different from other fields because there's a start and end date):
-                        indMbStrt = [];
-                        indMbEnd = [];
-                        unqYrs = unique(datesUse(:,1));
-                        for zz = 1 : numel(unqYrs)
-                            indMbStrtTemp = find(ismember(datesUse, [unqYrs(zz)-1, sMeta.dateGlac], 'rows')) + 1;
-                            indMbEndTemp  = find(ismember(datesUse, [unqYrs(zz), sMeta.dateGlac(1,:)], 'rows'));
-                            
-                            %Colllect dates during years containing both a
-                            %start and an end for mb:
-                            if ~isempty(indMbStrtTemp) && ~isempty(indMbEndTemp)
-                                %Ensure mb dates do not include spin-up:
-                                if days_since(sMeta.dateCurr, datesUse(indMbStrtTemp,:), 'gregorian') >= 0
-                                    indMbStrt = [indMbStrt; indMbStrtTemp];
-                                    indMbEnd  = [ indMbEnd;  indMbEndTemp];
-                                end
-                            end
-                        end
-
                         %Assign mb dates:
-                        sModOut.all.(varMbDateStrt) = datesUse(indMbStrt,:);
-                        sModOut.all.(varMbDateEnd) = datesUse(indMbEnd,:);
+                        [sModOut.all.(varMbDateStrt), sModOut.all.(varMbDateEnd)] = glac_measurement_dates(datesUse, 'dateGlac', sMeta);
                         
                         %Initialize output:
-                        sModOut.all.(varCurr) = nan([numel(indMbEnd), szInit3d(2:3)], 'single');
+                        sModOut.all.(varCurr) = nan([numel(sModOut.avg.(varMbDateStrt)(:,1)), szInit3d(2:3)], 'single');
                     else
                         sModOut.all.(varCurr) = nan(szInit3d, 'single');
                     end
@@ -199,19 +192,15 @@ else
                         
                         if regexpbl(varCurr, 'mb') %Initialize gridded mass balance (uses start and end dates)
                             varMbDateStrt = [varCurr '_dateStart'];
-                            varMbDateEnd = [varCurr '_dateEnd'];
+                            varMbDateEnd  = [varCurr '_dateEnd'];
 
-                            %Find mb dates (different from other fields because there's a start and end date):
-                            indFirst = find(ismember(datesUse, [sMeta.dateCurr(1)-1, sMeta.dateGlac], 'rows')) + 1;
-                            indMbStrt = ismember(datesUse(:,2:end), datesUse(indFirst,2:end), 'rows');
-                            indMbEnd = ismember(datesUse(:,2:end), sMeta.dateGlac(1,:), 'rows');
-
-                            sModOut.(ptWrtCurr).(varMbDateStrt) = datesUse(indMbStrt,:);
-                            sModOut.(ptWrtCurr).(varMbDateEnd) = datesUse(indMbEnd,:);
-                            
-                            sModOut.(ptWrtCurr).(varCurr) = nan(numel(indMbEnd), 1, 'single');
+                            %Assign mb dates:
+                            [sModOut.(ptWrtCurr).(varMbDateStrt), sModOut.(ptWrtCurr).(varMbDateEnd)] ...
+                                = glac_measurement_dates(datesUse, 'dateGlac', sMeta);
+                        
+                            sModOut.(ptWrtCurr).(varCurr) = nan(numel(sModOut.avg.(varMbDateStrt)(:,1)), 1, 'single');
                         else
-                            sModOut.(ptWrtCurr).(varCurr) = nan(szInitPt);
+                            sModOut.(ptWrtCurr).(varCurr) = nan(szInitPt, 'single');
                         end
                         
                         sModOut.(ptWrtCurr).fields{end+1} = varCurr;
@@ -268,7 +257,7 @@ else
                 %Extract information:
                 if strcmpi(ptWrtCurr, 'all') 
                     sModOut = print_model_grid(sModOut, sLand, nmCurr, ptWrtCurr, ...
-                        indTsPrintCurr, sMeta, sHydro.(varLon), sHydro.(varLat), indNNan2d);
+                        indTsPrintCurr, sMeta, sHydro.(varLon), sHydro.(varLat));
                 else
                     sModOut = print_model_pt(sModOut, sLand, nmCurr, ptWrtCurr, ...
                         indTsPrintCurr, sHydro.area, sModOut.(ptWrtCurr).indGage, indAreaCurr, sMeta);
@@ -278,13 +267,13 @@ else
                 %Extract information:
                 if strcmpi(ptWrtCurr, 'all') 
                     sModOut = print_model_grid(sModOut, sAtm, nmCurr, ptWrtCurr, ...
-                        indTsPrintCurr, sMeta, sHydro.(varLon), sHydro.(varLat), indNNan2d);
+                        indTsPrintCurr, sMeta, sHydro.(varLon), sHydro.(varLat));
                 else
                     sModOut = print_model_pt(sModOut, sAtm, nmCurr, ptWrtCurr, ...
                         indTsPrintCurr, sHydro.area, sModOut.(ptWrtCurr).indGage, indAreaCurr, sMeta);
                 end
                 
-            elseif any(strcmpi(fldsCryo, nmCurr)) %INFORMATION IN "sCryo"
+            elseif any(strcmpi(fldsCryo, nmCurr)) && ~any(strcmpi(fldsmb, nmCurr)) %INFORMATION IN "sCryo" (other than mass balance)
                 %Potentially use ice grid (can be different from main
                 %grid)
                 %Also, write boolean parameter to record whether or not ice
@@ -454,13 +443,13 @@ else
                     otherwise
                         if strcmpi(ptWrtCurr, 'all')
                             sModOut = print_model_grid(sModOut, sCryo, nmCurr, ptWrtCurr, ...
-                                indTsPrintCurr, sMeta, sHydro.(varLon), sHydro.(varLat), indNNan2d);
+                                indTsPrintCurr, sMeta, sHydro.(varLon), sHydro.(varLat));
                         else
                             sModOut = print_model_pt(sModOut, sCryo, nmCurr, ptWrtCurr, ...
                                 indTsPrintCurr, sHydro.area, indGageCurr, indAreaCurr, sMeta, indNNan2d);
                         end
                 end
-            elseif any(strcmpi(fldsmb, nmCurr)) %MASS BALANCE INFORMATION (stored in "sCryo")
+            elseif any(strcmpi(fldsCryo, nmCurr)) && any(strcmpi(fldsmb, nmCurr)) %MASS BALANCE INFORMATION (stored in "sCryo")
                 if regexpbl(fldsCryoAll, fldsmb)
                     %Difference with mass balance fields is that they are only
                     %calculated once per year
@@ -476,9 +465,10 @@ else
                         %Find date to write to:
                         varMbDateStrt = [fldMb '_dateStart'];
                         varMbDateEnd  = [fldMb   '_dateEnd'];
+                        keyboard
                         %Record mass balance if date corresponds to last day of
                         %mass balance year
-                        if isequal(sMeta.dateCurr(2:end), sMeta.dateGlac) && any(sMeta.dateCurr(1) == sModOut.all.(varMbDateEnd)(:,1))
+                        if isequal(sMeta.dateCurr(2:end), sMeta.dateGlac) && any(sMeta.dateCurr(1) == sModOut.(ptWrtCurr).(varMbDateEnd)(:,1))
                             %Find current output mb indice
                             indMbCurr = find(ismember(sModOut.(ptWrtCurr).(varMbDateEnd), sMeta.dateCurr, 'rows'));
                             if ~isempty(indMbCurr)

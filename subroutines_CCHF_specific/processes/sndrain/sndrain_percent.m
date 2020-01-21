@@ -38,11 +38,18 @@ end
 
 
 %Initialize snowmelt release array:
-sCryo.snlr = zeros(size(sCryo.snw),'single');
-
+%Initialize melt release array:
+if ~isfield(sCryo,'snlr')
+    sCryo.snlr = zeros(size(sCryo.snw), 'single');
+        sCryo.snlr(isnan(sCryo.icx)) = nan;
+else
+    sCryo.snlr(:) = 0; 
+        sCryo.snlr(isnan(sCryo.icx)) = nan;
+end
 
 %Find holding capacity (percentage of solid snow):
 sCryo.snlh = holdCap*sCryo.snw;
+    sCryo.snlh(isnan(sCryo.icx)) = nan;
 
 
 %Release snowpack liquid in excess of snowpack holding capacity:

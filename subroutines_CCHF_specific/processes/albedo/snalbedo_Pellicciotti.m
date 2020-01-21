@@ -49,6 +49,7 @@ aOld   = find_att(varargin{1}.global,'albedo_snow_old');  %Albedo of old/melting
 
 if ~isfield(sAtm,'tasmaxc')
     sAtm.tasmaxc = zeros(size(sCryo.snw),'single');
+        sAtm.tasmaxc(isnan(sCryo.icx)) = nan;
 end
 
 %Update accumulated daily maximum air temperature since last snow event (used in albedo calculation):
@@ -62,3 +63,5 @@ sCryo.snalb = real(aFresh - aOld*log10(sAtm.tasmaxc));
 %Set min and max snow albedo
 sCryo.snalb(sCryo.snalb > 1) = aFresh;
 sCryo.snalb( isnan(sCryo.snalb) | sCryo.snalb < aOld) = aOld; 
+
+    sCryo.snalb(isnan(sCryo.icx)) = nan;

@@ -193,3 +193,7 @@ end
 if ~isempty(fldLake)
     sCryo.hfneti = (1+9*sCryo.(fldLake)).*sCryo.hfneti;
 end
+
+
+sCryo.hfnet(isnan(sCryo.icx)) = nan;
+sCryo.hfneti(isnan(sCryo.icx)) = nan;

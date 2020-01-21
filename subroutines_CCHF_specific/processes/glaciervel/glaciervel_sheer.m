@@ -84,6 +84,11 @@ tau = sparse(double(max(0, rhoW*g*(full(sCryo.igrdwe).*sCryo.(varSineAngle)) - t
 
 sCryo.(varVel) = (tau./(R*nu^2)).^((n+1)/2); %Units are m/s
 
+%For testing:
+% figure
+% hist(sCryo.(varVel)(:)*60*60*365); %meters per year
+% xlim([0,2000]);
+
 %Note: If ice initialization methodology based on Shea is used, the 
 %glaciers will start out in equilibrium. This will likely result in 
 %velocities close to 0.

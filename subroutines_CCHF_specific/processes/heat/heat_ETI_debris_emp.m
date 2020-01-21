@@ -73,12 +73,17 @@ sCryo.hfrsi = (1-sCryo.icalb).*sAtm.rstran.*squeeze(sAtm.rsdt(indRSDT,:,:));
 %Temperature sensible energy (parameterization for convenction):
 sCryo.hft  = wattperdegS*squeeze(sAtm.tas(sAtm.indtas,:,:));
 sCryo.hfti = wattperdegI*squeeze(sAtm.tas(sAtm.indtas,:,:));
+    sCryo.hft(isnan(sCryo.icx)) = nan;
+    sCryo.hfti(isnan(sCryo.icx)) = nan;
 
 %Calculate snow melt potential using Pellicciotti's formulation: 
 %Because of conversion factor, each term has units of w/m^2
 sCryo.hfnet = sCryo.hft + sCryo.hfrs;
 %Calculate ice heatflux (based on clean ice; debris is modified below):
 sCryo.hfneti = sCryo.hft + sCryo.hfrsi; 
+
+sCryo.hfnet(isnan(sCryo.icx)) = nan;
+sCryo.hfneti(isnan(sCryo.icx)) = nan;
 
 
 %%Modify heat flux based on debris cover / clean ice

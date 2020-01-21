@@ -29,12 +29,15 @@ end
 
 if ~isfield(sCryo,'snw')
     sCryo.snw = zeros(size(squeeze(sAtm.pr(1,:,:))),'single');
+        sCryo.snw(isnan(sCryo.icx)) = nan;
 end
 if ~isfield(sCryo,'snlw')
     sCryo.snlw = zeros(size(squeeze(sAtm.pr(1,:,:))),'single');
+        sCryo.snlw(isnan(sCryo.icx)) = nan;
 end
 
 sLand.rnrf = zeros(size(squeeze(sAtm.pr(1,:,:))),'single');
+    sLand.rnrf(isnan(sCryo.icx)) = nan;
 
 %Add new snowfall to snowpack:
 sCryo.snw = sCryo.snw + sAtm.prsn;

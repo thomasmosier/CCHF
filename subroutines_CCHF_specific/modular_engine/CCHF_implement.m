@@ -309,7 +309,7 @@ valRt = 'output_';
             end
 
 
-            %Load climate variables:
+            %Select climate data paths:
             sPath{ii} = clm_path_ui(sPath{ii}, sMeta, sMeta.region{ii});
         end %End inputs UIs
         

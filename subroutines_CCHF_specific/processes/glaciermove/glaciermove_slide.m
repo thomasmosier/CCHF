@@ -32,21 +32,24 @@ end
 
 varLon = 'longitude';
 varLat = 'latitude';
-varMnMb = 'icmb';
-varMnLat = 'iclateral';
+varIgrdLon = 'igrdlon';
+varIgrdLat = 'igrdlat';
+
+%Main hydrologic grid (also has some ice areas)
+varMnLatMov = 'iclateral';
 varMnIceWe = 'icwe';
 varMnIceDwe = 'icdwe';
 varMnIcx = 'icx';
 
-varIgrdLon = 'igrdlon';
-varIgrdLat = 'igrdlat';
+%Ice grid (possibly finer than main hydrologic grid)
+varIgrdArea = 'igrdarea';
 varIgrdDl = 'igrdfdrdl';
 varIgrdFdr = 'igrdfdr';
 varIgrdDem = 'igrddem';
 varIgrdFdrM = 'igrdfdrmult';
 varIgrdWgtF = 'igrd2mainFlowWgt';
 varIgrdVel = 'igrdvel';
-varIgrdWE = 'igrdwe';
+varIgrdWe = 'igrdwe';
 varIgrdMb = 'igrdmb';
 
 
@@ -56,6 +59,14 @@ dt = time2sec(1,sMeta.dt,sMeta.dateCurr);
 
 %Set velocity minimum threshold (if less than this, don't bother with calculation):
 velThresh = 0.01/(3.154*10^7); %(1 cm per year; in units of m/s)
+
+
+%Check for velocity field:
+if ~isfield(sCryo, varIgrdVel)
+   error('glaciermoveSlide:noVel', ['Glacier movement can only be calculated if ' ...
+       'glacier velocity is also calculated. This is done in the ' char(39) glaciervel char(39) ' process representation.']) 
+end
+
 
 %Calculate distance between grid cells along flow path:
 if ~isfield(sCryo, varIgrdDl)
@@ -131,6 +142,15 @@ if ~isfield(sCryo, varIgrdFdrM)
 end
 
 
+%Determine if ice grid is same res as main hydrologic grid 
+if isequal(sHydro.(varLat), sCryo.(varIgrdLat)) && isequal(sHydro.(varLon), sCryo.(varIgrdLon)) 
+    blGrdResSame = 1;
+    %In this case, consider fractional glacier coverage within grid cell
+else
+    blGrdResSame = 0;
+end
+
+
 %Find grid cells where velocity exceeds threshold
 indVel = find(sCryo.(varIgrdVel) > velThresh);
 %Calculate lateral transport at both glacier and main grids if any moving
@@ -142,34 +162,77 @@ if ~isempty(indVel)
     %Set nan values to zero
     fracMove(isnan(fracMove)) = 0;
     fracMove(isinf(fracMove)) = 0;
-
-    %Calculate displaced ice:
+    
+    
+    %Initialize displaced ice:
     dispIce = zeros(szIce(1), szIce(2));
-    dispIce(indVel) = double(full(transpose(fracMove)*sCryo.(varIgrdWE)(indVel)));  
-    %Add ice to downslope grid cells:
-    sCryo.(varIgrdWE)(:) = sCryo.(varIgrdWE)(:) + transpose(sCryo.(varIgrdFdrM))*sparse(reshape(dispIce, [], 1)); %Units of meters
-    %Remove ice from uphill grid cell:
-    sCryo.(varIgrdWE)(:) = sCryo.(varIgrdWE)(:) - dispIce(:); %Units of meters
+    %Calculate displaced ice (displaced volume = frac move * elevation * area * fraction cover):
+    if blGrdResSame == 1
+        %Delta Ice = fractional displacement * Area grid cell * fractional
+        %glacier coverage * Depth of icea
+        dispIce(indVel) = double(full(transpose(fracMove))*(sCryo.(varIgrdWe)(indVel).*sHydro.area(indVel).*sCryo.(varMnIcx)(indVel)));
+    else
+        %Delta Ice volume = fractional displacement * Area grid cell * Depth of icea
+        
+        %Calculate grid cell area:
+        if ~isfield(sCryo, varIgrdArea)
+            sCryo.(varIgrdArea) = area_geodata(sCryo.(varIgrdLon), sCryo.(varIgrdLat));
+        end
+        
+        %Calculate delta ice volume:
+        dispIce(indVel) = double(full(transpose(fracMove))*(sCryo.(varIgrdWe)(indVel).*sCryo.(varIgrdArea)(indVel)));  
+    end
+    
+    %Calculate ice that is added to downslope grid cells (assumes same outline; additional ice adds to depth)
+    if blGrdResSame == 1
+        %New ice depth = (delta ice / (area grid cell * fractional coverage))
+        matNewIce = reshape(dispIce, [], 1) ./ (sHydro.area(:).*sCryo.(varMnIcx)(:));
+        %Use flow direction to move downslope:
+        matNewIceDownSlp = (full(transpose(sCryo.(varIgrdFdrM))*sparse(matNewIce)));
+    else
+        %New ice depth = (delta ice / area grid cell)
+        matNewIce = reshape(dispIce, [], 1) ./ sCryo.(varIgrdArea)(:);
+        %Use flow direction to move downslope:
+        matNewIceDownSlp = (full(transpose(sCryo.(varIgrdFdrM))*sparse(matNewIce)));
+    end
+    
+    %Add displaced ice to ice water equivalent
+    sCryo.(varIgrdWe)(:) = sCryo.(varIgrdWe)(:) + matNewIceDownSlp; %Units of meters cubed
 
-    %Add displaced ice to ice mass balance field (glacier grid):
-    sCryo.(varIgrdMb)(:) = sCryo.(varIgrdMb)(:) + full(transpose(sCryo.(varIgrdFdrM))*reshape(dispIce, [],1) - dispIce(:));
+    %Add ice to delta icea water equivalent
+    sCryo.(varIgrdMb)(:) = sCryo.(varIgrdMb)(:) + matNewIceDownSlp;
+
+    %Remove displaced ice from uphill grid cell (assumes same outline; removes from depth)
+    sCryo.(varIgrdWe)(:) = sCryo.(varIgrdWe)(:) - matNewIce; %Units of meters cubed
+
+    %Ensure no negative ice depths:
+    sCryo.(varIgrdWe)(sCryo.(varIgrdWe) < 0) = 0;
+    
     
     %%TRANSLATE MASS BALANCE FROM ICE GRID TO MAIN GRID
     %Initialize movement grid
-    sCryo.(varMnLat) = zeros(size(sHydro.dem), 'single');
-    %Calculate movement at main grid:
-    sCryo.(varMnLat)(:) = ...
-        transpose(sCryo.(varIgrdWgtF))*double(sCryo.(varMnIceWe)(:)) ...
-        - double(full(sum(sCryo.(varIgrdWgtF), 2))).*sCryo.(varMnIceWe)(:);
-%     %For testing:
-%     figure; imagesc(sCryo.(varMnLat)); colorbar;
-%     figure; imagesc(sCryo.(varMnIcx).*sCryo.(varMnIceWe)); colorbar;
-%     figure; histogram(sCryo.(varMnLat));
+    sCryo.(varMnLatMov) = zeros(size(sHydro.dem), 'single');
+    if blGrdResSame == 1
+        %Ice moved downhill minus ice removed from uphill
+        sCryo.(varMnLatMov)(:) = matNewIceDownSlp - matNewIce;
+    else
+        warning('glaciermoveSlide:translationIgrdToMn', ...
+            ['Check the translation between ice movement at the ice '...
+            'grid to main grid. For exmaple, ensure conservation of mass.']);
+        sCryo.(varMnLatMov)(:) = ...
+            transpose(sCryo.(varIgrdWgtF))*double(sCryo.(matNewIce)(:)) ...
+            - double(full(sum(sCryo.(varIgrdWgtF), 2))).*sCryo.(matNewIce)(:);
+    end
     
     %Add lateral ice movement to ice arrays (main grid):
-    %DO NOT ALTER 'icdwe'. This grid will account only for phase change
-%     sCryo.(varMnIceDwe) = sCryo.(varMnIceDwe) + sCryo.(varMnLat);
-    sCryo.(varMnIceWe) = sCryo.(varMnIceWe) + sCryo.(varMnLat);
+    sCryo.(varMnIceWe)  = sCryo.(varMnIceWe) + sCryo.(varMnLatMov);
+    sCryo.(varMnIceDwe) = sCryo.(varMnIceDwe) + sCryo.(varMnLatMov);
+    
     %Set any negative values to zero:
     sCryo.(varMnIceWe)(sCryo.(varMnIceWe) < 0) = 0;
+    
+%     %For testing:
+%     figure; imagesc(sCryo.(varMnLatMov)); colorbar;
+%     figure; imagesc(sCryo.(varMnIcx).*sCryo.(varMnIceWe)); colorbar;
+%     figure; histogram(sCryo.(varMnLatMov));
 end

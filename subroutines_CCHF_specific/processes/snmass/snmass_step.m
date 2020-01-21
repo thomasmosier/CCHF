@@ -40,15 +40,18 @@ cLate = densW*find_att(sMeta.global,'latent_water');  %Density water * Latent he
 
 %Initialize release field:
 sCryo.lhsnme = zeros(size(sCryo.snw),'single');
+    sCryo.lhsnme(isnan(sCryo.icx)) = nan;
 % sCryo.lhicme  = zeros(size(sCryo.snw),'single');
 if ~isfield(sCryo, 'snlw')
     sCryo.snlw = zeros(size(sCryo.snw),'single');
+        sCryo.snlw(isnan(sCryo.icx)) = nan;
 end
 
 
 
 %Calculate melt potential using simple degree indec formulation (units of m): 
 sCryo.lhpme = squeeze(time2sec(1,sMeta.dt,sMeta.dateCurr)*sCryo.hfnet/cLate);
+    sCryo.lhpme(isnan(sCryo.icx)) = nan;
 % % %Set melt potential to zero at cells where temperature less than threshold:
 % sCryo.lhpme(sCryo.lhpme < 0 ) = 0;
 
@@ -114,3 +117,5 @@ end
 sCryo.snw(sCryo.snw < 0 ) = 0;
 %Set negative snow liquid values to 0:
 sCryo.snlw(sCryo.snlw < 0 ) = 0;
+
+sCryo.sndwe(isnan(sCryo.icx)) = nan;

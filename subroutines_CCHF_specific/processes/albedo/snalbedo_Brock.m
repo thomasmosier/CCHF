@@ -66,3 +66,5 @@ sAtm.tasmaxc( sAtm.prsn > 0 ) = 0;
 sAtm.tasmaxc(sAtm.tasmaxc < 0) = 0;
 
 snow_albedo_Brock(aUnder, aFresh, aOld, varargin{1});
+
+sCryo.snalb(isnan(sCryo.icx)) = nan;
