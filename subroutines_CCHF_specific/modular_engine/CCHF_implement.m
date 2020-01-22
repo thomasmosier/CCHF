@@ -422,8 +422,31 @@ valRt = 'output_';
 
     %GET PARAMETER FILE (IF VALIDATION OR SIMULATION RUN)
     if regexpbl(sMeta.runType,{'valid','sim'})
-        if ~isempty(sMeta.pathcoef)
+        %Check two possible locations for coefficient files
+        blCfSPath = 0;
+        blCfSMeta = 0;
+        if isfield(sPath{1}, 'coef') && ~isempty('coef')
+            blCfSPath = 1;
+        end
+        if isfield(sMeta, 'pathcoef') && ~isempty('pathcoef')
+            blCfSMeta = 1;
+        end
+        
+        %If available via file, load from there; else open GUI to select
+        if blCfSMeta == 1 && blCfSPath == 1
+            if isequal(sMeta.pathcoef, sPath{1}.coef)
+                pathCoef = sMeta.pathcoef;
+            else
+                warning('cchfImplement:diffPAths', ['The sMeta and sPath '...
+                    'structures both point to the coefficients to be used '...
+                    'but they point to different locations. The path being '...
+                    'loaded is ' sMeta.pathcoef]);
+                pathCoef = sMeta.pathcoef;
+            end
+        elseif blCfSMeta == 1
             pathCoef = sMeta.pathcoef;
+        elseif blCfSPath == 1
+            pathCoef = sPath{1}.coef;
         else
             %Load parameters from file:
             uiwait(msgbox(sprintf(['Select the set of parameter coefficients ' ...
