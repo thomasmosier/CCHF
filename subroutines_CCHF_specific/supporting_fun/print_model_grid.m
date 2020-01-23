@@ -43,6 +43,18 @@ end
 
 %Write to file
 if isfield(sModOut.(ptWrtCurr), [char(nmCurr) '_path'])
-    fileNm = fullfile(sMeta.foldWrtData, nmCurr, [char(file_nm(sMeta.region{sMeta.siteCurr}, nmCurr, sMeta.dateCurr)) '.nc']);
-    print_grid_NC_v2(fileNm, squeeze(sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:)), nmCurr, lon, lat, sMeta.dateCurr, sMeta.dateCurr, 1);
+    %Crete subdirectories for year (if only one year present:
+    yrsUniq = unique(sMeta.dateCurr(:,1));
+    if numel(yrsUniq) == 1
+        foldWrt = fullfile(sMeta.foldWrtData, nmCurr, num2str(yrsUniq));
+    else
+        foldWrt = fullfile(sMeta.foldWrtData, nmCurr);
+    end
+    
+    %Create full path:
+    fileWrt = [char(file_nm(sMeta.region{sMeta.siteCurr}, nmCurr, sMeta.dateCurr)) '.nc'];
+    pathWrt = fullfile(foldWrt, fileWrt);
+    
+    %Write file
+    print_grid_NC_v2(pathWrt, squeeze(sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:)), nmCurr, lon, lat, sMeta.dateCurr, sMeta.dateCurr, 1);
 end
