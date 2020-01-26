@@ -42,6 +42,9 @@ sCryo.hfnet = wattperdegS*squeeze(sAtm.tas(sAtm.indtas,:,:)); %units to Watts pe
 %Heat flux for ice
 sCryo.hfneti = wattperdegI*squeeze(sAtm.tas(sAtm.indtas,:,:)); %units to Watts per m^2
 
+sCryo.hfnet(isnan(sCryo.icx)) = nan;
+sCryo.hfneti(isnan(sCryo.icx)) = nan;
+
 % %Set negatives to 0:
 % indNeg = squeeze(sAtm.tas(sAtm.indtas,:,:)) <= 0;
 % sCryo.hfnet(indNeg) = 0;
@@ -60,6 +63,7 @@ sCryo.hfneti = wattperdegI*squeeze(sAtm.tas(sAtm.indtas,:,:)); %units to Watts p
 if isfield(sCryo, 'icdbr') %If debris cover information available
     if ~isfield(sCryo, 'icdbrmelt')
         sCryo.icdbrmelt = debris_melt_empirical(sCryo.icdbr, 'm');
+            sCryo.icdbrmelt(isnan(sCryo.icx)) = nan;
     end
 
     sCryo.hfneti = sCryo.icdbrmelt.*sCryo.hfneti;

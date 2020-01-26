@@ -580,10 +580,12 @@ end
 
 
 %GLACIER PROCESSES (INCLUDES GLACIER DYNAMICS OPTIONS): 
-%FUNCTIONS TO ONLY BE IMPLEMENTED IF GLACIER OUTLINES PRESENT
-if ~strcmpi(sMeta.iceGrid, 'none') && sMeta.glacierDynamics == 1
-    glacMoveMod = find_att(sMeta.module,'glaciermove', 'no_warning');
-    
+%Only implemented once per year. Therefore, everything here is considered
+%mass balance rather than daily change in ice water equivalent ('icmb' rather than 'icdwe')
+
+%FUNCTIONS TO ONLY BE IMPLEMENTED IF GLACIER OUTLINES PRESENT AND GLACIER
+%DYNAMICS ON
+if ~strcmpi(sMeta.iceGrid, 'none') && sMeta.glacierDynamics == 1   
     %Initialize grid to track glacier mass balance:
     if sMeta.indCurr == 1
         sCryo.icmb = zeros(size(sHydro.dem),'single');
@@ -595,25 +597,33 @@ if ~strcmpi(sMeta.iceGrid, 'none') && sMeta.glacierDynamics == 1
         end
     end
     
+    
     %Reset mass balance on same day of the year at model start date
-    if isequal(sMeta.dateCurr(2:end), sMeta.dateStart(2:end))
+    %Note: mass balance is updated daily at the bottom of this script
+    if isequal(sMeta.dateCurr(2:end), sMeta.dateStart{sMeta.siteCurr}(2:end))
         sCryo.icmb = zeros(size(sHydro.dem),'single');
+        %Record glacier mass balance start date
+        sCryo.icmb_dateStart = sMeta.dateCurr;
+        sCryo.icmb_dateEnd = nan(size(sMeta.dateCurr));
     end
     
     
-    %On 365th day of each year:
-    %(1) Translate main-grid mass balance to fine-scale gird and
-    %(2) Record mass balance
-    if isequal(sMeta.dateCurr(2:end), sMeta.dateGlac)
+    %On 365th day of each year (or when in parameter mode):
+    if isequal(sMeta.dateCurr(2:end), sMeta.dateGlac) || regexpbl(sMeta.mode,'parameter')
+        %Record end date:
+        sCryo.icmb_dateEnd = sMeta.dateCurr;
+        
         %Translates changes calculated over main grid to changes calculated
         %over ice grid:
-        %This function must be first of glacier process representations 
+            %(1) Translate main-grid mass balance to fine-scale grid and
+            %(2) Update fractional coverage of main grid (if applicable)
+        %Note: This function must be first of glacier process representations 
         %because it ensures ice calculations on main grid from current time
         %step propogate to glacier grid
         if ~regexpbl(sMeta.mode,'parameter')
             mb_main2ice_grid(sHydro, sMeta)    
         end
-
+        
         
         %Glacier velocity:
         gvelMod = find_att(sMeta.module, 'glaciervel', 'no_warning');
@@ -623,28 +633,36 @@ if ~strcmpi(sMeta.iceGrid, 'none') && sMeta.glacierDynamics == 1
             else
                 glaciervel_sheer(sMeta);
             end
-
-        elseif ~regexpbl(gvelMod, 'none')
+        elseif ~regexpbl(gvelMod, 'none') && ~isempty(gvelMod)
             error('cchfModules:glaciervelUnknown', ['The glacier velocity representation ' gvelMod ' not recognized.']);
         end
             
             
         %Glacier sliding:
+        glacMoveMod = find_att(sMeta.module,'glaciermove', 'no_warning');
         if ~isempty(glacMoveMod) && regexpbl(glacMoveMod, 'slide')
             %Translate velocity into redistribution of ice between cells
             %(impacts mass balance)
-            glaciermove_slide(sHydro, sMeta);
-        elseif ~isempty(glacMoveMod) && ~regexpbl(glacMoveMod, 'static')
+            if regexpbl(sMeta.mode,'parameter')
+                coef = cat(1,coef, glaciermove_slide(sHydro));
+            else
+                glaciermove_slide(sHydro, sMeta);
+            end
+        elseif ~isempty(glacMoveMod) && (~regexpbl(glacMoveMod, 'static') || ~regexpbl(glacMoveMod, 'none'))
             error('cchfModules:unknwownGlacierSlide', ['The glacier movement representation ' glacMoveMod ' not recognized.']);
         end
     end
      
+    
+    %Enforce physical constraints
+    sCryo.icx( sCryo.icx  < 0) = 0;
+    sCryo.icwe(sCryo.icwe < 0) = 0;
+    
     %At end of each time step, record changes in mass balance at main grid (the main 
     %grid mass balance is then translated to the glacier grid once per year):
     sCryo.icmb = sCryo.icmb + sCryo.icdwe;
 end
-    
-    
+
 
 %%OUTPUT FOR PARAMETER MODE:
 if regexpbl(sMeta.mode,'parameter')

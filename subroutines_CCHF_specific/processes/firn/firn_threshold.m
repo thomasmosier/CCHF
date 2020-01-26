@@ -43,17 +43,22 @@ global sCryo
 
 %Initialize firn2ic grid
 sCryo.frn2ic = zeros(size(sCryo.snw));
+    sCryo.frn2ic(isnan(sCryo.icx)) = nan;
 
 %Find indices greater than threshold:
 indCap = find(sCryo.snw > threshold);
 
 if ~isempty(indCap)
-    %Calculate
+    %Calculate firn contribution to new ice
     sCryo.frn2ic(indCap) = sCryo.snw(indCap) - threshold;
-    
-    sCryo.icwe(indCap)  = sCryo.icwe(indCap) - sCryo.frn2ic(indCap);
-    
+    %Enforce physical constraint
+    sCryo.frn2ic(indCap(sCryo.frn2ic(indCap) < 0) ) = 0;
+    %Add new ice to existing
+    sCryo.icwe(indCap)  = sCryo.icwe(indCap) + sCryo.frn2ic(indCap);
+    %Modify change in ice field
     sCryo.icdwe(indCap) = sCryo.icdwe(indCap) + sCryo.frn2ic(indCap);
+    %Modify change in snow field
     sCryo.sndwe(indCap) = sCryo.sndwe(indCap) - sCryo.frn2ic(indCap);
+    %Set new snow amount
     sCryo.snw(indCap) = threshold;
 end

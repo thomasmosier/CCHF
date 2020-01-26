@@ -51,9 +51,13 @@ if ~isfield(sCryo, tic)
     sCryo.tic = nan(size(sCryo.snw),'single');
 end
 
+
 sCryo.lhicme  = zeros(size(sCryo.snw),'single');
+    sCryo.lhicme(isnan(sCryo.icx)) = nan;
 sCryo.icdwe   = zeros(size(sCryo.snw),'single');
+    sCryo.icdwe(isnan(sCryo.icx)) = nan;
 sCryo.iclr    = zeros(size(sCryo.snw),'single'); %Ice liquid release
+    sCryo.iclr(isnan(sCryo.icx)) = nan;
 
 
 %if snowpack has ice field, allow additional melt at those locations:
@@ -83,8 +87,7 @@ if ~isempty(indIceMlt)
     timeIc(timeIc > tStep ) = tStep;
     
     sCryo.lhicme(indIceMlt) = 10^(dii)*sCryo.hfneti(indIceMlt).*timeIc(indIceMlt)/cLate;
-    sCryo.lhicme(sCryo.lhicme < 0) = 0;
-    sCryo.lhpme(indIceMlt) = 0;
+        sCryo.lhpme(indIceMlt) = 0; 
         
     %Scale melt for debris covered glacier cells:
     if isfield(sCryo,'icdbr')
@@ -92,11 +95,18 @@ if ~isempty(indIceMlt)
     	sCryo.lhicme(indDebrisMlt) = debScl*sCryo.lhicme(indDebrisMlt);
     end
     
-    sCryo.lhicme( isnan(sCryo.lhicme)) = 0;
+    %Physical constraints:
+    sCryo.lhicme(isnan(sCryo.lhicme)) = 0;
+    sCryo.lhicme(indIceMlt(sCryo.lhicme(indIceMlt) < 0)) = 0;
+    
     %*'iclr' accounts for fact that glacier coverage of each cell may only
     %be partial
     sCryo.iclr(indIceMlt) = sCryo.icx(indIceMlt).*sCryo.lhicme(indIceMlt);
     %*'icdwe' is depth change per unit area of ice (indpenedent of 
     %fractional coverage)
     sCryo.icdwe(indIceMlt) = -sCryo.lhicme(indIceMlt);
+    
+    %Update ice water equivalent based on melt:
+    sCryo.icwe(indIceMlt) = sCryo.icwe(indIceMlt) - sCryo.lhicme(indIceMlt);
+        sCryo.icwe(indIceMlt(sCryo.icwe(indIceMlt) < 0)) = 0;
 end

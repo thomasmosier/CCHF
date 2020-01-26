@@ -62,3 +62,5 @@ if issparse(sCryo.icwe)
 else
     sCryo.igrdbsdem = sCryo.igrddem - gThick;
 end
+
+sCryo.icwe(isnan(sCryo.icx)) = nan;

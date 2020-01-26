@@ -58,10 +58,11 @@ minTemp = find_att(sMeta.global,'snow_temp_min');
 
 %Initialize release field:
 sCryo.lhsnme = zeros(size(sCryo.snw),'single');
+    sCryo.lhsnme(isnan(sCryo.icx)) = nan;
 if ~isfield(sCryo, 'snlw')
     sCryo.snlw = zeros(size(sCryo.snw),'single');
+        sCryo.snlw(isnan(sCryo.icx)) = nan;
 end
-
 
 
 % if isequal(sMeta.dateCurr(1:2),[2000, 1])
@@ -70,7 +71,8 @@ end
 
 %Calculate melt potential using simple degree indec formulation (units of m): 
 sCryo.lhpme = 10^(dgi)*time2sec(1,sMeta.dt,sMeta.dateCurr)*sCryo.hfnet/cLate;
-
+    sCryo.lhpme(isnan(sCryo.icx)) = nan;
+    
 
 %Update snow temperature based on conduction:
 % dTemp = 10^(tsnPwr)*sCryo.hfnetSC./(cSens*sCryo.snw);
@@ -145,6 +147,10 @@ sCryo.tsn(sCryo.tsn > 0) = 0;
 sCryo.tsn(sCryo.tsn < minTemp) = minTemp; 
 sCryo.tsn(sCryo.snlw > 0.005*sCryo.snw) = 0;
 sCryo.tsn(sCryo.snw == 0) = nan; 
+
+sCryo.sndwe(isnan(sCryo.icx)) = nan;
+sCryo.snlw(isnan(sCryo.icx)) = nan;
+sCryo.tsn(isnan(sCryo.icx)) = nan;
 
 
 % %%MELT ICE:

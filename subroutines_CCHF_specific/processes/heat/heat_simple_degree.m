@@ -46,6 +46,9 @@ end
 sCryo.hfnet = wattperdegS*(squeeze(sAtm.tas(sAtm.indtas,:,:)) - tasOffset); %units to Watts per m^2
 sCryo.hfneti = wattperdegI*(squeeze(sAtm.tas(sAtm.indtas,:,:)) - tasOffset); %units to Watts per m^2
 
+sCryo.hfnet(isnan(sCryo.icx)) = nan;
+sCryo.hfneti(isnan(sCryo.icx)) = nan;
+
 % %Heat flux for ice
 % if isfield(sCryo, 'icedbr') %If debris cover information available
 %     sCryo.hfneti = wattperdegDeb*(squeeze(sAtm.tas(sAtm.indtas,:,:)) - tasOffset); 

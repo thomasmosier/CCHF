@@ -66,7 +66,8 @@ end
 
 
 %Reset runoff field:
-sLand.mrro = zeros(size(sLand.mrro));
+sLand.mrro(:) = 0;
+    sLand.mrro(isnan(sCryo.icx)) = 0;
 
 indX = [];
 if isfield(sCryo, 'ice')
@@ -76,10 +77,12 @@ end
 %Create soil moisture field:
 if ~isfield(sLand,'sm')
     sLand.sm = zeros(size(sLand.mrro));
+        sLand.sm(isnan(sCryo.icx)) = 0;
 end
 %Set soil moisture holding capacity:
 if ~isfield(sLand,'smc')
     sLand.smc = smc*ones(size(sLand.mrro));
+        sLand.smc(isnan(sCryo.icx)) = 0;
     if ~isempty(indX) %Set moisture holding capacity to zero at glaciated cells
         sLand.smc(indX) = smc.*sCryo.icx(indX);
     end
@@ -100,6 +103,7 @@ if isfield(sLand,'pet')
         error('groundwater_bucket:noPETcurr','No PET grid was calculated for the current time-step');
     end
     sLand.et = squeeze(sLand.pet(indPET,:,:));
+        sLand.et(isnan(sCryo.icx)) = 0;
 else
     error('direct_runoff:noPET','There should be a potential evapotranspiration field.');
 end

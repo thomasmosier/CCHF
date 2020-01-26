@@ -70,7 +70,9 @@ end
 %Calculate current inflow and previous outflows:
 if sLand.indCurr == 1
     sLand.inflowP = zeros(size(sLand.mrro), 'single');
+        sLand.inflowP(isnan(sHydro.dem)) = nan;
     sLand.flowP = zeros(size(sLand.mrro), 'single');
+        sLand.flowP(isnan(sHydro.dem)) = nan;
 end
 
 if ~isfield(sLand,'tLagFdr')
@@ -120,6 +122,9 @@ end
 
 %Set current flow as previous outflow for next time step: 
 sLand.flowP = sLand.flow;
+
+%Set flow to NaN at all locations where the DEM is NaN:
+sLand.flow(isnan(sHydro.dem)) = nan;
 
 % X = 0.1;
 % for ii = 1 : nGrid

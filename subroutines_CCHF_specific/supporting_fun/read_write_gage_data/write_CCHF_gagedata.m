@@ -44,7 +44,7 @@ fid = fopen(path,'wt');
 fprintf(fid,'%s\n', ['CCHF formatted gagedata from ' char(39) nameIn char(39) '.']);
 fprintf(fid,'%s\n', 'Each point-variable pair of data will be written to this file but be separated by an empty line.');
 
-  
+ 
 %Write all substructures into same file, seperated by a blank line:
 for ii = 1 : numel(namesPtsWrt(:))
     %IDENTIFY HEADER INFORMATION:
@@ -160,17 +160,18 @@ for ii = 1 : numel(namesPtsWrt(:))
     %Loop over each perceived variable in the current sub-structure:
     for jj = 1 : numel(namesCurr(:))
         dateNmsCurr = dateNms;
+        dateCurr = date;
         
-        %Don't write current field if it has fewer elements the the date
-        if numel(sObs.(namesPtsWrt{ii}).(namesCurr{jj})) < numel(date{1}(:,1))
-            if size(sObs.(namesPtsWrt{ii}).(namesCurr{jj})) == 2
-                warning('write_CCHF_gagedata:missingData', ...
-                    ['Gage data corresponding to ' namesPtsWrt{ii} '.' ...
-                    namesCurr{jj} ' is not being written because there ' ...
-                    'appear to be missing entries.']);
-                continue
-            end
-        end
+%         %Don't write current field if it has fewer elements the the date
+%         if numel(sObs.(namesPtsWrt{ii}).(namesCurr{jj})) < numel(dateCurr{1}(:,1))
+%             if size(sObs.(namesPtsWrt{ii}).(namesCurr{jj})) == 2
+%                 warning('write_CCHF_gagedata:missingData', ...
+%                     ['Gage data corresponding to ' namesPtsWrt{ii} '.' ...
+%                     namesCurr{jj} ' is not being written because there ' ...
+%                     'appear to be missing entries.']);
+%                 continue
+%             end
+%         end
         
         fprintf(fid,'\n'); %Write blank line between each section.
         
@@ -216,26 +217,46 @@ for ii = 1 : numel(namesPtsWrt(:))
 %                     'Therefore it will not be written to the CCHF '...
 %                     'formatted observation data file.']);
             end
-        else %Write data
+        else %If data area 2d array, write data and corresponding date(s)
             strDataHd = 'Value, ';
             strDataFrmt = [sNum ', '];
             dateWrite = [];
             
-            if regexpbl(dateNmsCurr,{'start','begin','end','finish'})
+            %Check if date format involves start/end format for current
+            %variable
+            blDateNmCurr = 0;
+            for zz = numel(dateNmsCurr(:)) : -1 : 1
+                if regexpbl(dateNmsCurr{zz}, namesCurr{jj})
+                    blDateNmCurr = 1;
+                end
+            end
+            
+            %If bl == yes, remove non begin/end date fields
+            if blDateNmCurr == 1 && regexpbl(dateNmsCurr,{'start','begin','end','finish'})
                 for zz = numel(dateNmsCurr(:)) : -1 : 1
                     if ~regexpbl(dateNmsCurr{zz}, namesCurr{jj})
                         dateNmsCurr(zz) = [];
+                        dateCurr(zz) = [];
                     end
-                end  
+                end 
+            else %If bl = 0, remove begin/end date fields
+                for zz = numel(dateNmsCurr(:)) : -1 : 1
+                    if regexpbl(dateNmsCurr{zz}, {'start','begin','end','finish'})
+                        dateNmsCurr(zz) = [];
+                        dateCurr(zz) = [];
+                    end
+                end 
             end
             
+            %Confirm there are at most two date fields remaining
             if numel(dateNmsCurr(:)) > 2
                 error('write_CCHF_date:MultDates','There are at least three date fields. This has not been programmed for.');
 %             elseif isempty(dateNmsCurr)
 %                 error('write_CCHF_date:noDates','There are no date fields. This has not been programmed for.');
             end
             
-            for kk = 1 : numel(dateNmsCurr)
+            %Format and gather dates to write
+            for kk = 1 : numel(dateNmsCurr) %Loop over date fields (e.g. 'start' and 'end')
                 if kk == 2
                     strDataHd = [strDataHd ', '];
                     strDataFrmt = [strDataFrmt ' '];
@@ -255,7 +276,10 @@ for ii = 1 : numel(namesPtsWrt(:))
                     error('write_CCHF_date:MultDates','There are at least three date fields. This has not been programmed for.');
                 end
 
-                switch numel(date{kk}(1,:))
+                
+                %%Create data and date format strings
+                %Add comma if being appended
+                switch numel(dateCurr{kk}(1,:))
                     case 1
                         strDataHd = [strDataHd, 'Year' strDateX];
                         strDataFrmt = [strDataFrmt, '%d,'];
@@ -280,38 +304,58 @@ for ii = 1 : numel(namesPtsWrt(:))
                     otherwise
                         error('write_CCHF_gagedata:unknownTimeFormat', ...
                             ['The case where the date vector has precision to ' ...
-                            num2str(numel(date{kk}(1,:))) ' temporal '...
+                            num2str(numel(dateCurr{kk}(1,:))) ' temporal '...
                             'subdivisions has not been programmed for.']);
                 end
-
-                dateWrite = [dateWrite, date{kk}];
-
-                if ~isempty(flagCurr)
-                    strDataHd = [strDataHd ', flag'];
-                    strDataFrmt = [strDataFrmt ' %d,'];
+                
+                %Gather date values
+                if kk == 1
+                    dateWrite = dateCurr{kk};
+                else %Append
+                    if isequal(numel(dateWrite(1,:)), numel(dateCurr{kk}(1,:)))
+                        dateWrite = [dateWrite, dateCurr{kk}];
+                    else
+                        dateWrite = [dateWrite, nan([1,numel(dateWrite(1,:))])];
+                        warning('writeCCHFGageData:dateLength',['Model dates are not being written for ' ...
+                            namesCurr{jj} ' because the datestring lengths differ.' ...
+                            char(10) 'Output date vector is length ' num2str(numel(dateWrite(1,:))) ...
+                            ' and the current date length is ' num2str(numel(dateCurr{kk})) '.']);
+                    end
                 end
+            end %End of date loop
+            
+            %Format flag (if present)
+            if ~isempty(flagCurr)
+                strDataHd = [strDataHd ', flag'];
+                strDataFrmt = [strDataFrmt ' %d,'];
             end
 
+            
             %%WRITE DATA AND DATE:
             %Write line describing columns:
             fprintf(fid,'%s\n', strDataHd);
             %Write data and dates:
-            if ~isempty(dateWrite)
-                for kk = 1 : numel(dateWrite(:,1))
-                    %Write data:
-                    if ~isempty(flagCurr)
-                        fprintf(fid,strDataFrmt, [sObs.(namesPtsWrt{ii}).(namesCurr{jj})(kk), dateWrite(kk,:), flagCurr(kk)]);
-                    else
-                        fprintf(fid,strDataFrmt, [sObs.(namesPtsWrt{ii}).(namesCurr{jj})(kk), dateWrite(kk,:)]);
+            if isequal(numel(sObs.(namesPtsWrt{ii}).(namesCurr{jj})(:,1)), numel(dateWrite(:,1)))
+                if ~isempty(dateWrite)
+                    for ll = 1 : numel(dateWrite(:,1)) %Loop over each date entry
+                        %Write data:
+                        if ~isempty(flagCurr)
+                            fprintf(fid,strDataFrmt, [sObs.(namesPtsWrt{ii}).(namesCurr{jj})(ll), dateWrite(ll,:), flagCurr(ll)]);
+                        else
+                            fprintf(fid,strDataFrmt, [sObs.(namesPtsWrt{ii}).(namesCurr{jj})(ll), dateWrite(ll,:)]);
+                        end
+                        fprintf(fid,'\n');
                     end
-                    fprintf(fid,'\n');
+                elseif ~isempty(sObs.(namesPtsWrt{ii}).(namesCurr{jj}))
+                    for ll = 1 : numel(sObs.(namesPtsWrt{ii}).(namesCurr{jj})(:,1)) %Loop over each data entry
+                        %Write data:
+                        fprintf(fid,strDataFrmt, sObs.(namesPtsWrt{ii}).(namesCurr{jj})(ll));
+                        fprintf(fid,'\n');
+                    end
                 end
-            elseif ~isempty(sObs.(namesPtsWrt{ii}).(namesCurr{jj}))
-                for kk = 1 : numel(sObs.(namesPtsWrt{ii}).(namesCurr{jj})(:,1))
-                    %Write data:
-                    fprintf(fid,strDataFrmt, sObs.(namesPtsWrt{ii}).(namesCurr{jj})(kk));
-                    fprintf(fid,'\n');
-                end
+            else
+               warning('writeCchfGageData:dateDataDiffLength',['The simulations for ' namesCurr{jj} ...
+                   ' are being skipped and not written to file because there is the dates and data are different lengths.'])
             end
         end
     end

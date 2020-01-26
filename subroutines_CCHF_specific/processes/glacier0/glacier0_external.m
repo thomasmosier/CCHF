@@ -51,3 +51,5 @@ end
 if ~isfield(sCryo, 'icwe') || ~isfield(sCryo, 'igrdwe')
     error('glacier0External:noArea','Ice thickness and base DEM cannot be initialized because there is no depth or thickness approximation.');
 end
+
+sCryo.icwe(isnan(sCryo.icx)) = nan;

@@ -38,6 +38,7 @@ if ~isfield(sCryo, 'icalb')
 
     %Initialize albedo array:
     sCryo.icalb = aIce*ones(size(sCryo.snalb));
+        sCryo.icalb(isnan(sCryo.icx)) = nan;
 
     %Set different albedo for grid cells with debris:
     if isfield(sCryo, 'icdbr')
@@ -59,13 +60,13 @@ if ~isfield(sCryo, 'icalb')
     if ~isempty(fldLake)
         aLake = find_att(sMeta.global,'albedo_water');
         
-        if all2d(sCryo.(fldLake) >= 0 & sCryo.(fldLake) <= 1)
-            sCryo.icalb = aLake*sCryo.(fldLake) + sCryo.icalb.*(1 - sCryo.(fldLake));
-        else
+        if any2d((sCryo.(fldLake) < 0 | sCryo.(fldLake) > 1) & ~isnan(sCryo.(fldLake)))
             error('icalbedoConstant:lakeNotFraction', ['The lake inventory ' ...
                 'contains values outside the range 0 and 1. It is expected '...
                 'that the values should represent fractional area of lake ' ...
                 'coverage within each grid cell.']);
+        else
+            sCryo.icalb = aLake*sCryo.(fldLake) + sCryo.icalb.*(1 - sCryo.(fldLake));
         end
     end
 end

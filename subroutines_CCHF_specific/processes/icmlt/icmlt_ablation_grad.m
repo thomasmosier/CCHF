@@ -75,8 +75,11 @@ end
 %Reset values on first day of year
 if isequal(sMeta.dateRun(indDtCurr(1),2:end), sMeta.dateCurr(2:end))
     sCryo.tasaccum = zeros(size(sCryo.snw),'single');
-    sCryo.icdwe    = zeros(size(sCryo.snw),'single');
-    sCryo.iclr     = zeros(size(sCryo.snw),'single'); %Ice liquid release 
+        sCryo.tasaccum(isnan(sCryo.icx)) = nan;
+    sCryo.icdwe = zeros(size(sCryo.snw),'single');
+        sCryo.icdwe(isnan(sCryo.icx)) = nan;
+    sCryo.iclr = zeros(size(sCryo.snw),'single'); %Ice liquid release 
+        sCryo.iclr(isnan(sCryo.icx)) = nan;
 end
     
 %Calculate accumulated air temperature every day of year:
@@ -87,22 +90,32 @@ if isequal(sMeta.dateRun(indDtCurr(end),2:end), sMeta.dateCurr(2:end))
     %Average acculumated temperature:
     sCryo.tasaccum = sCryo.tasaccum / numel(indDtCurr);
     
-    indIceMelt = intersect(find(sCryo.tasaccum >= tasScl), indIce);
+    indIceMlt = intersect(find(sCryo.tasaccum >= tasScl), indIce);
     
-    if ~isempty(indIceMelt)
+    if ~isempty(indIceMlt)
         %Find max elevation of melting ice (Treat this as approximate ELA
         %elevation)
         %Use search window
         szWind = 20;
         elevMax = sHydro.dem;
-        elevMax(setdiff((1:numel(sHydro.dem)), indIceMelt)) = 0;
+        elevMax(setdiff((1:numel(sHydro.dem)), indIceMlt)) = 0;
         elevMax = min_2d_window(elevMax, szWind);
 
         %Find elevation difference (used in ablation gradient calculation):
         elevDiff = elevMax - sHydro.dem;
        
         %Calculate melt based on ablation gradient:
-        sCryo.icdwe(indIceMelt) = abGrad*(elevDiff(indIceMelt)/100);
-        sCryo.iclr(indIceMelt) = sCryo.icx(indIceMelt).*sCryo.icdwe(indIceMelt);
+        sCryo.icdwe(indIceMlt) = abGrad*(elevDiff(indIceMlt)/100);
+        
+        %Physical constraints:
+        sCryo.lhicme(isnan(sCryo.lhicme)) = 0;
+        sCryo.lhicme(indIceMlt(sCryo.lhicme(indIceMlt) < 0)) = 0;
+    
+        %Ice release:
+        sCryo.iclr(indIceMlt) = sCryo.icx(indIceMlt).*sCryo.icdwe(indIceMlt);
+        
+        %Update ice water equivalent based on melt:
+        sCryo.icwe(indIceMlt) = sCryo.icwe(indIceMlt) - sCryo.lhicme(indIceMlt);
+            sCryo.icwe(indIceMlt(sCryo.icwe(indIceMlt) < 0)) = 0;
     end
 end

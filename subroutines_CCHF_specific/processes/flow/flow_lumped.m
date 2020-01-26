@@ -101,7 +101,6 @@ if ~isfield(sLand,'totFdrR') || ~isfield(sLand,'totFdrF') || ~regexpbl(find_att(
 end
 
 
-
 %Convert NaN values to 0 in case the NaN gets routed downstream.
 sLand.mrro(isnan(sLand.mrro)) = 0;
 
@@ -117,6 +116,7 @@ end
 
 %Set flow to NaN at all locations where the DEM is NaN:
 sLand.flow(isnan(sHydro.dem)) = nan;
+sLand.mrro(isnan(sHydro.dem)) = nan;
 
 %For testing:
 % if isequal(sMeta.dateCurr,[2001, 7,30])

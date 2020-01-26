@@ -72,6 +72,8 @@ sCryo.hfnet = squeeze(sAtm.tas(sAtm.indtas,:,:)).* ...
 sCryo.hfneti = squeeze(sAtm.tas(sAtm.indtas,:,:)).* ...
 	(wCon + (10^mIcPwr)*sAtm.rstran.*squeeze(sAtm.rsdt(indRSDT,:,:)));
 
+sCryo.hfnet(isnan(sCryo.icx)) = nan;
+sCryo.hfneti(isnan(sCryo.icx)) = nan;
 
 % %Convert from units of mm/hr to W/m2
 % densW = find_att(sMeta.global,'density_water'); 

@@ -30,82 +30,118 @@ varLat = 'latitude';
 varIgrdLon = 'igrdlon';
 varIgrdLat = 'igrdlat';
 
+%Main hydrologic grid (also has some ice areas)
+varMnLatMov = 'iclateral';
+varMnIceWe = 'icwe';
+varMnIceDwe = 'icdwe'; %Change in water equivalent (main grid)
+varMnIcx = 'icx';
+varMnMb = 'icmb'; %Glacier mass balance (annual basis)
+
+%Ice grid (possibly finer than main hydrologic grid)
+varIgrdArea = 'igrdarea';
+varIgrdDl = 'igrdfdrdl';
+varIgrdFdr = 'igrdfdr';
+varIgrdDem = 'igrddem';
+varIgrdFdrM = 'igrdfdrmult';
+varIgrdWgtF = 'igrd2mainFlowWgt';
+
+varIgrdWe = 'igrdwe';
+varIgrdMb = 'igrdmb'; %Change in water equivalent (ice grid)
+
 
 if ~isfield(sCryo, 'icmb')
     error('iceLink:noMb','The cryosphere structure array has no mass balance field (at main hydrologic grid scale). This is required for computing glacier dynamics.')
 end
 
+
+if isequal(sHydro.(varLat), sCryo.(varIgrdLat)) && isequal(sHydro.(varLon), sCryo.(varIgrdLon)) 
+    blGrdResSame = 1;
+else
+    blGrdResSame = 0;
+end
+
 %Translate change in ice water equivalent modelled in using main grid to ice grid:
-if isequal(sHydro.(varLat), sCryo.(varIgrdLat)) && isequal(sHydro.(varLon), sCryo.(varIgrdLon)) %Ice and main grids are same
+if blGrdResSame == 1 %Ice and main grids are same
     %mass balance of igrd same as mb of main grid
-    sCryo.igrdmb = sCryo.icmb;
+    sCryo.(varIgrdMb) = sCryo.(varMnMb);
     %Update water equivalent of igrd
-    sCryo.igrdwe  = sCryo.igrdwe + sCryo.igrdmb;
+    sCryo.(varIgrdWe)  = full(sCryo.(varIgrdWe)) + sCryo.(varIgrdMb);
 else %Ice and main grids are different
-    sCryo.igrdmb = zeros(size(sCryo.igrddem), 'single');
+    sCryo.(varIgrdMb) = zeros(size(sCryo.igrddem), 'single');
     
     %Loop over all grid cells in the main grid to distribute changes
+    %Note: There are several ice grid cells for each main grid cell
     indIc = find(sCryo.icmb ~= 0);
     for ii = 1 : numel(indIc)
-        indIgrd = find(sCryo.igrdwe(sCryo.main2igrd{indIc(ii)}) > 0);
+        indIgrd = find(sCryo.(varIgrdWe)(sCryo.main2igrd{indIc(ii)}) > 0);
                 
         %Distribute ice change from main grid to ice grid
         %Everything is units of depth, so area differences do not matter here
         %Mass balance:
-        sCryo.igrdmb(indIgrd) = sCryo.icmb(indIc(ii)); %This grid is depth 
+        sCryo.(varIgrdMb)(indIgrd) = sCryo.icmb(indIc(ii)); %This grid is depth 
         %Water equivalent of igrd:
-        sCryo.igrdwe(indIgrd) = full(sCryo.igrdwe(indIgrd)) + sCryo.igrdmb(indIgrd);
+        sCryo.(varIgrdWe)(indIgrd) = full(sCryo.(varIgrdWe)(indIgrd)) + sCryo.(varIgrdMb)(indIgrd);
     end
     clear ii
 end
 
 
 %%Ensure ice water equivalent cannot have less than zero depth of ice:
-sCryo.igrdwe(sCryo.igrdwe < 0) = 0;
+sCryo.( varIgrdWe)(sCryo.( varIgrdWe) < 0) = 0;
+sCryo.(varMnIceWe)(sCryo.(varMnIceWe) < 0) = 0;
 
 
 %%Update fractional coverage of glaciers:
-%re-initialize grid:
-sCryo.icx = zeros(size(sCryo.icx), 'single');
+if blGrdResSame
+    sCryo.(varMnIcx)(sCryo.(varMnIceWe) <= 0 | isnan(sCryo.(varMnIceWe))) = 0;
+    sCryo.(varMnIcx)(sCryo.(varMnIcx) < 0) = 0;
+else
+    %re-initialize grid:
+    sCryo.(varMnIcx) = zeros(size(sCryo.(varMnIcx)), 'single');
 
-%Test if same number of igrd cells in each main grid cell:
-varGridSame = 'nigrdsame';
-if ~isfield(sCryo, varGridSame)
-    testIgrd = countmember(single((1:numel(sHydro.dem))), sCryo.igrd2main);
-    
-    if all(testIgrd(:) == testIgrd(1))
-        sCryo.(varGridSame) = 1;
+    %Test if same number of igrd cells in each main grid cell:
+    varGridSame = 'nigrdsame';
+    if ~isfield(sCryo, varGridSame)
+        testIgrd = countmember(single((1:numel(sHydro.dem))), sCryo.igrd2main);
+
+        if all(testIgrd(:) == testIgrd(1))
+            sCryo.(varGridSame) = 1;
+        else
+            sCryo.(varGridSame) = 0;
+        end
+    end
+
+    %Find indices of main grid with glacier:
+    indMnX = sCryo.igrd2main(sCryo.(varIgrdWe) > 0);
+    %Unique main grid cells with glaciers
+    [indMnXUnq] = unique(indMnX);
+    %Number of glacier grid cells contained in each main grid cell with
+    %glaciers:
+    mnXfreq = countmember(indMnXUnq,indMnX);
+
+    %Calculate fraction:
+    if sCryo.(varGridSame) == 1
+        %Assign to ice fraction in main grid:
+        sCryo.(varMnIcx)(indMnXUnq) = mnXfreq/100;
     else
-        sCryo.(varGridSame) = 0;
+        %Check number of glacier grid cells in each main grid cell:
+        nIgrdInMain = countmember(single((1:numel(sCryo.(varMnIcx)))'),sCryo.igrd2main);
+        %Assign to ice fraction in main grid:
+        sCryo.(varMnIcx)(indMnXUnq) = mnXfreq./nIgrdInMain(indMnXUnq);
     end
 end
 
-%Find indices of main grid with glacier:
-indMnX = sCryo.igrd2main(sCryo.igrdwe > 0);
-%Unique main grid cells with glaciers
-[indMnXUnq] = unique(indMnX);
-%Number of glacier grid cells contained in each main grid cell with
-%glaciers:
-mnXfreq = countmember(indMnXUnq,indMnX);
-    
-%Calculate fraction:
-if sCryo.(varGridSame) == 1
-    %Assign to ice fraction in main grid:
-    sCryo.icx(indMnXUnq) = mnXfreq/100;
-else
-    %Check number of glacier grid cells in each main grid cell:
-    nIgrdInMain = countmember(single((1:numel(sCryo.icx))'),sCryo.igrd2main);
-    %Assign to ice fraction in main grid:
-    sCryo.icx(indMnXUnq) = mnXfreq./nIgrdInMain(indMnXUnq);
-end
+
+%Enforce physical constraints
+sCryo.(varMnIcx)( sCryo.(varMnIcx)  < 0) = 0;
 
 
 %%Update icegrid surface elevation:
-indUpdate = find(sCryo.igrdmb ~= 0);
+indUpdate = find(sCryo.(varIgrdMb) ~= 0);
 if ~isempty(indUpdate)
     rhoI = find_att(sMeta.global,'density_ice'); 
     rhoW = find_att(sMeta.global,'density_water');
 
-    sCryo.igrddem(indUpdate) = sCryo.igrdbsdem(indUpdate) + (rhoW/rhoI)*full(sCryo.igrdwe(indUpdate));
+    sCryo.igrddem(indUpdate) = sCryo.igrdbsdem(indUpdate) + (rhoW/rhoI)*full(sCryo.(varIgrdWe)(indUpdate));
 end
     

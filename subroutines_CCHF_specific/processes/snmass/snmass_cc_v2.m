@@ -51,18 +51,20 @@ cLate = densW*find_att(sMeta.global,'latent_water');  %Density water * Latent he
 %Initialize liquid water field (on first iteration):
 if ~isfield(sCryo, 'snlw')
     sCryo.snlw = zeros(size(sCryo.snw),'single');
-    sCryo.snlw(isnan(sCryo.snw)) = nan;
+        sCryo.snlw(isnan(sCryo.icx)) = nan;
 end
 %Initialize cold content field )on first iteration):
 if ~isfield(sCryo, 'sncc')
     sCryo.sncc = zeros(size(sCryo.snw),'single');
-    sCryo.snlw(isnan(sCryo.snw)) = nan;
+        sCryo.snlw(isnan(sCryo.icx)) = nan;
 end
 %Reset cold content if no snow:
 sCryo.sncc(~isnan(sCryo.sncc) & sCryo.sncc ~= 0 & sCryo.snw == 0) = 0;
+    sCryo.sncc(isnan(sCryo.icx)) = nan;
 
 %Initialize melt field (every iteration):
 sCryo.lhsnme = zeros(size(sCryo.snw),'single');
+    sCryo.lhsnme(isnan(sCryo.icx)) = nan;
 
 % if isfield(sCryo,'hfsnc')
 %    error('mass_cc:conduct', ['The CC conservation of energy and mass '...
@@ -168,6 +170,8 @@ sCryo.snw(sCryo.snw < 0 ) = 0;
 %Set negative snow liquid values to 0:
 sCryo.snlw(sCryo.snlw < 0 ) = 0;
 
+sCryo.sndwe(isnan(sCryo.icx)) = nan;
+
 
 %ADJUST SNOW TEMPERATURE BASED ON COLD-CONTENT
 if isfield(sCryo,'tsn') 
@@ -184,6 +188,7 @@ if isfield(sCryo,'tsn')
         ./(cSensI*sCryo.snw(indSnow) + cSensW*sCryo.snlw(indSnow)));
         %In the above, there shouldn't actually be any liquid water at
         %locations where cc is positive
+        sCryo.tsn(isnan(sCryo.icx)) = nan;
 
     
     %%MAKE CORRECTIONS TO TEMPERATURE BASED ON LIMITS AND ASSUMPTIONS:

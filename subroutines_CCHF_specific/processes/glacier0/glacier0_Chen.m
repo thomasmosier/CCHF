@@ -61,3 +61,5 @@ if isfield(sCryo, 'icx')
 else
     error('glacier0Chen:noArea','Ice thickness cannot be estimated because there is no area approximation.');
 end
+
+sCryo.icwe(isnan(sCryo.icx)) = nan;

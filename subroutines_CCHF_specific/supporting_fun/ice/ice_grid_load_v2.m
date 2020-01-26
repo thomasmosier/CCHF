@@ -221,6 +221,7 @@ if isfield(sPath, 'ice') %&& ~regexpbl(sMeta.mode, 'parameter')
                 sIceInit.icx(ll,mm) = sum2d(iceSubExist(indLatN:indLatS,indLonW:indLonE))/nSclSq;
             end
         end
+        sIceInit.icx(isnan(sHydro.dem)) = nan;
         
 
         %Initialize main ice water equivalent grid as sparse array:
@@ -331,6 +332,7 @@ if isfield(sPath, 'ice') %&& ~regexpbl(sMeta.mode, 'parameter')
 
         %Initialize arrays to track changes in ice depth
         sIceInit.icdwe = sparse(szMain(1),szMain(2));
+            sIceInit.icdwe(isnan(sHydro.dem)) = nan;
         sIceInit.igrddwe = sparse( szIce(1), szIce(2));
         
         save(pathIceStruct, 'sIceInit', '-v7.3');
@@ -345,7 +347,9 @@ else %In this case, ice grid same as main grid
     sIceInit.igrdwe  = sparse(szMain(1),szMain(2)); %Ice grid water equivalent
     sIceInit.igrddwe = sparse(szMain(1),szMain(2)); %Ice grid change in water equivalent
     sIceInit.icdwe   = sparse(szMain(1),szMain(2)); %Main grid change in water equivalent
+        sIceInit.icdwe(isnan(sHydro.dem)) = nan;
     sIceInit.icx     =  zeros(szMain,'single'); %Main grid fractional ice coverage
+        sIceInit.icx(isnan(sHydro.dem)) = nan;
 end
 
 
@@ -425,6 +429,7 @@ if isfield(sPath, 'icwe')
 
     %Populate matrices:
     sIceInit.icwe = icWeTemp;
+        sIceInit.icwe(isnan(sHydro.dem)) = nan;
     sIceInit.igrdwe = sparse(double(iGrdWeTemp));
     
     disp(['Ice water equivalent thickness loaded from ' ...
@@ -465,6 +470,7 @@ if isfield(sPath, 'icdbr')
     end
 
     sIceInit.icdbr = sDebris.data;
+        sIceInit.icdbr(isnan(sHydro.dem)) = nan;
 %     sIceInit.icdbr = sparse(szIce(1),szIce(2));
 %     sIceInit.icdbr(indIce) = sDebris.data(indIce);
     
@@ -507,6 +513,7 @@ if isfield(sPath, 'icpndx')
 
     sIceInit.icpndx = sPond.data;
     sIceInit.icpndx(isnan(sIceInit.icpndx)) = 0;
+        sIceInit.icpndx(isnan(sHydro.dem)) = nan;
 %     sIceInit.icdbr = sparse(szIce(1),szIce(2));
 %     sIceInit.icdbr(indIce) = sDebris.data(indIce);
 

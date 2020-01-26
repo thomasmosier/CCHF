@@ -48,7 +48,8 @@ end
 %Units of J-m^{-2}-hr-mm^{-1}-s^{-1} := W-m^{-2}-hr-mm^{-1} (because [dis] = mm/hr/deg 
 
 if ~isfield(sCryo, 'tsn')
-   sCryo.tsn = zeros(size(sCryo.snw), 'single'); 
+    sCryo.tsn = zeros(size(sCryo.snw), 'single'); 
+        sCryo.tsn = (isnan(sCryo.icx)) = nan;
 end  
 
 %Find top of the atmosphere radiation:
@@ -85,6 +86,7 @@ end
 
 %%Temperature melt energy:
 sCryo.hft = wattperdeg*squeeze(sAtm.tas(sAtm.indtas,:,:));
+    sCryo.hft(isnan(sCryo.icx)) = nan;
 
 %Calculate melt potential using Pellicciotti's formulation: 
 %Because of conversion factor, each term has units of w/m^2
@@ -92,6 +94,9 @@ sCryo.hfnet  = sCryo.hfrs  + sCryo.hft + sCryo.hfrl;
 sCryo.hfneti = sCryo.hfrsi + sCryo.hft + sCryo.hfrli;
 % sCryo.hfnet  = sCryo.hft +  sCryo.hfrs + 10^(lwPwr)*sCryo.hfrl + sCryo.hfnetPC;
 % sCryo.hfneti = sCryo.hft + sCryo.hfrsi + 10^(lwPwr)*sCryo.hfrl + sCryo.hfnetPC;
+
+sCryo.hfnet(isnan(sCryo.icx)) = nan;
+sCryo.hfneti(isnan(sCryo.icx)) = nan;
 
 %VERSION WITH RAAD SCALING (REDUNDENT):
 % sCryo.hfnet = dis*fConvert*squeeze(sAtm.tas(sAtm.indtas,:,:)) ...
