@@ -27,6 +27,18 @@ function varargout = mod_v_obs_v2(sObs, sMod, methRank, varargin)
 %before calculating a performance statistic).
 
 
+%Check that observations exist
+if isempty(sObs) && ~isstruct(sObs)
+    if nargout >= 1
+        varargout{1} = {nan}; 
+        if nargout == 2
+            varargout{2} = {''};
+        end
+    end
+    
+    %Exit subroutine
+    return
+end
 
 flagPlot = 0;
 flagScatter = 0;
@@ -138,6 +150,16 @@ clear ii
 if all(isnan(dateRef))
    error('mod_v_obs:noRefDate', 'The reference date could not be found.');
 end
+
+
+%Parse evaluation metrics to use:
+if ischar(methRank)
+   methRank = {methRank};
+elseif ~iscell(methRank)
+    error('modVObs:unknownRankingClass', ['The fitness metric is of class ' class(methRank) ', which has not been programmed for.'])
+end
+nMetric = numel(methRank(:));
+
 
 %%FIND ALL DATA FIELDS PRESENT IN OBSERVATION DATA:
 obsTypes = cell(0,1);
@@ -657,13 +679,6 @@ for kk = numel(dataAll(:,1)) : -1 : 1
 end
 
 
-%Parse evaluation metrics to use:
-if ischar(methRank)
-   methRank = {methRank};
-elseif ~iscell(methRank)
-    error('modVObs:unknownRankingClass', ['The fitness metric is of class ' class(methRank) ', which has not been programmed for.'])
-end
-nMetric = numel(methRank(:));
 for ii = 1 : numel(dataAll(:,1))
 
     obsCurr = dataAll{ii,iMeta}{1};

@@ -56,6 +56,14 @@ for ll = 1 : numel(sMeta.varLd)
     end
     
     
+    %Remove hidden files:
+    for jj = numel(filesTemp(:)) : -1 : 1
+        if numel(filesTemp{jj}) > 1 && strcmpi(filesTemp{jj}(1:2), '._')
+            filesTemp(jj) = [];
+        end
+    end
+    
+    
     %Test if function can read file name (based on CMIP5 convention):
     testNc = CMIP5_time(filesTemp{1});
 

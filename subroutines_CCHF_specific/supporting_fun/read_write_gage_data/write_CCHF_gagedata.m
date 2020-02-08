@@ -335,7 +335,18 @@ for ii = 1 : numel(namesPtsWrt(:))
             %Write line describing columns:
             fprintf(fid,'%s\n', strDataHd);
             %Write data and dates:
-            if isequal(numel(sObs.(namesPtsWrt{ii}).(namesCurr{jj})(:,1)), numel(dateWrite(:,1)))
+            if isempty(dateWrite)
+                if ~isempty(sObs.(namesPtsWrt{ii}).(namesCurr{jj}))
+                    for ll = 1 : numel(sObs.(namesPtsWrt{ii}).(namesCurr{jj})(:,1)) %Loop over each data entry
+                        %Write data:
+                        fprintf(fid,strDataFrmt, sObs.(namesPtsWrt{ii}).(namesCurr{jj})(ll));
+                        fprintf(fid,'\n');
+                    end
+                else
+                    warning('writeCchfGageData:dateDataDiffLength1',['The simulations for ' namesCurr{jj} ...
+                        ' are being skipped and not written to file because there is the dates and data are different lengths.']);
+                end 
+            elseif isequal(numel(sObs.(namesPtsWrt{ii}).(namesCurr{jj})(:,1)), numel(dateWrite(:,1)))
                 if ~isempty(dateWrite)
                     for ll = 1 : numel(dateWrite(:,1)) %Loop over each date entry
                         %Write data:
@@ -354,7 +365,7 @@ for ii = 1 : numel(namesPtsWrt(:))
                     end
                 end
             else
-               warning('writeCchfGageData:dateDataDiffLength',['The simulations for ' namesCurr{jj} ...
+               warning('writeCchfGageData:dateDataDiffLength2',['The simulations for ' namesCurr{jj} ...
                    ' are being skipped and not written to file because there is the dates and data are different lengths.'])
             end
         end

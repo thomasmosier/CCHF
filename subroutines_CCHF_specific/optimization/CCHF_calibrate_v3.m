@@ -611,7 +611,7 @@ for ss = indStgStrt : nStage
 % %                   warning('off','all')
 % %                 end
 %         end
-
+        
         parfor jj = 1 : numel(indRun)
             %Turn off warning during parloop
             warning('off','all')
@@ -685,8 +685,6 @@ for ss = indStgStrt : nStage
            end
         end
         
-
-
 
         %Calculate best fitness from current generation:
         if ii == indGenStrt(ss) && ii ~= 1
