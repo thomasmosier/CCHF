@@ -175,7 +175,7 @@ else %Process from scratch
     %Loop over all MODIS files to load:
     for jj = 1 : numel(datesMODIS{1}(:,1))
         if (0 == mod(jj, 50))
-            fprintf("%s: MODIS file index %d of %d\n", ...
+            fprintf('%s: MODIS file index %d of %d\n', ...
                 mfilename(), jj, numel(datesMODIS{1}(:,1)));
         end
     

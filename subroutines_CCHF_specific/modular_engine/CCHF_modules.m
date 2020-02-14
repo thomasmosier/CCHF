@@ -226,7 +226,7 @@ end
 
 %CRYOSPHERE HEAT:
 heatMod = find_att(sMeta.module, 'heat', 'no_warning');
-if strcmpi(heatMod, 'SDI') || strcmpi(heatMod, 'STI')
+if strcmpi(heatMod, 'SDI') || strcmpi(heatMod, 'STI') || strcmpi(heatMod, 'simple')
     if regexpbl(sMeta.mode,'parameter')
         coef = cat(1,coef, heat_simple_degree());
     else
