@@ -425,10 +425,10 @@ valRt = 'output_';
         %Check two possible locations for coefficient files
         blCfSPath = 0;
         blCfSMeta = 0;
-        if isfield(sPath{1}, 'coef') && ~isempty('coef')
+        if isfield(sPath{1}, 'coef') && ~isempty(sPath{1}.coef)
             blCfSPath = 1;
         end
-        if isfield(sMeta, 'pathcoef') && ~isempty('pathcoef')
+        if isfield(sMeta, 'pathcoef') && ~isempty(sMeta.pathcoef)
             blCfSMeta = 1;
         end
         
