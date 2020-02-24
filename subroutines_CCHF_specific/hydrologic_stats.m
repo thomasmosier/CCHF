@@ -23,105 +23,128 @@ varPathFlow = 'flow_path';
 %Turn off plotting warning
 warning('off', 'plot_CCHF:noData');
 
-keyboard
+
 %Do hydrologic calculations only during validation or simulation modes:
 for kk = 1 : nSites
-    %Load/find flow data written to file during model runs:
-    flow = nan([numel(sMeta.dateRun(:,1)), size(sHydro{kk}.dem)], 'single');
-    dirFlow = '';
-    if iscell(sMod) && numel(sMod(:)) == 1
-        if isfield(sMod{kk}.all, 'flow')
-            flow = sMod{kk}.all.flow;
-        elseif isfield(sMod{kk}.all, varPathFlow)
-            dirFlow = sMod{1}.all.(varPathFlow);
-        end
-    elseif isstruct(sMod)
-        if isfield(sMod.all, 'flow')
-            flow = sMod.all.flow;
-        elseif isfield(sMod{kk}.all, varPathFlow)
-            dirFlow = sMod.all.(varPathFlow);
-        end
-    else
-        warning('HpatImplement:unexpectedOutputType','No output plots will be produced because the output are of an unexpected type.');
-    end
-
-    %Load flow from files:
-    if all(isnan(flow(:)))
-        if ~isempty(dirFlow)
-            filesFlow = find_files(dirFlow,'nc');
-            if ~isempty(filesFlow(:))
-                for ii = 1 : numel(sMod{kk}.all.date(:,1))
-                    pathCurr = fullfile(dirFlow, filesFlow{ii});
-                    flow(ii,:,:) = ncread(pathCurr, 'flow');
-                end
-            else
-                error('HpatImplement:noNcFlow', ['No NetCDF files were found '...
-                    'containing the gridded flow data necessary to calculate hydropower potential statistics.']);
-            end
-        else
-            warning('HpatImplement:missingFlowPath', ['No hydropower calculations ' ...
-                'can be produced because the path information to modelled '...
-                'streamflow information is missing.']);
-        end
-    end
+%     %Stats of inerest:
+%     Runoff and streamflow
+%         Total WY runoff contributions from each grid cell (rain, snow
+%         melt, ice melt) (m^3/year). Gridded
+%         Date of max runoff contributions
+%     SWE 
+%         Total WY snowfall (m^3). Gridded
+%         Maximum WY SWE (m^3). Gridded
+%         Date of max SWE (day of WY). Gridded
+%     Glacier mass balance
+%         Annual change in glacier mass balance (kg/yr). Gridded
+%         Total basin change in glacier mass balance (kg/yr). Lumped.
+    %It is contained in: sMod{kk}.all
     
     
-    if sum(~isnan(flow(:))) == 0
-        error('HpatImplement:noModelledFlow', ['The entire flow array is nan. ' ...
-            'Therefore no hydropower calculations can be conducted. This indicates '...
-            'that the modelled flow was not stored for the entire grid array either in memory or in files.']);
+    %Find unique water years:
+    indWYBeg = find(ismember(sMod{kk}.all.date(:,2:3), [10,1], 'rows'));
+    indWYEnd = [indWYBeg(2:end) - 1, numel(sMod{kk}.all.date(:,1))];
+    
+    WYTest = nanmean(indWYEnd(1:end-1) - indWYBeg(1:end-1));
+    if indWYEnd(end) - indWYBeg(end) < WYTest - 2 || indWYEnd(end) - indWYBeg(end) > WYTest + 2
+        indWYBeg = indWYBeg(1:end-1);
+        indWYEnd = indWYEnd(1:end-1);
     end
-
-    flowAvg = nanmean(flow,1);
-
-    %CALCULATE HYDROPOWER POTENTIAL
-    if iscell(sMod) && numel(sMod(:)) == 1
-        [powerAvg, powerRho, powerSd, powerSm] = power_potential(sHydro{kk}.slopeFdr, sHydro{kk}.dlFdr, flow, sMod{1}.all.date);
-    elseif isstruct(sMod)
-        [powerAvg, powerRho, powerSd, powerSm] = power_potential(sHydro{kk}.slopeFdr, sHydro{kk}.dlFdr, flow, sMod.all.date);
-    else
-        warning('HpatImplement:unexpectedOutputType','No output plots will be produced because the output are of an unexpected type.');
-    end
-
-
-    %%%%%%%%%%%%%%%%%%%%%%%%
-    %%%% DEFINE AND IMPLEMENT RANKING METRIC
-    %%%%%%%%%%%%%%%%%%%%%%%%
-    powerQual = power_quality(powerRho, powerSm);
-    %%%%%%%%%%%%%%%%%%%%%%%%
-    %%%% END OF RANKING METRIC
-    %%%%%%%%%%%%%%%%%%%%%%%%
-
-
-    %Write hydropower potential statistics to files:
-    dirHydroStats = fullfile(sPath{kk}.output,'hydropower_stats');
+    
+    WYYr = sMod{kk}.all.date(indWYEnd,1);
+    
+    %Create direcotry for output:
+    dirHydroStats = fullfile(sPath{kk}.output,'hydrologic_stats');
         mkdir(dirHydroStats);
-    pathFlowAvg = fullfile(dirHydroStats, 'flow_mean');
-    pathPwrAvg  = fullfile(dirHydroStats, 'power_mean');
-    pathPwrRho  = fullfile(dirHydroStats, 'power_density');
-    pathPwrSd   = fullfile(dirHydroStats, 'power_standard_deviation');
-    pathPwrSm   = fullfile(dirHydroStats, 'power_stability_metric');
-    pathPwrQual = fullfile(dirHydroStats, 'power_quality');
 
-    if regexpbl(sMeta.wrtTyp, {'nc', 'netcdf'})
-        dateVec  = nan(size(sMeta.dateRun(1,:)));
-        dateBnds = [sMeta.dateRun(1,:); sMeta.dateRun(end,:)];
+        
+    %%Runoff and streamflow:
+    varLp = {'mrro', 'rnrf', 'snlr', 'iclr', 'snw'};
+    varUnit = {'m/s','m/s','m/s','m/s', 'm'};
+    
+    %Loop over variables:
+    for jj = 1 : numel(varLp)
+        if isfield(sMod{kk}.all, varLp{jj}) 
+            %Loop over water years
+            for ii = 1 : numel(indWYBeg)
+                [grdWYMax, grdWYDOY] = max(sMod{kk}.all.(varLp{jj})(indWYBeg(ii):indWYEnd(ii),:,:), [], 1);
+                    grdWYMax = squeeze(grdWYMax);
+                    grdWYDOY = squeeze(grdWYDOY); grdWYDOY(isnan(grdWYMax)) = nan;
 
-        warning('off', 'printGridNc:nanTime');
-        print_grid_NC_v2([pathFlowAvg, '.nc'],   flowAvg,      'flow_avg', sHydro{kk}.(varLon), sHydro{kk}.(varLat), dateVec, dateBnds,    'm^3/s', 1);
-        print_grid_NC_v2([ pathPwrAvg, '.nc'],  powerAvg,       'pwr_avg', sHydro{kk}.(varLon), sHydro{kk}.(varLat), dateVec, dateBnds,        'W', 1);
-        print_grid_NC_v2([ pathPwrRho, '.nc'],  powerRho,   'pwr_density', sHydro{kk}.(varLon), sHydro{kk}.(varLat), dateVec, dateBnds,      'W/m', 2);
-        print_grid_NC_v2([  pathPwrSd, '.nc'],   powerSd,        'pwr_sd', sHydro{kk}.(varLon), sHydro{kk}.(varLat), dateVec, dateBnds,        'W', 2);
-        print_grid_NC_v2([  pathPwrSm, '.nc'],   powerSm, 'pwr_stability', sHydro{kk}.(varLon), sHydro{kk}.(varLat), dateVec, dateBnds, 'unitless', 2);
-        print_grid_NC_v2([pathPwrQual, '.nc'], powerQual,   'pwr_quality', sHydro{kk}.(varLon), sHydro{kk}.(varLat), dateVec, dateBnds,      'W/m', 2);
-        warning('on', 'printGridNc:nanTime');
-    elseif regexpbl(sMeta.wrtTyp, 'asc')
-        hdrWrt = ESRI_hdr(sHydro{kk}.(varLon), sHydro{kk}.(varLat), 'corner');
-        write_ESRI_v4(  flowAvg, hdrWrt, [pathFlowAvg, '.asc'], 1);
-        write_ESRI_v4( powerAvg, hdrWrt, [ pathPwrAvg, '.asc'], 1);
-        write_ESRI_v4( powerRho, hdrWrt, [ pathPwrRho, '.asc'], 2);
-        write_ESRI_v4(  powerSd, hdrWrt, [  pathPwrSd, '.asc'], 2);
-        write_ESRI_v4(  powerSm, hdrWrt, [  pathPwrSm, '.asc'], 2);
-        write_ESRI_v4(powerQual, hdrWrt, [pathPwrQual, '.asc'], 2);
+                grdWYSum = squeeze(nansum(sMod{kk}.all.(varLp{jj})(indWYBeg(ii):indWYEnd(ii),:,:)));
+                    grdWYSum(isnan(grdWYMax)) = nan;
+
+                %Convert from seconds to years:
+                if strcmpi(varUnit{jj}, 'm/s')
+                    secToDy = 86400;
+    %                 secToYr = (indWYEnd(ii) - indWYBeg(ii) + 1) * secToDy;
+                    grdWYMax = grdWYMax * secToDy;
+                    grdWYSum = grdWYSum * secToDy;
+
+                    unitMax = 'm/day';
+                    unitSum = 'm/yr';
+                elseif ~strcmpi(varUnit{jj}, 'm')
+                   error('hydroStats:unknownUnits', ['Units ' varUnit{jj} ' for variable ' varLp{jj} ' are not recognize.']); 
+                else
+                    unitMax = varUnit{jj};
+                    unitSum = varUnit{jj};
+                end
+
+
+                pathOutSum = fullfile(dirHydroStats, [varLp{jj} '_total_WY' num2str(WYYr(ii))]);
+                pathOutMax = fullfile(dirHydroStats, [varLp{jj} '_max_WY' num2str(WYYr(ii))]);
+                pathOutDOY = fullfile(dirHydroStats, [varLp{jj} '_dayofyr-max_WY' num2str(WYYr(ii))]);
+
+                if regexpbl(sMeta.wrtTyp, {'nc', 'netcdf'})
+                    dateVec  = nan(size(sMod{kk}.all.date(1,:)));
+                    dateBnds = [sMod{kk}.all.date(indWYBeg(ii),:); sMod{kk}.all.date(indWYEnd(ii),:)];
+
+                    warning('off', 'printGridNc:nanTime');
+                    print_grid_NC_v2([pathOutSum, '.nc'],   grdWYSum, varLp{jj}, sHydro{kk}.(varLon), sHydro{kk}.(varLat), dateVec, dateBnds, unitSum, 1);
+                    print_grid_NC_v2([pathOutMax, '.nc'],   grdWYMax, varLp{jj}, sHydro{kk}.(varLon), sHydro{kk}.(varLat), dateVec, dateBnds, unitMax, 1);
+                    print_grid_NC_v2([pathOutDOY, '.nc'],   grdWYDOY, varLp{jj}, sHydro{kk}.(varLon), sHydro{kk}.(varLat), dateVec, dateBnds,   'day', 0);
+                    warning('on', 'printGridNc:nanTime');
+                elseif regexpbl(sMeta.wrtTyp, 'asc')
+                    hdrWrt = ESRI_hdr(sHydro{kk}.(varLon), sHydro{kk}.(varLat), 'corner');
+                    write_ESRI_v4(grdWYSum, hdrWrt, [pathOutSum, '.asc'], 1);
+                    write_ESRI_v4(grdWYMax, hdrWrt, [pathOutMax, '.asc'], 1);
+                    write_ESRI_v4(grdWYDOY, hdrWrt, [pathOutDOY, '.asc'], 1);
+                end
+            end
+            clear ii
+        else
+            warning('hydroStats:unknownVar', ['The variable ' varLp{jj} ...
+                ' does not exist in the all field for region ' sMeta.region{kk} ...
+                ' and is therefore being skipped.']);
+        end
+    end
+    clear jj
+    
+    
+    %%Ice mass balance:
+    if isfield(sMod{kk}.all, 'icmb') 
+        %Loop over ice mass balance years
+        for ii = 1 : numel(indWYBeg)
+            icmbWY = squeeze(sMod{kk}.all.icmb(ii,:,:));
+
+            pathOutIcmb = fullfile(dirHydroStats, ['icmb' '_WY' num2str(WYYr(ii))]);
+
+            if regexpbl(sMeta.wrtTyp, {'nc', 'netcdf'})
+                dateVec  = nan(size(sMod{kk}.all.date(1,:)));
+                dateBnds = [sMod{kk}.all.icmb_dateStart(ii,:); sMod{kk}.all.icmb_dateEnd(ii,:)];
+
+                warning('off', 'printGridNc:nanTime');
+                print_grid_NC_v2([pathOutIcmb, '.nc'], icmbWY, 'icmb', sHydro{kk}.(varLon), sHydro{kk}.(varLat), dateVec, dateBnds, 'm/yr', 1);
+                warning('on', 'printGridNc:nanTime');
+            elseif regexpbl(sMeta.wrtTyp, 'asc')
+                hdrWrt = ESRI_hdr(sHydro{kk}.(varLon), sHydro{kk}.(varLat), 'corner');
+                write_ESRI_v4(icmbWY, hdrWrt, [pathOutIcmb, '.asc'], 1);
+            end
+        end
+        clear ii
+    else
+        warning('hydroStats:unknownVar', ['The variable ' 'icmb' ...
+                ' does not exist in the all field for region ' sMeta.region{kk} ...
+                ' and is therefore being skipped.']);
     end
 end
