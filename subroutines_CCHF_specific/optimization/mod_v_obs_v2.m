@@ -873,7 +873,7 @@ for kk = 1 : nMetric
     for ii = numel(nmScore{kk}) : -1 : 1
        if isempty(nmScore{kk}{ii})
            nmScore{kk}(ii) = [];
-           scoreTemp{kk} = scoreTemp{kk}((1:numel(scoreTemp)) ~= ii); 
+           scoreTemp{kk} = scoreTemp{kk}((1:numel(scoreTemp{kk})) ~= ii); 
        end
     end
 end
