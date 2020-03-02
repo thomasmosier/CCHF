@@ -42,8 +42,24 @@ for kk = 1 : nSites
     
     
     %Find unique water years:
-    indWYBeg = find(ismember(sMod{kk}.all.date(:,2:3), [10,1], 'rows'));
-    indWYEnd = [indWYBeg(2:end) - 1, numel(sMod{kk}.all.date(:,1))];
+    if isfield(sMod{kk}, 'all') 
+        if isfield(sMod{kk}.all, 'date')
+            indWYBeg = find(ismember(sMod{kk}.all.date(:,2:3), [10,1], 'rows'));
+                indWYBeg = indWYBeg(:); %Ensure column vector
+            if ~isempty(indWYBeg)
+                indWYEnd = [indWYBeg(2:end) - 1; numel(sMod{kk}.all.date(:,1))];
+            else
+                warning('hydroStats:waterYearNoWY', ['Hydrologic statistics for ' ...
+                sMeta.region{kk} ' are being skipped because no water years have been found.']);
+            end
+        else
+            warning('hydroStats:waterYearNoDate', ['Hydrologic statistics for ' ...
+                sMeta.region{kk} ' are being skipped because there is no date field.']);
+        end
+    else
+        warning('hydroStats:waterYearNoDate', ['Hydrologic statistics for ' ...
+                sMeta.region{kk} ' are being skipped because there is no gridded field.']);
+    end
     
     WYTest = nanmean(indWYEnd(1:end-1) - indWYBeg(1:end-1));
     if indWYEnd(end) - indWYBeg(end) < WYTest - 2 || indWYEnd(end) - indWYBeg(end) > WYTest + 2
