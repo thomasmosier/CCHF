@@ -205,16 +205,16 @@ if flagWrt == 1
         pathTemp = char(path(:));
         indSame = find(diff(pathTemp,2) == 0);
         if numel(indSame) < 2
-            [dirOut, ~, ~] = fileparts(pathTemp);
+            [dirOut, ~, ~] = fileparts(path{1});
             [dirOut, ~, ~] = fileparts(dirOut); %This moves the output directory one level up
         else
             indRtSame = find(diff(indSame) ~= 1, 1, 'first');
             if isempty(indRtSame)
                 dirOut = path{1}(1:indSame(end));
             elseif isequal(path{1}(indSame(indRtSame)), filesep)
-                dirOut = path{1}(1:indSame(indRtSame));
+                dirOut = path{1}(1:indSame(indRtSame)-1);
             else
-                dirOut = path{1}(1:indSame(indRtSame)+1);
+                dirOut = path{1}(1:indSame(indRtSame));
             end
         end
     else
