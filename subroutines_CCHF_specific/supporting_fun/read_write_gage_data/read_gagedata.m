@@ -203,18 +203,20 @@ if flagWrt == 1
     if iscell(path) && numel(path(:)) > 1
         %Find common output directory:
         pathTemp = char(path(:));
-        indSame = find(diff(pathTemp,2) == 0);
-        if numel(indSame) < 2
+        all_rows_same = all(diff(pathTemp) == 0, 1);
+        diff_column = find(~all_rows_same, 1, 'first');
+
+        % If there are no parts of the path in common, just move the
+        % directory one level up from the first observation path
+        % TESTME: I'm not sure if this will be correct behavior
+        % on a Windoze system
+        if diff_column <= 2
             [dirOut, ~, ~] = fileparts(path{1});
             [dirOut, ~, ~] = fileparts(dirOut); %This moves the output directory one level up
         else
-            indRtSame = find(diff(indSame) ~= 1, 1, 'first');
-            if isempty(indRtSame)
-                dirOut = path{1}(1:indSame(end));
-            elseif isequal(path{1}(indSame(indRtSame)), filesep)
-                dirOut = path{1}(1:indSame(indRtSame)-1);
-            else
-                dirOut = path{1}(1:indSame(indRtSame));
+            dirOut = path{1}(1:diff_column - 1);
+            if isequal(dirOut(end), filesep)
+                dirOut = dirOut(1:end-1);
             end
         end
     else
