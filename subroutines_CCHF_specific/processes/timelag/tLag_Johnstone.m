@@ -79,7 +79,7 @@ if ~isfield(sLand, 'tlag')
     %Calculate array if needed.
     if blCalc == 1
         sLand.tlag = sparse(sztLag(1),sztLag(1));
-        iTLag = find(sHydro.dl ~= 0);
+        iTLag = find(sHydro.dl ~= 0 & sHydro.slope ~= 0);
         tic
         sLand.tlag(iTLag) = 10^a*3600*sqrt(sHydro.dl(iTLag) ./ sqrt(abs(sHydro.slope(iTLag))));
 

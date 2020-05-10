@@ -134,7 +134,9 @@ valRt = 'output_';
         error('cchfImplement:dateRunNotField', ['dateRun does not exist as '...
             'a field of sMeta, which is not expected.']);
     end
-    sMeta.progress = 'year';
+    if ~isfield(sMeta, 'progress')
+        sMeta.progress = 'year';
+    end
 
     %Load global constants from funtion:
     sMeta.global = global_params; %contains global parameter values (albedo of ice, etc.)
