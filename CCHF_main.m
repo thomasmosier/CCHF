@@ -26,16 +26,6 @@ clc         %Clears all existing text in the command window.
 close all   %Closes all figure windows. 
 
 
-
-%Path for all inputs (file with stored paths is created during model run in
-%which user selects inputs through GUI)
-path2Inputs = '';
-
-%Path to calibration state file generated during previous, interupted
-%calibration run (leave empty unless " runType = 'calibrate_resume' "
-pathCalibrateResume = ''; 
-
-
 %%USER INPUTS:
 %Select the type of model run:
 runType = 'calibrate';	%Either 'default' (guess a parameter set), 
@@ -50,14 +40,38 @@ runType = 'calibrate';	%Either 'default' (guess a parameter set),
                                 %'_[Number]' to perform equifinality test
 
 %Select the name for the region (used for naming output files):
-region = 'wolverine'; %{'Hunza','Karora'}; %{'Naltar','Karora'}; %{'Donyian','Hunza'}; 
+region = 'wolverine';   %Multiple regions can be used. In this case the 
+                        %format is "{'region1', 'region2'}" If multiple
+                        %regions used, start and end dates can be set for
+                        %each region seperately using the date vector
+                        %format "{[year1, month1], [year2, month2]}".
+     
 
-startDate = [2000, 9];  %Vector with format '[year, month]' specifying date 
+startDate = [2000, 9];  %Vector with format "[year, month]" specifying date 
                         %to begin model run (run will include this date).
+                        
 
-endDate = [2003, 8];   %Vector with format '[year, month]' specifying date 
+endDate = [2003, 8];   %Vector with format "[year, month]" specifying date 
                         %to end model run (run will include this date).                          
 
+                        
+%Path for all inputs (file with stored paths is created during model run in
+%which user selects inputs through GUI)
+path2Inputs = '';
+
+%Path to calibration state file generated during previous, interupted
+%calibration run (leave empty unless " runType = 'calibrate_resume' "
+pathCalibrateResume = ''; 
+
+%SAVE MODEL END STATE (boolean value)
+blSaveModState = 1; 
+%If set to 1, model saves model state at end of last time step. 
+
+%ONLY USED FOR 'simulate_resume' and 'validate_resume'
+%This is the common directory where a previous model state has been saved
+%(e.g. if multiple regions run and there are sub-directories, this should 
+%point to directory shared by both regions)
+dirLoadModState = '';
 
 
      
@@ -70,8 +84,31 @@ nGage = 1;
 
                     
 %REQUIRED MODULE CHOICES (ONE FROM EACH CATEGORY):
-%'heat': 'STI' (simple temperature index), 'Pelli' (Pellicciotti version of ETI), 'Hock', 'LST', or 
-    %'SETI'
+moduleSet = { ...
+    'heat',  'ETI_debris_emp'; ... %surface heat flux module representation
+    'snmass', 'step'; ... %snow energy and mass representation
+    'icmlt', 'ratio'; ... %ice melt representation
+    'runoff', 'bucket'; ... %runoff representation
+    'toa', 'DeWalle'; ... %top-of-atmosphere radiation representation
+    'atmtrans', 'dem_decay'; ... %atmospheric transmissivity representation
+    'snalbedo', 'Pelli'; ... %snow albedo representation
+    'icalbedo', 'constant'; ... %ice albedo representation
+    'bcalbedo', 'ming'; ... %black carbon effect on albedo representation
+    'glacier0', 'external'; ... %glacier water equivalent at time 0
+    'partition', 'ramp'; ... %Partitioning precip into snow and rain
+    'pet', 'Hammon'; ... %potential evapotranspiration representation
+    'timelag', 'Johnstone'; ... %timelag (of flow through each grid cell) representation
+    'flow', 'lumped'; ... %flow routing representation
+    'density', 'Liston'; ... %densification of snow (does not participate in firn to ice processes)
+    'sndrain', 'percent'; ... %snow holding capacity representation
+    'sca', 'max'; ... %Snow covered area representation
+    'sublimate', 'Lutz'; ... %Sublimation representation
+    'firn', 'threshold'; ... %firn compaction representation
+    'glaciermove', 'slide'; ... %glacier movement representation
+    'avalanche', 'angle'}; %snow avalanching (can be 'none')
+%MODULE OPTIONS:
+%'heat': 'simple', 'Pelli' (Pellicciotti version of ETI), 'Hock', 'LST', or 
+    %'ETI_debris_Reid', 'ETI_debris_emp', or 'SETI'
 %'mass': 'step', 'cc', 'enbal', 'Liston'
 %'icmlt': 'ratio' (ratio of heat on snow and equivalent ice surface 
     %calculated, then any energy remaining after snowmelt is used for ice 
@@ -97,35 +134,48 @@ nGage = 1;
 %'firn': 'simple' (snow becomes ice once threshold reached) or 'static' (no firn compaction)
 %'glaciermove': 'Shea' (model will allow glacier sliding and 
     %calculate changes in ice thickness) or 'static' (glaciers held constant)
-moduleSet = { ...
-    'heat',  'TI_Kraaijenbrink'; ... %surface heat flux module representation
-    'snmass', 'cc'; ... %snow energy and mass representation
-    'icmlt', 'ratio'; ... %ice melt representation
-    'runoff', 'bucket'; ... %runoff representation
-    'toa', 'DeWalle'; ... %top-of-atmosphere radiation representation
-    'atmtrans', 'dem_decay'; ... %atmospheric transmissivity representation
-    'snalbedo', 'Pelli'; ... %snow albedo representation
-    'icalbedo', 'constant'; ... %ice albedo representation
-    'glacier0', 'external'; ... %glacier water equivalent at time 0
-    'partition', 'ramp'; ... %Partitioning precip into snow and rain
-    'pet', 'Hammon'; ... %potential evapotranspiration representation
-    'timelag', 'Johnstone'; ... %timelag (of flow through each grid cell) representation
-    'flow', 'lumped'; ... %flow routing representation
-    'density', 'Liston'; ... %densification of snow (does not participate in firn to ice processes)
-    'sndrain', 'percent'; ... %snow holding capacity representation
-    'sca', 'max'; ... %Snow covered area representation
-    'sublimate', 'Lutz'; ... %Sublimation representation
-    'firn', 'threshold'; ... %firn compaction representation
-    'glaciervel', 'sheer'; ... %glacier movement representation
-	'glaciermove', 'slide'; ... %glacier movement representation
-    'avalanche', 'angle' %snow avalanching (can be 'none')
-    };
 
+    
+%Values assigned here will overwrite existing values from other sources 
+%(and will not be calibrated)
+%Format is {name of function, parameter name, value}
+%Leave empty if no parameters should be set
+knownCfValues = {...
+    'atmtrans_dem_decay', 'trans_clear_intercept', 0.7105; ...
+    'atmtrans_dem_decay', 'trans_clear_dem', 0.0235; ...
+    'atmtrans_dem_decay', 'trans_decay_rate', 3.4318; ...
+    'atmtrans_dem_decay', 'trans_decay_power', 1.6142; ...
+    'partition_ramp', 'tmp_snow', -1; ...
+    'partition_ramp', 'tmp_rain', 3 ...
+    }; 
+%Values for 'atmtrans' derived from optimization relative to ERA
+%Values for 'partition_ramp' derived from visual inspection of figure in 
+    %Dai, A. (2008). Temperature and pressure dependence of the rain-snow 
+    %phase transition over land and ocean
+    
+
+%GLACIER SPECIFIC OPTIONS    
+%dynamically change glacier outlines (boolean value)    
+blDynamicGlaciers = 0; 
 %Boolean value to toggle on all glacier processes. If off, glaciers can
 %still be included, but they will be static (infinite sources of melt water)
-blDynamicGlaciers = 0; %0 = static glaciers, 1 = dynamic (use firn/glacier processes selected in module set) 
+%0 = static glaciers, 1 = dynamic (use firn/glacier processes selected in module set) 
 
-%These settings only used in calibration (can to left alone for validation)
+%Include glaciers? %Select type of DEM grid for ice. 
+iceGrid = 'same'; %Choices are:
+                    %'none' = glaciers not used.
+                    %'same' = same grid as main DEM.
+                    %'fine' = finer grid than main DEM (requires two grids:
+                            %one has boolean ice value and corresponding 
+                            %high-res DEM)
+
+useDebris = 0;  %Set to 1 to load debris cover array. If 0, all ice presumed 
+                %to be clean ice.                         
+                            
+useIcePond = 0; %Set to 1 to load glacier lake cover array. If 0, presumed there are no glacier lakes
+        
+
+%CALIBRATION SPECIFIC OPTIONS (NOT USED IN OTHER RUN TYPES)
 optType = 'apso';  %optimization method: 
                         %'GA_binary' (Genetic Algorithm using binary chromosomes), 
                         %'GA_real' (genetic algorithm using real numbers), 
@@ -141,8 +191,8 @@ fitType = 'kge_Parajka_mbe'; %fitness score options:
                     %'MAPE' (mean absolute percent error),
                     %'WMAPE' (weighted mean absolute percent error), or
                     %others...
-nRuns = 8000;   %Maximum number of runs
 
+                    
 %Option to determine how performance at multiple sites is ranked during
 %calibration:
 methodSiteCombine = 'linear'; %Options: 
@@ -162,36 +212,21 @@ nStage = 2; %%Number of calibration stages (Use two stages)
 category = {'input','cryo'; ...
     'land','routing'}; %Each row corresponds parameter types to optimize in that stage
 
-useFdr = 1; %Set to one to load and use ArcGIS flow direction grid. If 0, 
-            %uses algorithm to computer flow direction, which works well on 
-            %large watersheds but not well on small watersheds. 
-            
-%Select the time-series elements to produce:
-monthsSpin = '24 months';	%String defining number of months to 
-                            %run model for prior to start date
-                        %'startDate'.
-                        
-timeStep = 'daily';     %String specifying time resolution.  Can be 
-                        %'daily', 'monthly', 'hourly'.
-                        
-dataRes = 'daily';    %String specifying resolution of input time-series 
-                        %data 
-     
 maxWorkersCal = 8; %Specifcy maximum number of CPUs to use in parallell optimization.
-maxWorkersVal = 4;
+
+%Defines abbreviated calibration period (if ftiness requirement not met,
+%cuts model run for parameter set short. 
+%Evaluate model two years after start of year to determine worthiness of
+%parameter set:
+dateEval = nan(1,3);
+%Example:
+% dateEval = startDate + [2, zeros(1,numel(startDate)-1)];
+
                         
-%For genetic algorithm only:
-perUse = []; %If empty, no roulette selection.
-nElite = 2;
-rateCross = 0.8;
-    nCross = 1;
-    siteMutate = 1;
-%End of genetic algorithm parameters
          
 %POINTS WHERE OUTPUT DESIRED:
 %Wolverine:
 testPts = {[-148.921, 60.4197]; [-148.915, 60.3769]; [-148.907, 60.4042]};
-
 reportPt = {'avg'};
 
 output = {...
@@ -231,49 +266,8 @@ output = {...
     'iclr', reportPt; ... %Liquid water released from ice
     'sndt', reportPt; ... %Change in snow temperature
     };
-
-   
-%Values assigned here will overwrite existing values from other sources 
-%(and will not be calibrated)
-%Format is {name of function, parameter name, value}
-%Leave empty if no parameters should be set
-knownCfValues = {...
-    'atmtrans_dem_decay', 'trans_clear_intercept', 0.7105; ...
-    'atmtrans_dem_decay', 'trans_clear_dem', 0.0235; ...
-    'atmtrans_dem_decay', 'trans_decay_rate', 3.4318; ...
-    'atmtrans_dem_decay', 'trans_decay_power', 1.6142; ...
-    'partition_ramp', 'tmp_snow', -1; ...
-    'partition_ramp', 'tmp_rain', 3 ...
-    }; 
-%Values for 'atmtrans' derived from optimization relative to ERA
-%Values for 'partition_ramp' derived from visual inspection of figure in 
-    %Dai, A. (2008). Temperature and pressure dependence of the rain-snow 
-    %phase transition over land and ocean
     
-
-%Boolean value to display time-series plots of modelled output:
-blDispOutput = 1;
-
-%Include glaciers? %Select type of DEM grid for ice. 
-iceGrid = 'same'; %Choices are:
-                    %'none' = glaciers not used.
-                    %'same' = same grid as main DEM.
-                    %'fine' = finer grid than main DEM (requires two grids:
-                            %one has boolean ice value and corresponding 
-                            %high-res DEM)
-
-useDebris = 0;  %Set to 1 to load debris cover array. If 0, all ice presumed 
-                %to be clean ice.                         
-                            
-useIcePond = 0; %Set to 1 to load glacier lake cover array. If 0, presumed there are no glacier lakes
-
-%Clip to non-rectangular region of interest using reference file:
-blClip = 0;     %(1 = yes or 0 = no).  If 1, user prompted to 
-                %locate reference file in ESRI ACII format.  All downscaled 
-                %output will only be produced for cells in reference file 
-                %where value is not NaN.
-        
-
+    
 %PRINTING OPTIONS: 
 %Determine output file type:
 writeMod = 1;       %1 = Gridded files will be written for any outut parameters recorded at grid cells where 'all' observations are recorded (see 'output' and 'reportPts').
@@ -283,14 +277,30 @@ writeEval = 1;      %1 = Gridded files of observations and model output will be 
 writeType = 'ascii';    %'ascii' = individual ascii files (ESRI format)
                         %'netCDF' = A single netCDF file (Analogous to CMIP5 format)
 
-%Defines abbreviated calibration period (if ftiness requirement not met,
-%cuts model run for parameter set short. 
-%Evaluate model two years after start of year to determine worthiness of
-%parameter set:
-dateEval = nan(1,3);
-% dateEval = startDate + [2, zeros(1,numel(startDate)-1)];
+                        
+%ASSORTED MODEL SETUP (typically not used)
+%Boolean value to display time-series plots of modelled output:
+blDispOutput = 1;
 
-blPrevRun = 0;
+                        
+useFdr = 1; %Set to one to load and use ArcGIS flow direction grid. If 0, 
+            %uses algorithm to computer flow direction, which works well on 
+            %large watersheds but not well on small watersheds. 
+            
+%Select the time-series elements to produce:
+monthsSpin = '24 months';	%String defining number of months to 
+                            %run model for prior to start date
+                        %'startDate'.
+                        
+timeStep = 'daily';     %String specifying time resolution.  Can be 
+                        %'daily', 'monthly', 'hourly'.
+                        
+dataRes = 'daily';    %String specifying resolution of input time-series 
+                        %data 
+     
+
+maxWorkersVal = 4;  %Specifcy maximum number of CPUs to use in parallell 
+                    %optimization for multiple concurrent validation runs.
 
 
 
@@ -313,7 +323,7 @@ sMeta = struct;
     sMeta.('wrtGridEval') = writeEval;
     sMeta.('iceGrid')  = iceGrid;
     sMeta.('glacierDynamics') = blDynamicGlaciers;
-    sMeta.varLd        = {'pr','tas','tasmin','tasmax'};
+    %sMeta.varLd        = {'pr','tas','tasmin','tasmax'}; REMOVE
     sMeta.('blDebris') = useDebris;
     sMeta.('blIcePond') = useIcePond;
     sMeta.('blDispOut') = blDispOutput;
@@ -322,9 +332,11 @@ sMeta = struct;
     sMeta.('maxworker') = maxWorkersVal;
     sMeta.('ldFdr') = useFdr;
     sMeta.('nGage') = nGage;
-    sMeta.('useprevrun') = blPrevRun;
+%     sMeta.('useprevrun') = blPrevRun; REMOVE
     sMeta.('pathinputs') = path2Inputs;
     sMeta.('pathresume') = pathCalibrateResume;
+    sMeta.('blSaveState') = blSaveModState;
+    sMeta.('dirloadstate') = dirLoadModState;
 
 sOpt = struct;
     sOpt.('fitTest') = fitType;
@@ -340,6 +352,7 @@ if regexpbl(sMeta.runType,'calibrate')
     %fixed population of 30
     nPop = 30;
 %         nGen = 5;
+    nRunsMax = 60;
     nGen = round(nRunsMax / nPop);
 
     if nGen < 1
@@ -370,7 +383,7 @@ if regexpbl(sMeta.runType,'calibrate')
     %Set number of generations until stagnation:
     if regexpbl(sOpt.type, {'genetic','GA'})
         sOpt.stagnate = 20;
-    elseif regexpbl(sOpt.type, {'PSO','hybrid'})
+    elseif regexpbl(sOpt.type, {'PSO','hybrid','APSO'})
         sOpt.stagnate = 10;
     else
         sOpt.stagnate = 15;
@@ -395,8 +408,19 @@ if regexpbl(sMeta.runType,'calibrate')
 end
 
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%IMPLEMENTATION CCHF MODEL:    
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 [sMod, sObs] = CCHF_implement(sMeta, sOpt);
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%IMPLEMENTATION MOUNTAIN STATS:
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%hydrologic_stats(sHydro, sPath, sMod, sMeta);
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %% HPAT STATS:
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% HPAT_implement(sHydro, sPath, sMod, sMeta);
