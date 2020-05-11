@@ -254,7 +254,7 @@ for mm = 1 : nSites
     %Set file and folder for saving model state (if selected)
     fileSaveStateRt = ['model_state_' sMeta.strModule '_' sMeta.region{mm} ...
         '_state-'];
-    if regexpbl(sMeta.runType, {'simulate', 'resume'}, 'and') && ~strcmpi(sMeta.mode, 'parameter')
+    if (regexpbl(sMeta.runType, {'simulate', 'resume'}, 'and') || regexpbl(sMeta.runType, {'valid', 'resume'}, 'and')) && ~strcmpi(sMeta.mode, 'parameter')
         varLoadState = 'dirloadstate';
         
         if isfield(sMeta, varLoadState)
@@ -290,7 +290,7 @@ for mm = 1 : nSites
             
             pathLoadState = fullfile(dirSaveState, fileLoadState);
             if exist(pathLoadState, 'file')
-                load(pathLoadState, '-mat', 'sAtm', 'sCryo', 'sLand');
+                load(pathLoadState, '-mat', 'sAtm', 'sCryo', 'sLand', 'sObs');
                 
                 %Check for time consistency
                 dateLast = sAtm.datepr(end,:);
@@ -298,18 +298,18 @@ for mm = 1 : nSites
                 dayGap = days_since(dateLast, dateCurr, 'gregorian');
                 
                 if dayGap ~= 1
-                   warning('cchfEngine:simulateResumeDateGap', ['The ' char(39) 'simulate_resume'  ...
+                   warning('cchfEngine:runResumeDateGap', ['The ' char(39) 'simulate_resume'  ...
                        char(39) ' run type is being used, but there is a ' ...
                        'gap between the end of the previous run (' date_2_string(dateLast) ...
                        ') and the start of the current run  (' date_2_string(dateCurr) ').']); 
                 end
             else
-               error('cchfEngine:pathSimulateResumeMissing',['The path '...
-                   'for the simulation resume state has been set but '...
+               error('cchfEngine:pathRunResumeMissing',['The path '...
+                   'for the model run resume state has been set but '...
                    'does not exist: ' pathLoadState]);
             end
         else
-            error('cchfEngine:pathsimulateResumeNotSet', ['The path for '...
+            error('cchfEngine:pathRunResumeNotSet', ['The path for '...
                 'the simulation resume state has not been set.']);
         end
     end %End of simulate_resume variable load
@@ -600,22 +600,33 @@ for mm = 1 : nSites
                 break
             end
         end
-    end %End of time loop
-    
-    
-    %%SAVE MODEL STATE
-    if sMeta.blSaveState == 1 && ~strcmpi(sMeta.mode, 'parameter') && ~regexpbl(sMeta.runType, 'calibrate')
-        fileSaveStateExt = [date_2_string(sMeta.dateEnd{mm}) '.mat'];
-        pathSaveState = fullfile(sPath{mm}.output, [fileSaveStateRt, fileSaveStateExt]);
         
-        if ~exist(sPath{mm}.output, 'dir')
-            mkdir(sPath{mm}.output);
+        
+        %%SAVE MODEL STATE
+        if sMeta.blSaveState == 1 && ~strcmpi(sMeta.mode, 'parameter') && ~regexpbl(sMeta.runType, 'calibrate')
+            if isequal(sMeta.dateCurr, sMeta.dateStart{mm} + [5, zeros(1,numel(sMeta.dateStart{mm})-1)]) || ii == nTs
+                fileSaveStateExt = [date_2_string(sMeta.dateEnd{mm}) '.mat'];
+                pathSaveState = fullfile(sPath{mm}.output, [fileSaveStateRt, fileSaveStateExt]);
+
+                if ~exist(sPath{mm}.output, 'dir')
+                    mkdir(sPath{mm}.output);
+                end
+                
+                %Search for previous saved copies:
+                filePrevSvStruct = dir(fullfile(sPath{mm}.output, [fileSaveStateRt, '*.mat']));
+                if ~isempty(filePrevSvStruct) && isstruct(filePrevSvStruct)
+                    filePrevSv = fullfile(filePrevSvStruct.folder, filePrevSvStruct.name);
+                    delete(filePrevSv);
+                end
+                    
+                %Save current:
+                save(pathSaveState, 'sAtm', 'sCryo', 'sLand', 'sObs', '-v7.3');
+
+                disp(['Model state for ' sMeta.region{mm} ' corresponding to ' ...
+                date_2_string(sMeta.dateEnd{mm}) ' has been saved to ' pathSaveState]);
+            end
         end
-        save(pathSaveState, 'sAtm', 'sCryo', 'sLand', '-v7.3');
-        
-        disp(['Model state for ' sMeta.region{mm} ' corresponding to ' ...
-            date_2_string(sMeta.dateEnd{mm}) ' has been saved to ' pathSaveState]);
-    end
+    end %End of time loop
 end %End of site loop
 
 

@@ -107,7 +107,7 @@ valRt = 'output_';
     %Create time vector to loop over based on start date and time-step
     %If this field populated here, it wont be populated inside each model call,
     %which saves time
-    if regexpbl(sMeta.runType, {'simulate', 'resume'}, 'and')
+    if regexpbl(sMeta.runType, {'simulate', 'resume'}, 'and') || regexpbl(sMeta.runType, {'valid', 'resume'}, 'and')
         %When simulate_resume is being used, start immediately from
         %previous model state
         sMeta.spinup = '0 months';
