@@ -604,7 +604,7 @@ for mm = 1 : nSites
         
         %%SAVE MODEL STATE
         if sMeta.blSaveState == 1 && ~strcmpi(sMeta.mode, 'parameter') && ~regexpbl(sMeta.runType, 'calibrate')
-            if isequal(sMeta.dateCurr, sMeta.dateStart{mm} + [5, zeros(1,numel(sMeta.dateStart{mm})-1)]) || ii == nTs
+            if isequal(sMeta.dateCurr, sMeta.dateStart{mm} + [5, zeros(1,numel(sMeta.dateStart{mm})-1)]) || ii == nTS
                 fileSaveStateExt = [date_2_string(sMeta.dateEnd{mm}) '.mat'];
                 pathSaveState = fullfile(sPath{mm}.output, [fileSaveStateRt, fileSaveStateExt]);
 

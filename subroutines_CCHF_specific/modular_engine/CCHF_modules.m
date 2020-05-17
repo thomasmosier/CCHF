@@ -547,7 +547,7 @@ elseif regexpbl(timeMod, 'Liston')
     else
         tLag_Liston(sHydro, sMeta);
     end
-else
+elseif ~regexpbl(timeMod, 'none')
     error('cchfModules:timelagUnknown', ['The flow travel time representation ' timeMod ' not recognized.']);
 end
 
@@ -574,7 +574,10 @@ elseif regexpbl(flowMod, 'Liston') %Fast and slow flow
     else
         flow_Liston(sHydro, sMeta);
     end
-else
+elseif regexpbl(flowMod, 'none')
+    %Set flow to nan if flow module not used
+    sLand.flow(:) = nan;
+elseif ~regexpbl(flowMod, 'none')
     error('cchfModules:flowUnknown', ['The flow routing representation ' flowMod ' not recognized.']);
 end
 
