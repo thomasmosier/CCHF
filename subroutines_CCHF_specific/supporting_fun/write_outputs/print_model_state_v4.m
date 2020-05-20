@@ -163,8 +163,13 @@ else
                     ptWrtCurr = ['pt' num2str(ptCurr)];
                     
                     %Check that the point is inside the current domain:
-                    lonCurr = sMeta.output{sMeta.siteCurr}{kk,2}{ll}(1);
-                    latCurr = sMeta.output{sMeta.siteCurr}{kk,2}{ll}(2);
+                    if iscell(sMeta.output{sMeta.siteCurr}{kk,2})
+                        lonCurr = sMeta.output{sMeta.siteCurr}{kk,2}{ll}(1);
+                        latCurr = sMeta.output{sMeta.siteCurr}{kk,2}{ll}(2);
+                    else
+                        lonCurr = sMeta.output{sMeta.siteCurr}{kk,2}(1);
+                        latCurr = sMeta.output{sMeta.siteCurr}{kk,2}(2);
+                    end
 
                     lonStep = nanmean(abs(diff(sHydro.(varLon))));
                     latStep = nanmean(abs(diff(sHydro.(varLat))));

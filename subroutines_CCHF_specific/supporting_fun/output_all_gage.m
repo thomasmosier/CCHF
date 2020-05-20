@@ -316,10 +316,16 @@ for ii = 1 : numel(namesObs)
         %Identify fields that currently exist and others that must be
         %created:
         if ~isempty(output)
-            %Find fields present in both obs and output:
-            [fieldOutCurr, ~, indOut] = intersect(fieldObsCurr, output(:,1));
-            %Find fields present in obs but not present in output:
-            [fieldNotOutCurr, ~] = setdiff(fieldObsCurr, output(:,1));
+            if iscell(output) && ~isempty(output(:))
+                %Find fields present in both obs and output:
+                [fieldOutCurr, ~, indOut] = intersect(fieldObsCurr, output(:,1));
+                %Find fields present in obs but not present in output:
+                [fieldNotOutCurr, ~] = setdiff(fieldObsCurr, output(:,1));
+            else
+                fieldOutCurr = '';
+                fieldNotOutCurr = {fieldObsCurr};
+                output = cell(0,2);
+            end
         else
             fieldOutCurr = '';
             fieldNotOutCurr = {fieldObsCurr};
