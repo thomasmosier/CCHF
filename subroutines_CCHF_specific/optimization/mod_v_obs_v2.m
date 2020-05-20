@@ -395,6 +395,7 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
                         indAvg = ismember(dataAll{cntrObs,iODate}(:,1:2), datesAvg(ll,1:2),'rows');
                         dataAvg(ll) = mean(dataAll{cntrObs,iOData}(indAvg));
                     end
+                    clear ll
 
                     dataAll{cntrObs,iOData} =  dataAvg; %Substitute averages for observations
                     dataAll{cntrObs,iODate} = datesAvg;
@@ -405,6 +406,7 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
                         indAvg = ismember(dataAll{cntrObs,iMDate}(:,1:2), datesAvg(ll,1:2),'rows');
                         dataAvg(ll) = mean(dataAll{cntrObs,iMData}(indAvg));
                     end
+                    clear ll
 
                     dataAll{cntrObs,iMData} = dataAvg; %Substitute averages for modelled
                     dataAll{cntrObs,iMDate} = datesAvg;
@@ -536,6 +538,7 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
                             error('modVObs:unknownDateFormat',['The model date is of class ' class(dataAll{cntrObs,iMDate}) ' and has ' num2str(numel(dataAll{cntrObs,iMDate})) ' elements. This has not been programmed for.']);
                         end
                     end %End of loop over observations
+                    clear ll
                 else
                     error('mod_v_obs:errDim', ['The current variable has ' ...
                         num2str(numel(size(numel(dataAll{cntrObs,iOData})))) ...
@@ -559,6 +562,7 @@ for ii = 1 : numel(ptsObs(:)) %Loop over all points in the Observation data
                         %For testing:
                         %figure; imagesc(squeeze(dataTempMod2Obs(ll,:,:)), 'alphaData', ~isnan(squeeze(dataTempMod2Obs(ll,:,:))); colorbar;
                     end
+                    clear ll
                 else
                     error('modVObs:unknownDateFormat',['The model date is of class ' ...
                         class(dataAll{cntrObs,iMDate}) ' and has ' num2str(numel(dataAll{cntrObs,iMDate})) ...
@@ -924,6 +928,7 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
         152,78,163]/255;
     custGray = [0.5,0.5,0.5];
 
+    
     for ii = 1 : numel(obsTypes)
         %Guess units:
         switch obsTypes{ii}
@@ -972,6 +977,7 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
             for ll = 1 : nPlot
                 indCurrType{ll} = ll;
             end
+            clear ll
         end
         
 
@@ -985,6 +991,16 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                 nDtCurr = numel(dataAll{indCurrType{ll}(1),iMDate}(:,1));
                 dateTyp = 1;
             end
+            
+            %Check that data is not all nan:
+            if all(isnan(dataAll{indCurrType{ll}(1),iOData}(:)))
+                warning('modVObs:skippingPlotObs',['Plot for ' varCurr ' is being skipped because all observation data is nan.']);
+                continue
+            elseif all(isnan(dataAll{indCurrType{ll}(1),iMData}(:)))
+                warning('modVObs:skippingPlotMod',['Plot for ' varCurr ' is being skipped because all model output is nan.']);
+                continue
+            end
+            
 
             %Make gridded plots if data are gridded
             if ((szCurr(1) == nDtCurr && numel(szCurr) == 3) || (szCurr(1) ~= nDtCurr && numel(szCurr) == 2)) && flagGrid

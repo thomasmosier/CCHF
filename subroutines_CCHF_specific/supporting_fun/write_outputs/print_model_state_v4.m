@@ -151,7 +151,7 @@ else
                         [sModOut.all.(varMbDateStrt), sModOut.all.(varMbDateEnd)] = glac_measurement_dates(datesUse, 'dateGlac', sMeta);
                         
                         %Initialize output:
-                        sModOut.all.(varCurr) = nan([numel(sModOut.avg.(varMbDateStrt)(:,1)), szInit3d(2:3)], 'single');
+                        sModOut.all.(varCurr) = nan([numel(sModOut.all.(varMbDateStrt)(:,1)), szInit3d(2:3)], 'single');
                     else
                         sModOut.all.(varCurr) = nan(szInit3d, 'single');
                     end

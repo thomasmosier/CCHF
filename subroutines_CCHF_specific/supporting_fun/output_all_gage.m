@@ -317,13 +317,11 @@ for ii = 1 : numel(namesObs)
         %created:
         if ~isempty(output)
             if iscell(output) && ~isempty(output(:))
-                if iscell(output(:,1))
+                if iscell(output(:,1)) && numel(output(:,1)) <= 1
                     output(:,1) = output{:,1};
-%                     %Find fields present in obs but not present in output:
-%                     [fieldNotOutCurr, ~] = setdiff(fieldObsCurr, output{:,1});
-                else
-                    error('outputAllGage:outputTypeUnknown',['The output array is type ' ...
-                        class(output(:,1)) ', which has not been programmed for.']);
+%                 else
+%                     error('outputAllGage:outputTypeUnknown',['The output array is type ' ...
+%                         class(output(:,1)) ', which has not been programmed for.']);
                 end
                 
                 %Find fields present in both obs and output:
