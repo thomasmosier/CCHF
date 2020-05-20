@@ -95,6 +95,9 @@ else
         %Loop over all variables to output
         for kk = 1 : numel(sMeta.output{sMeta.siteCurr}(:,1)) 
             varCurr = sMeta.output{sMeta.siteCurr}{kk,1};
+            if iscell(varCurr)
+                varCurr = varCurr{:};
+            end
             
             %loop over points where model output should be written:
             for ll = 1 : numel(sMeta.output{sMeta.siteCurr}{kk,3}(:)) 
