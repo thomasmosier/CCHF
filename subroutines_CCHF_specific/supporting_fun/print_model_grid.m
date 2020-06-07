@@ -1,4 +1,6 @@
-function sModOut = print_model_grid(sModOut, sData, nmCurr, ptWrtCurr, indTsPrintCurr, sMeta, lon, lat, varargin)
+function print_model_grid(sData, nmCurr, ptWrtCurr, indTsPrintCurr, sMeta, lon, lat, varargin)
+
+global sModOut
 
 %Indices that should be used (not set to nan):
 if ~isempty(varargin(:))

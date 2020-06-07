@@ -22,8 +22,9 @@ function varargout = print_model_state_v4(sHydro, sMeta, pathOut)
 
 %Use global and persistent variles.
 %Persistent variable 'sModOut' speeds run time by close to factor of 100
-global sAtm sCryo sLand
-persistent sModOut
+global sAtm sCryo sLand sModOut
+
+
 
 varLat = 'latitude';
 varLon = 'longitude';
@@ -264,20 +265,20 @@ else
             if any(strcmpi(fldsLand, nmCurr)) %INFORMATION IN "sLand"
                 %Extract information:
                 if strcmpi(ptWrtCurr, 'all') 
-                    sModOut = print_model_grid(sModOut, sLand, nmCurr, ptWrtCurr, ...
+                    print_model_grid(sLand, nmCurr, ptWrtCurr, ...
                         indTsPrintCurr, sMeta, sHydro.(varLon), sHydro.(varLat));
                 else
-                    sModOut = print_model_pt(sModOut, sLand, nmCurr, ptWrtCurr, ...
+                    print_model_pt(sLand, nmCurr, ptWrtCurr, ...
                         indTsPrintCurr, sHydro.area, sModOut.(ptWrtCurr).indGage, indAreaCurr, sMeta);
                 end
                 
             elseif any(strcmpi(fldsAtm, nmCurr)) %INFORMATION IN "sAtm"
                 %Extract information:
                 if strcmpi(ptWrtCurr, 'all') 
-                    sModOut = print_model_grid(sModOut, sAtm, nmCurr, ptWrtCurr, ...
+                    print_model_grid(sAtm, nmCurr, ptWrtCurr, ...
                         indTsPrintCurr, sMeta, sHydro.(varLon), sHydro.(varLat));
                 else
-                    sModOut = print_model_pt(sModOut, sAtm, nmCurr, ptWrtCurr, ...
+                    print_model_pt(sAtm, nmCurr, ptWrtCurr, ...
                         indTsPrintCurr, sHydro.area, sModOut.(ptWrtCurr).indGage, indAreaCurr, sMeta);
                 end
                 
@@ -363,7 +364,7 @@ else
                         if strcmpi(ptWrtCurr, 'all')
                             warning('print_model_state:stakeAllGrid', 'The glacier stake observations are expected at a single point. An entire grid has not been programmed for.');
                         else
-                            sModOut = print_model_pt(sModOut, sCryo.icdwe + sCryo.sndwe, nmCurr, ptWrtCurr, ...
+                            print_model_pt(sCryo.icdwe + sCryo.sndwe, nmCurr, ptWrtCurr, ...
                                 indTsPrintCurr, sHydro.area, indGageCurr, indAreaCurr, sMeta);
                         end
                     case varGeodetic
@@ -450,10 +451,10 @@ else
                         end
                     otherwise
                         if strcmpi(ptWrtCurr, 'all')
-                            sModOut = print_model_grid(sModOut, sCryo, nmCurr, ptWrtCurr, ...
+                            print_model_grid(sCryo, nmCurr, ptWrtCurr, ...
                                 indTsPrintCurr, sMeta, sHydro.(varLon), sHydro.(varLat));
                         else
-                            sModOut = print_model_pt(sModOut, sCryo, nmCurr, ptWrtCurr, ...
+                            print_model_pt(sCryo, nmCurr, ptWrtCurr, ...
                                 indTsPrintCurr, sHydro.area, indGageCurr, indAreaCurr, sMeta, indNNan2d);
                         end
                 end
@@ -501,7 +502,7 @@ else
                                             '(high-res grid used for ice) has not been programmed. ' ...
                                             'This requires finding the correct spatial indices']);
                                     else
-                                        sModOut = print_model_pt(sModOut, sCryo.(fldMb), nmCurr, ptWrtCurr, indTsPrintCurr, sHydro.area, indGageCurr, indAreaCurr, sMeta);
+                                        print_model_pt(sCryo.(fldMb), nmCurr, ptWrtCurr, indTsPrintCurr, sHydro.area, indGageCurr, indAreaCurr, sMeta);
                                     end
                                 end
                             end

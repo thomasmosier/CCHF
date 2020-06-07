@@ -1,4 +1,6 @@
-function sModOut = print_model_pt(sModOut, sData, nmCurr, ptWrtCurr, indTsOutCurr, area, indGage, indArea, sMeta, varargin)
+function print_model_pt(sData, nmCurr, ptWrtCurr, indTsOutCurr, area, indGage, indArea, sMeta, varargin)
+
+global sModOut
 
 %Set indices outside domain to nan:
 if ~isempty(varargin(:))
