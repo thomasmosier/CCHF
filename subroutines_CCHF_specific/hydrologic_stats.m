@@ -138,7 +138,7 @@ for kk = 1 : nSites
     
     
     %%Ice mass balance:
-    if isfield(sMod{kk}.all, 'icmb') 
+    if isfield(sMod{kk}.all, 'icmb') && ndims(sMod{kk}.all.icmb) == 3 && numel(sMod{kk}.all.icmb(:,1,1)) > 0
         %Loop over ice mass balance years
         for ii = 1 : numel(indWYBeg)
             icmbWY = squeeze(sMod{kk}.all.icmb(ii,:,:));
