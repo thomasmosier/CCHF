@@ -384,10 +384,18 @@ if ~isempty(dateCurr) && ~all(isnan(dateCurr))
         indDateLded = ismember(sAtm.(['date' varCurr]), datesUse(sMeta.indCurr,:), 'rows');
         if any(indDateLded)
             sAtm.(['ind' varCurr]) = find(indDateLded == 1, 1, 'first');
-        else
+        else %This logic in the else statement is meant to catch time-averaged climate input variables (e.g. bcdeposition)
             filesUniqCurr = unique(sPath.([varCurr 'File']));
             filesUniqPr = unique(sPath.('prFile'));
-            if numel(filesUniqCurr) < numel(filesUniqPr) && mode(sAtm.(['date' varCurr])(:,1)) ~= datesUse(sMeta.indCurr, 1)
+            
+            blTimeAvg = 0;
+            if (numel(filesUniqCurr) < numel(filesUniqPr) && mode(sAtm.(['date' varCurr])(:,1)) ~= datesUse(sMeta.indCurr, 1))
+                blTimeAvg = 1;
+            elseif ~isequal(unique(sAtm.(['date' varCurr])(1,:)), unique(sAtm.('datepr')(1,:))) && strcmpi(varCurr, 'bcdep')
+                blTimeAvg = 1;
+            end
+ 
+            if blTimeAvg == 1
                 indDateLded = ismember(sAtm.(['date' varCurr])(:,2:end), datesUse(sMeta.indCurr,2:end), 'rows');
                 if any(indDateLded)
                     sAtm.(['ind' varCurr]) = find(indDateLded == 1, 1, 'first');
@@ -395,8 +403,8 @@ if ~isempty(dateCurr) && ~all(isnan(dateCurr))
                     error('load_ts_equal:noIndAvg',['At time indice ' num2str(sMeta.indCurr) ...
                    ' no ' varCurr ' date was found. This is for the case of an average climate variable.']);
                 end
-            else
-               error('load_ts_equal:noIndTs',['At time indice ' num2str(sMeta.indCurr) ...
+            else 
+                error('load_ts_equal:noIndTs',['At time indice ' num2str(sMeta.indCurr) ...
                    ' no ' varCurr ' date was found. This is for the case of a time-series climate variable.']);
             end 
         end

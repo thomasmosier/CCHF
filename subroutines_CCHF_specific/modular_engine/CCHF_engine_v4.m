@@ -291,6 +291,9 @@ for mm = 1 : nSites
             pathLoadState = fullfile(dirSaveState, fileLoadState);
             if exist(pathLoadState, 'file')
                 load(pathLoadState, '-mat', 'sAtm', 'sCryo', 'sLand', 'sObs');
+                disp(['The current simulation is resuming from the model state at ' ...
+                    pathLoadState '.']);
+                disp('The global variables sAtm, sCryo, sLand, and sObs have been loaded from this location.');
                 
                 %Check for time consistency
                 dateLast = sAtm.datepr(end,:);
@@ -303,6 +306,11 @@ for mm = 1 : nSites
                        'gap between the end of the previous run (' date_2_string(dateLast) ...
                        ') and the start of the current run  (' date_2_string(dateCurr) ').']); 
                 end
+                
+                %Clear sAtm because there are no state variables that are
+                %dynamic across time steps
+                clear sAtm
+                sAtm = struct;
             else
                error('cchfEngine:pathRunResumeMissing',['The path '...
                    'for the model run resume state has been set but '...
