@@ -104,6 +104,12 @@ else
             for ll = 1 : numel(sMeta.output{sMeta.siteCurr}{kk,3}(:)) 
                 ptCurr = sMeta.output{sMeta.siteCurr}{kk,3}{ll};
                 
+                %Check if pt is number but doesn't have 'pt' in front:
+                if isnumeric(ptCurr) && ptCurr < numel(sHydro.dem)
+                    ptCurr = ['pt' num2str(ptCurr)];
+                    sMeta.output{sMeta.siteCurr}{kk,3}{ll} = ptCurr;
+                end
+                
                 %Switch between types of output points ('avg', 'all', or
                 %specific point)
                 if strcmpi(ptCurr,'avg')
@@ -133,15 +139,13 @@ else
                         sModOut.avg.(varCurr) = nan(szInitPt, 'single');
                     end
                 elseif strcmpi(ptCurr,'all')
-                    if ~isfield(sModOut,'all') || isempty(sModOut.all)
-                        sModOut.all = struct;
-                            sModOut.all.(varLon) = sHydro.(varLon);
-                            sModOut.all.(varLat) = sHydro.(varLat);
-                            sModOut.all.date = outDate;
-                            sModOut.all.indGage = indNNan2d;
-                            sModOut.all.fields = cell(0,1);
-%                         sModOut.all = struct('lon', sHydro.(varLon), 'lat', sHydro.(varLat), ...
-%                             'date', outDate, 'indGage', (1:numel(sHydro.dem)), 'fields', cell(0,1));
+                    if ~isfield(sModOut,ptCurr) || isempty(sModOut.(ptCurr))
+                        sModOut.(ptCurr) = struct;
+                            sModOut.(ptCurr).(varLon) = sHydro.(varLon);
+                            sModOut.(ptCurr).(varLat) = sHydro.(varLat);
+                            sModOut.(ptCurr).date = outDate;
+                            sModOut.(ptCurr).indGage = indNNan2d;
+                            sModOut.(ptCurr).fields = cell(0,1);
                     end
                     
                     if regexpbl(varCurr, 'mb') %Initialize gridded mass balance (uses start and end dates)
@@ -149,21 +153,45 @@ else
                         varMbDateEnd  = [varCurr '_dateEnd'];
 
                         %Assign mb dates:
-                        [sModOut.all.(varMbDateStrt), sModOut.all.(varMbDateEnd)] = glac_measurement_dates(datesUse, 'dateGlac', sMeta);
+                        [sModOut.(ptCurr).(varMbDateStrt), sModOut.(ptCurr).(varMbDateEnd)] = glac_measurement_dates(datesUse, 'dateGlac', sMeta);
                         
                         %Initialize output:
-                        sModOut.all.(varCurr) = nan([numel(sModOut.all.(varMbDateStrt)(:,1)), szInit3d(2:3)], 'single');
+                        sModOut.(ptCurr).(varCurr) = nan([numel(sModOut.(ptCurr).(varMbDateStrt)(:,1)), szInit3d(2:3)], 'single');
                     else
-                        sModOut.all.(varCurr) = nan(szInit3d, 'single');
+                        sModOut.(ptCurr).(varCurr) = nan(szInit3d, 'single');
                     end
                     
                     %Add variable to list:
-                    sModOut.all.fields{end+1} = varCurr;
+                    sModOut.(ptCurr).fields{end+1} = varCurr;
                     %If being written to file, add path:
                     if sMeta.wrtGridOut == 1 && ~regexpbl(sMeta.runType,'calib')
-                        sModOut.all.([varCurr '_path']) = fullfile(sMeta.foldWrtData, varCurr);
+                        sModOut.(ptCurr).([varCurr '_path']) = fullfile(sMeta.foldWrtData, varCurr);
                     end
-                else %Point output:
+                elseif strcmpi(ptCurr,'writegrid')
+                    if ~isfield(sModOut, ptCurr) || isempty(sModOut.(ptCurr))
+                        sModOut.(ptCurr) = struct;
+                            sModOut.(ptCurr).(varLon) = sHydro.(varLon);
+                            sModOut.(ptCurr).(varLat) = sHydro.(varLat);
+                            sModOut.(ptCurr).date = outDate;
+                            sModOut.(ptCurr).indGage = indNNan2d;
+                            sModOut.(ptCurr).fields = cell(0,1);
+                    end
+                    
+                    if regexpbl(varCurr, 'mb') %Initialize gridded mass balance (uses start and end dates)
+                        varMbDateStrt = [varCurr '_dateStart'];
+                        varMbDateEnd  = [varCurr '_dateEnd'];
+
+                        %Assign mb dates:
+                        [sModOut.(ptCurr).(varMbDateStrt), sModOut.(ptCurr).(varMbDateEnd)] = glac_measurement_dates(datesUse, 'dateGlac', sMeta);
+                    end
+                    
+                    %Add variable to list:
+                    sModOut.(ptCurr).fields{end+1} = varCurr;
+                    %If being written to file, add path:
+                    if sMeta.wrtGridOut == 1 && ~regexpbl(sMeta.runType,'calib')
+                        sModOut.(ptCurr).([varCurr '_path']) = fullfile(sMeta.foldWrtData, varCurr);
+                    end
+                elseif regexpbl(ptCurr, 'pt') %Point output:
                     ptWrtCurr = ['pt' num2str(ptCurr)];
                     
                     %Check that the point is inside the current domain:
@@ -233,6 +261,14 @@ else
                         sModOut.(ptWrtCurr).iceLat = sCryo.iceLat(rIce);
                         sModOut.(ptWrtCurr).indIce = indIce;
                     end
+                else
+                    if isnumeric(ptCurr)
+                        ptErr = num2str(ptCurr);
+                    else
+                        ptErr = ptCurr;
+                    end
+                        
+                    error('print_model_State:wrtType',['Model output location/option ' ptErr ' not programmed for.']);
                 end
             end
         end
@@ -255,6 +291,12 @@ else
         %Current point:
         ptWrtCurr = locOut{kk};
         
+        %Check if pt is number but doesn't have 'pt' in front:
+        if isnumeric(ptWrtCurr) && ptWrtCurr < numel(sHydro.dem)
+            ptWrtCurr = ['pt' num2str(ptWrtCurr)];
+            %sMeta.output{sMeta.siteCurr}{kk,3}{ll} = ptWrtCurr;
+        end
+        
         for ll = 1 : numel(fldsOut{kk}) %Loop over data fields for current grid point
             nmCurr = char(fldsOut{kk}{ll});
                         
@@ -264,7 +306,7 @@ else
             %CALCULATE INDICES AND EXTRACT MODELED DATA
             if any(strcmpi(fldsLand, nmCurr)) %INFORMATION IN "sLand"
                 %Extract information:
-                if strcmpi(ptWrtCurr, 'all') 
+                if strcmpi(ptWrtCurr, 'all') || strcmpi(ptWrtCurr, 'writegrid')
                     print_model_grid(sLand, nmCurr, ptWrtCurr, ...
                         indTsPrintCurr, sMeta, sHydro.(varLon), sHydro.(varLat));
                 else
@@ -274,7 +316,7 @@ else
                 
             elseif any(strcmpi(fldsAtm, nmCurr)) %INFORMATION IN "sAtm"
                 %Extract information:
-                if strcmpi(ptWrtCurr, 'all') 
+                if strcmpi(ptWrtCurr, 'all') || strcmpi(ptWrtCurr, 'writegrid') 
                     print_model_grid(sAtm, nmCurr, ptWrtCurr, ...
                         indTsPrintCurr, sMeta, sHydro.(varLon), sHydro.(varLat));
                 else
@@ -361,14 +403,14 @@ else
                 %Extract information:
                 switch nmCurr 
                     case varStake %fieldObsCurr = {'icdwe','sndwe'}
-                        if strcmpi(ptWrtCurr, 'all')
+                        if strcmpi(ptWrtCurr, 'all') || strcmpi(ptWrtCurr, 'writegrid')
                             warning('print_model_state:stakeAllGrid', 'The glacier stake observations are expected at a single point. An entire grid has not been programmed for.');
                         else
                             print_model_pt(sCryo.icdwe + sCryo.sndwe, nmCurr, ptWrtCurr, ...
                                 indTsPrintCurr, sHydro.area, indGageCurr, indAreaCurr, sMeta);
                         end
                     case varGeodetic
-                        if strcmpi(ptWrtCurr, 'all')
+                        if strcmpi(ptWrtCurr, 'all') || strcmpi(ptWrtCurr, 'writegrid')
                             fldTemp = nan(szMain, 'single');
                             fldTemp(indNNan2d) = sCryo.icdwe(indNNan2d) + sCryo.sndwe(indNNan2d);
                             sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:) = fldTemp;
@@ -450,7 +492,7 @@ else
                             end
                         end
                     otherwise
-                        if strcmpi(ptWrtCurr, 'all')
+                        if strcmpi(ptWrtCurr, 'all') || strcmpi(ptWrtCurr, 'writegrid')
                             print_model_grid(sCryo, nmCurr, ptWrtCurr, ...
                                 indTsPrintCurr, sMeta, sHydro.(varLon), sHydro.(varLat));
                         else
@@ -474,14 +516,14 @@ else
                         %Find date to write to:
                         varMbDateStrt = [fldMb '_dateStart'];
                         varMbDateEnd  = [fldMb   '_dateEnd'];
-                        keyboard
+                        
                         %Record mass balance if date corresponds to last day of
                         %mass balance year
                         if isequal(sMeta.dateCurr(2:end), sMeta.dateGlac) && any(sMeta.dateCurr(1) == sModOut.(ptWrtCurr).(varMbDateEnd)(:,1))
                             %Find current output mb indice
                             indMbCurr = find(ismember(sModOut.(ptWrtCurr).(varMbDateEnd), sMeta.dateCurr, 'rows'));
                             if ~isempty(indMbCurr)
-                                if strcmpi(ptWrtCurr, 'all')
+                                if strcmpi(ptWrtCurr, 'all') || strcmpi(ptWrtCurr, 'writegrid')
                                     fldTemp = nan(szMain, 'single');
                                     fldTemp(indNNan2d) = sCryo.(fldMb)(indNNan2d);
                                     sModOut.(ptWrtCurr).(nmCurr)(indMbCurr,:,:) = fldTemp;

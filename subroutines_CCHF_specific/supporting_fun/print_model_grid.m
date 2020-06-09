@@ -2,6 +2,7 @@ function print_model_grid(sData, nmCurr, ptWrtCurr, indTsPrintCurr, sMeta, lon, 
 
 global sModOut
 
+
 %Indices that should be used (not set to nan):
 if ~isempty(varargin(:))
     indInGrid2d = varargin{1};
@@ -20,23 +21,51 @@ if isstruct(sData)
         end
 
         if ~isempty(indInGrid2d) %The selected indices to be used (not nan)
-            sModOut.(ptWrtCurr).(nmCurr)(ind2_3d(size(sModOut.(ptWrtCurr).(nmCurr)), indInGrid2d, indTsPrintCurr)) = ...
-                single(squeeze(sData.(nmCurr)(ind2_3d(size(sData.(nmCurr)), indInGrid2d, indInputTsCurr))));
+            if strcmpi(ptWrtCurr, 'all')
+                sModOut.(ptWrtCurr).(nmCurr)(ind2_3d(size(sModOut.(ptWrtCurr).(nmCurr)), indInGrid2d, indTsPrintCurr)) = ...
+                    single(squeeze(sData.(nmCurr)(ind2_3d(size(sData.(nmCurr)), indInGrid2d, indInputTsCurr))));
+            elseif strcmpi(ptWrtCurr, 'writegrid')
+                gridTemp = ...
+                    single(squeeze(sData.(nmCurr)(ind2_3d(size(sData.(nmCurr)), indInGrid2d, indInputTsCurr))));
+            end
         else
-            sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:) = single(squeeze(sData.(nmCurr)(indInputTsCurr,:,:)));
+            if strcmpi(ptWrtCurr, 'all')
+                sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:) = single(squeeze(sData.(nmCurr)(indInputTsCurr,:,:)));
+            elseif strcmpi(ptWrtCurr, 'writegrid')
+                gridTemp = single(squeeze(sData.(nmCurr)(indInputTsCurr,:,:)));
+            end
         end
     else
         if ~isempty(indInGrid2d) %The selected indices to be used (not nan)
-            sModOut.(ptWrtCurr).(nmCurr)(ind2_3d(size(sModOut.(ptWrtCurr).(nmCurr)),indInGrid2d,indTsPrintCurr)) = single(sData.(nmCurr)(indInGrid2d));
+            if strcmpi(ptWrtCurr, 'all')
+                sModOut.(ptWrtCurr).(nmCurr)(ind2_3d(size(sModOut.(ptWrtCurr).(nmCurr)),indInGrid2d,indTsPrintCurr)) = single(sData.(nmCurr)(indInGrid2d));
+            elseif strcmpi(ptWrtCurr, 'writegrid')
+                gridTemp = single(sData.(nmCurr)(indInGrid2d));
+            end
+            
         else
-            sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:) = single(sData.(nmCurr));
+            if strcmpi(ptWrtCurr, 'all')
+                sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:) = single(sData.(nmCurr));
+            elseif strcmpi(ptWrtCurr, 'writegrid')
+                gridTemp = single(sData.(nmCurr));
+            end
         end
     end
 elseif isnumeric(sData) && ismatrix(sData)
     if ~isempty(indInGrid2d) %The selected indices to be used (not nan)
-        sModOut.(ptWrtCurr).(nmCurr)(ind2_3d(size(sModOut.(ptWrtCurr).(nmCurr)),indInGrid2d,indTsPrintCurr)) = single(sData(indInGrid2d));
+        if strcmpi(ptWrtCurr, 'all')
+            sModOut.(ptWrtCurr).(nmCurr)(ind2_3d(size(sModOut.(ptWrtCurr).(nmCurr)),indInGrid2d,indTsPrintCurr)) = single(sData(indInGrid2d));
+        elseif strcmpi(ptWrtCurr, 'writegrid')
+            gridTemp = single(sData(indInGrid2d));
+        end
+        
     else
-        sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:) = single(sData);
+        if strcmpi(ptWrtCurr, 'all')
+            sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:) = single(sData);
+        elseif strcmpi(ptWrtCurr, 'writegrid')
+            gridTemp = single(sData);
+        end
+        
     end
 else
     error('printModelGrid:numericArray3d','The input data is a numeric array with 3 dim. Numeric arrays must only have 2 dim.')
@@ -58,5 +87,9 @@ if isfield(sModOut.(ptWrtCurr), [char(nmCurr) '_path'])
     pathWrt = fullfile(foldWrt, fileWrt);
     
     %Write file
-    print_grid_NC_v2(pathWrt, squeeze(sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:)), nmCurr, lon, lat, sMeta.dateCurr, sMeta.dateCurr, 1);
+    if strcmpi(ptWrtCurr, 'all')
+        print_grid_NC_v2(pathWrt, squeeze(sModOut.(ptWrtCurr).(nmCurr)(indTsPrintCurr,:,:)), nmCurr, lon, lat, sMeta.dateCurr, sMeta.dateCurr, 1);
+    else
+        print_grid_NC_v2(pathWrt, gridTemp, nmCurr, lon, lat, sMeta.dateCurr, sMeta.dateCurr, 1);
+    end
 end

@@ -346,7 +346,7 @@ for ii = 1 : numel(namesObs)
             for kk = 1 : numel(fieldNotOutCurr)
                 if isnumeric(lonCurr) && isnumeric(latCurr)
                     output(end+1,1:2) = {char(fieldNotOutCurr{kk}), [lonCurr, latCurr]};
-                elseif strcmpi(lonCurr,'avg') || strcmpi(lonCurr,'all')
+                elseif strcmpi(lonCurr,'avg') || strcmpi(lonCurr,'all') || strcmpi(lonCurr,'writegrid')
                     output(end+1,1:2) = {fieldNotOutCurr{kk}, {lonCurr}};
                 end
             end
@@ -369,6 +369,8 @@ for ii = 1 : numel(namesObs)
                         output{indOut(kk),2} = [output{indOut(kk),2}; {'avg'}];
                     elseif strcmpi(lonCurr,'all')
                         output{indOut(kk),2} = [output{indOut(kk),2}; {'all'}];
+                    elseif strcmpi(lonCurr,'writegrid')
+                        output{indOut(kk),2} = [output{indOut(kk),2}; {'writegrid'}];
                     end
                elseif ischar(output{indOut(kk),2})
                     if isnumeric(lonCurr) && isnumeric(latCurr)
@@ -377,6 +379,8 @@ for ii = 1 : numel(namesObs)
                         output{indOut(kk),2} = {output{indOut(kk),2}; 'avg'};
                     elseif strcmpi(lonCurr,'all')
                         output{indOut(kk),2} = [output{indOut(kk),2}; {'all'}];
+                    elseif strcmpi(lonCurr,'writegrid')
+                        output{indOut(kk),2} = [output{indOut(kk),2}; {'writegrid'}];
                     end
                elseif iscell(output{indOut(kk),2})
                     if isnumeric(lonCurr) && isnumeric(latCurr)
@@ -385,6 +389,8 @@ for ii = 1 : numel(namesObs)
                         sameCrd = cellfun(@(x) any(strcmpi('avg', x)), output{indOut(kk),2});
                     elseif strcmpi(lonCurr,'all')
                         sameCrd = cellfun(@(x) any(strcmpi('all', x)), output{indOut(kk),2});
+                    elseif strcmpi(lonCurr,'writegrid')
+                        sameCrd = cellfun(@(x) any(strcmpi('writegrid', x)), output{indOut(kk),2});
                     end
 
                    %Check if point already exists in array:
@@ -395,6 +401,8 @@ for ii = 1 : numel(namesObs)
                             output{indOut(kk),2} = [output{indOut(kk),2}; 'avg'];
                         elseif strcmpi(lonCurr,'all')
                             output{indOut(kk),2} = [output{indOut(kk),2}; 'all'];
+                        elseif strcmpi(lonCurr,'writegrid')
+                            output{indOut(kk),2} = [output{indOut(kk),2}; 'writegrid'];
                         else
                             error('output_all_gage:unknownCrdMarker', ...
                                 ['The longitude marker ' lonCurr ' is not known.']);
@@ -405,8 +413,6 @@ for ii = 1 : numel(namesObs)
         end
     end
 end 
-
-
 
 
 
@@ -433,13 +439,15 @@ for ii = 1 : numel(output(:,1))
                     output{ii,3}{jj} = 'avg';
                 elseif strcmpi(output{ii,2}{jj},{'all'})
                     output{ii,3}{jj} = 'all';
+                elseif strcmpi(output{ii,2}{jj},{'writegrid'})
+                    output{ii,3}{jj} = 'writegrid';
                 end
             end
         end
     elseif isnumeric(output{ii,2})
         output{ii, 3} = cell(numel(output{ii,2}(:,1)),1);
 
-        for jj = 1: numel(output{ii,2}(:,1))
+        for jj = 1 : numel(output{ii,2}(:,1))
             [~, gageRow] = min(abs(output{ii,2}(jj,2)-lat));
             [~, gageCol] = min(abs(output{ii,2}(jj,1)-lon));
             if output{ii,2}(jj,2) > lat(1) + 0.5*abs(diff(lat(1:2))) || output{ii,2}(jj,2) < lat(end) - 0.5*abs(diff(lat(end-1:end))) 
@@ -448,13 +456,15 @@ for ii = 1 : numel(output(:,1))
                 warning('SETI_backbone:gagePtCol','The longitude of the gauge point may be outside the area being modeled.');
             end
 
-            output{ii,3}{jj} = round(sub2ind(szModel, gageRow, gageCol));
+            output{ii,3}{jj} = ['pt' num2str(round(sub2ind(szModel, gageRow, gageCol)))];
         end
     elseif ischar(output{ii,2})
         if regexpbl(output{ii,2},{'avg','mean'})
             output{ii,3}{1} = 'avg';
         elseif strcmpi(output{ii,2},{'all'})
             output{ii,3}{1} = 'all';
+        elseif strcmpi(output{ii,2},{'writegrid'})
+            output{ii,3}{1} = 'writegrid';
         end
     else
         error('output_all_gage:unknownOutputType','Unknown type');
