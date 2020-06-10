@@ -110,3 +110,6 @@ if ~isempty(indIceMlt)
     sCryo.icwe(indIceMlt) = sCryo.icwe(indIceMlt) - sCryo.lhicme(indIceMlt);
         sCryo.icwe(indIceMlt(sCryo.icwe(indIceMlt) < 0)) = 0;
 end
+
+%Set change to nan outside region
+sCryo.icdwe(isnan(sCryo.icx)) = nan;

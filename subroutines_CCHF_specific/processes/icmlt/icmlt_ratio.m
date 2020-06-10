@@ -57,7 +57,7 @@ sCryo.lhicme  = zeros(size(sCryo.snw),'single');
 sCryo.icdwe   = zeros(size(sCryo.snw),'single');
     sCryo.icdwe(isnan(sCryo.icx)) = nan;
 sCryo.iclr    = zeros(size(sCryo.snw),'single'); %Ice liquid release
-    sCryo.iclr(isnan(sCryo.icx)) = nan;
+    
 
 
 %if snowpack has ice field, allow additional melt at those locations:
@@ -108,6 +108,10 @@ if ~isempty(indIceMlt)
     sCryo.icwe(indIceMlt) = sCryo.icwe(indIceMlt) - sCryo.lhicme(indIceMlt);
         sCryo.icwe(indIceMlt(sCryo.icwe(indIceMlt) < 0)) = 0;
 end
+
+%Set change to nan outside region
+sCryo.iclr(isnan(sCryo.icx)) = nan;
+sCryo.icdwe(isnan(sCryo.icx)) = nan;
 
 
 % %Set ice Temp (locations where no snow):

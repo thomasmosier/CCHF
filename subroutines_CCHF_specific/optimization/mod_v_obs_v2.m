@@ -140,9 +140,11 @@ varDate = 'date';
 calUse = 'gregorian';
 dateRef = [1981, 1, 1];
 for ii = 1 : numel(ptsMod)
-    dateCurr = sMod.(ptsMod{ii}).(varDate)(1,:,:);
-    if dateCurr(1) < dateRef(1)
-        dateRef(1) = dateCurr(1);
+    if isfield(sMod.(ptsMod{ii}), varDate)
+        dateCurr = sMod.(ptsMod{ii}).(varDate)(1,:,:);
+        if dateCurr(1) < dateRef(1)
+            dateRef(1) = dateCurr(1);
+        end
     end
 end
 clear ii

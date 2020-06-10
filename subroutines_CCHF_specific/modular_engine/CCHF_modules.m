@@ -65,6 +65,31 @@ if ~regexpbl(sMeta.mode,'parameter') && sMeta.indCurr == 1
 end
 
 
+%Track glacier mass balance
+%Initialize grid to track glacier mass balance:
+if sMeta.indCurr == 1
+    sCryo.icmb = zeros(size(sHydro.dem),'single');
+
+    %Display glacier mass balance date on first iteration
+    if  ~regexpbl(sMeta.mode, 'calib')
+        disp(['Calculating glacier dynamics each year of model run on ' ...
+            num2str(sMeta.dateGlac(1)) '/' num2str(sMeta.dateGlac(2)) '.']);
+    end
+end
+
+
+%Reset mass balance on same day of the year at model start date
+%Note: mass balance is updated daily at the bottom of this script
+%Note: glacier mb calculation dates are based on model start date
+if isequal(sMeta.dateCurr(2:end), sMeta.dateStart{sMeta.siteCurr}(2:end))
+    sCryo.icmb = zeros(size(sHydro.dem),'single');
+    %Record glacier mass balance start date
+    sCryo.icmb_dateStart = sMeta.dateCurr;
+    sCryo.icmb_dateEnd = nan(size(sMeta.dateCurr));
+end
+%See recording of glacier mass balance at the end of this subroutine
+
+
 %PARTITION PRECIPITATION INTO RAIN AND SNOWFALL:
 partMod = find_att(sMeta.module, 'partition', 'no_warning');
 if regexpbl(partMod, 'ramp') 
@@ -589,33 +614,9 @@ end
 %FUNCTIONS TO ONLY BE IMPLEMENTED IF GLACIER OUTLINES PRESENT AND GLACIER
 %DYNAMICS ON
 if ~strcmpi(sMeta.iceGrid, 'none') && sMeta.glacierDynamics == 1   
-    %Initialize grid to track glacier mass balance:
-    if sMeta.indCurr == 1
-        sCryo.icmb = zeros(size(sHydro.dem),'single');
-        
-        %Display glacier mass balance date on first iteration
-        if  ~regexpbl(sMeta.mode, 'calib')
-            disp(['Calculating glacier dynamics each year of model run on ' ...
-                num2str(sMeta.dateGlac(1)) '/' num2str(sMeta.dateGlac(2)) '.']);
-        end
-    end
-    
-    
-    %Reset mass balance on same day of the year at model start date
-    %Note: mass balance is updated daily at the bottom of this script
-    if isequal(sMeta.dateCurr(2:end), sMeta.dateStart{sMeta.siteCurr}(2:end))
-        sCryo.icmb = zeros(size(sHydro.dem),'single');
-        %Record glacier mass balance start date
-        sCryo.icmb_dateStart = sMeta.dateCurr;
-        sCryo.icmb_dateEnd = nan(size(sMeta.dateCurr));
-    end
-    
-    
+
     %On 365th day of each year (or when in parameter mode):
     if isequal(sMeta.dateCurr(2:end), sMeta.dateGlac) || regexpbl(sMeta.mode,'parameter')
-        %Record end date:
-        sCryo.icmb_dateEnd = sMeta.dateCurr;
-        
         %Translates changes calculated over main grid to changes calculated
         %over ice grid:
             %(1) Translate main-grid mass balance to fine-scale grid and
@@ -660,10 +661,19 @@ if ~strcmpi(sMeta.iceGrid, 'none') && sMeta.glacierDynamics == 1
     %Enforce physical constraints
     sCryo.icx( sCryo.icx  < 0) = 0;
     sCryo.icwe(sCryo.icwe < 0) = 0;
+end
+
+
+%At end of each time step, record changes in mass balance at main grid (the main 
+%grid mass balance is then translated to the glacier grid once per year):
+sCryo.icmb = sCryo.icmb + sCryo.icdwe;
     
-    %At end of each time step, record changes in mass balance at main grid (the main 
-    %grid mass balance is then translated to the glacier grid once per year):
-    sCryo.icmb = sCryo.icmb + sCryo.icdwe;
+
+%Record end date of glacier glacier mass balance on the last day
+%of the year
+if isequal(sMeta.dateCurr(2:end), sMeta.dateGlac)
+    %Record end date:
+    sCryo.icmb_dateEnd = sMeta.dateCurr;
 end
 
 

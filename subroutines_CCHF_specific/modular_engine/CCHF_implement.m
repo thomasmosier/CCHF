@@ -996,26 +996,27 @@ if numel(sOutput) == nSites
             mkdir(dirModPlots);
         pathOutRt = fullfile(dirModPlots,'model');
 
-        %Plot output
-        plot_CCHF(sOutput{mm}, {'flow'}, sMeta, [pathOutRt '_flow'], strDispOut);
-        plot_CCHF(sOutput{mm}, {'flow','pr'}, sMeta, [pathOutRt '_flow_pr'], strDispOut);
-        % plot_CCHF(sOutput{mm}, {'et','pet'}, sMeta, [pathOutRt '_ET'], strDispOut);
-        plot_CCHF(sOutput{mm}, {'hfnet','hfrs', 'hfrl', 'hft','hfcp', 'hfgc', 'hfsnc'}, sMeta, [pathOutRt '_heat_components'],'avg', strDispOut);
-        % plot_CCHF(sOutput{mm}, {'prsn','rain','et','mrro'}, sMeta, [pathOutRt '_inVsOut'],'avg', strDispOut);  
-        % plot_CCHF(sOutput{mm}, {'prsn','swe','sndwe','rain','mrro','icdwe'}, sMeta, [pathOutRt '_inVsOut'],'avg', strDispOut);
-        plot_CCHF(sOutput{mm}, {'rain','snlr','iclr','mrro'}, sMeta, [pathOutRt '_inVsOut'],'avg', strDispOut);
-        plot_CCHF(sOutput{mm}, {'snlr','rnrf','iclr'}, sMeta, [pathOutRt '_water_release'],'avg', strDispOut);
-        % plot_CCHF(sOutput{mm}, {'sndwe','icdwe'}, sMeta, [pathOutRt '_cryoChange'], strDispOut);
-        plot_CCHF(sOutput{mm}, {'snw','snlw','sndwe'}, sMeta, [pathOutRt '_snw'], strDispOut);
-        plot_CCHF(sOutput{mm}, {'snw','sncc'}, sMeta, [pathOutRt '_snow_coldcontent'], strDispOut);
-        % plot_CCHF(sOutput{mm}, {'icdwe'}, sMeta, [pathOutRt '_dIce'], strDispOut);
-        % plot_CCHF(sOutput{mm}, {'snw'}, sMeta, [pathOutRt '_snowpack'], strDispOut);
-        % plot_CCHF(sOutput{mm}, {'sww','lwsnl','snlh','snlr','iclr','lhpme','rnrf'}, sMeta, [pathOutRt '_snowpack'],'avg', strDispOut);
-        plot_CCHF(sOutput{mm}, {'lwsnl','snlh','snlr','iclr','lhpme','sndwe'}, sMeta, [pathOutRt '_snowpack'],'avg', strDispOut);
-        plot_CCHF(sOutput{mm}, {'tas','tsis','tsn'}, sMeta, [pathOutRt '_temperature'], strDispOut);
-        plot_CCHF(sOutput{mm}, {'prsn','rain'}, sMeta, [pathOutRt '_rain'], strDispOut);
-        plot_CCHF(sOutput{mm}, {'albRedTop','albRedIce'}, sMeta, [pathOutRt '_bcalbedo_impact'], strDispOut);
-        plot_CCHF(sOutput{mm}, {'albedoS', 'albedoI'}, sMeta, [pathOutRt '_albedo'], strDispOut);
+
+%         %Plot output
+%         plot_CCHF(sOutput{mm}, {'flow'}, sMeta, [pathOutRt '_flow'], strDispOut);
+%         plot_CCHF(sOutput{mm}, {'flow','pr'}, sMeta, [pathOutRt '_flow_pr'], strDispOut);
+%         % plot_CCHF(sOutput{mm}, {'et','pet'}, sMeta, [pathOutRt '_ET'], strDispOut);
+%         plot_CCHF(sOutput{mm}, {'hfnet','hfrs', 'hfrl', 'hft','hfcp', 'hfgc', 'hfsnc'}, sMeta, [pathOutRt '_heat_components'],'avg', strDispOut);
+%         % plot_CCHF(sOutput{mm}, {'prsn','rain','et','mrro'}, sMeta, [pathOutRt '_inVsOut'],'avg', strDispOut);  
+%         % plot_CCHF(sOutput{mm}, {'prsn','swe','sndwe','rain','mrro','icdwe'}, sMeta, [pathOutRt '_inVsOut'],'avg', strDispOut);
+%         plot_CCHF(sOutput{mm}, {'rain','snlr','iclr','mrro'}, sMeta, [pathOutRt '_inVsOut'],'avg', strDispOut);
+%         plot_CCHF(sOutput{mm}, {'snlr','rnrf','iclr'}, sMeta, [pathOutRt '_water_release'],'avg', strDispOut);
+%         % plot_CCHF(sOutput{mm}, {'sndwe','icdwe'}, sMeta, [pathOutRt '_cryoChange'], strDispOut);
+%         plot_CCHF(sOutput{mm}, {'snw','snlw','sndwe'}, sMeta, [pathOutRt '_snw'], strDispOut);
+%         plot_CCHF(sOutput{mm}, {'snw','sncc'}, sMeta, [pathOutRt '_snow_coldcontent'], strDispOut);
+%         % plot_CCHF(sOutput{mm}, {'icdwe'}, sMeta, [pathOutRt '_dIce'], strDispOut);
+%         % plot_CCHF(sOutput{mm}, {'snw'}, sMeta, [pathOutRt '_snowpack'], strDispOut);
+%         % plot_CCHF(sOutput{mm}, {'sww','lwsnl','snlh','snlr','iclr','lhpme','rnrf'}, sMeta, [pathOutRt '_snowpack'],'avg', strDispOut);
+%         plot_CCHF(sOutput{mm}, {'lwsnl','snlh','snlr','iclr','lhpme','sndwe'}, sMeta, [pathOutRt '_snowpack'],'avg', strDispOut);
+%         plot_CCHF(sOutput{mm}, {'tas','tsis','tsn'}, sMeta, [pathOutRt '_temperature'], strDispOut);
+%         plot_CCHF(sOutput{mm}, {'prsn','rain'}, sMeta, [pathOutRt '_rain'], strDispOut);
+%         plot_CCHF(sOutput{mm}, {'albRedTop','albRedIce'}, sMeta, [pathOutRt '_bcalbedo_impact'], strDispOut);
+%         plot_CCHF(sOutput{mm}, {'albedoS', 'albedoI'}, sMeta, [pathOutRt '_albedo'], strDispOut);
         % plot_CCHF(sOutput{mm}, 'flow', sMeta, [pathOutRt '_flowrate'], strDispOut);
     end
     clear mm

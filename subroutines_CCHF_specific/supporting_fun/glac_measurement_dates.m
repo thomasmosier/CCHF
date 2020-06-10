@@ -6,7 +6,7 @@ indMbEnd = [];
 unqYrs = unique(datesUse(:,1));
 for zz = 1 : numel(unqYrs)
     indMbStrtTemp = find(ismember(datesUse, [unqYrs(zz)-1, sMeta.(datesFld)], 'rows')) + 1;
-    indMbEndTemp  = find(ismember(datesUse, [unqYrs(zz), sMeta.(datesFld)(1,:)], 'rows'));
+    indMbEndTemp  = find(ismember(datesUse, [unqYrs(zz)  , sMeta.(datesFld)(1,:)], 'rows'));
 
     %Colllect dates during years containing both a
     %start and an end for mb:

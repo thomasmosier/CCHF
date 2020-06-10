@@ -83,6 +83,8 @@ if ~isempty(indIceMlt)
 end
 
 
+%Set change to nan outside region
+sCryo.icdwe(isnan(sCryo.icx)) = nan;
 
 % %Set ice Temp (locations where no snow):
 % sCryo.tic(sCryo.icx ~= 0 & sCryo.snw == 0) = 0;

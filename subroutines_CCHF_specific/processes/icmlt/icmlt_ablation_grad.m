@@ -119,3 +119,6 @@ if isequal(sMeta.dateRun(indDtCurr(end),2:end), sMeta.dateCurr(2:end))
             sCryo.icwe(indIceMlt(sCryo.icwe(indIceMlt) < 0)) = 0;
     end
 end
+
+%Set change to nan outside region
+sCryo.icdwe(isnan(sCryo.icx)) = nan;

@@ -346,7 +346,7 @@ for ii = 1 : numel(namesObs)
             for kk = 1 : numel(fieldNotOutCurr)
                 if isnumeric(lonCurr) && isnumeric(latCurr)
                     output(end+1,1:2) = {char(fieldNotOutCurr{kk}), [lonCurr, latCurr]};
-                elseif strcmpi(lonCurr,'avg') || strcmpi(lonCurr,'all') || strcmpi(lonCurr,'writegrid')
+                elseif strcmpi(lonCurr,'avg') || strcmpi(lonCurr,'all') || strcmpi(lonCurr,'writegrid') || strcmpi(lonCurr,'annualgrid') 
                     output(end+1,1:2) = {fieldNotOutCurr{kk}, {lonCurr}};
                 end
             end
@@ -369,8 +369,10 @@ for ii = 1 : numel(namesObs)
                         output{indOut(kk),2} = [output{indOut(kk),2}; {'avg'}];
                     elseif strcmpi(lonCurr,'all')
                         output{indOut(kk),2} = [output{indOut(kk),2}; {'all'}];
-                    elseif strcmpi(lonCurr,'writegrid')
-                        output{indOut(kk),2} = [output{indOut(kk),2}; {'writegrid'}];
+%                     elseif strcmpi(lonCurr,'writegrid')
+%                         output{indOut(kk),2} = [output{indOut(kk),2}; {'writegrid'}];
+%                     elseif strcmpi(lonCurr, 'annualgrid')
+%                         output{indOut(kk),2} = [output{indOut(kk),2}; {'annualgrid'}];
                     end
                elseif ischar(output{indOut(kk),2})
                     if isnumeric(lonCurr) && isnumeric(latCurr)
@@ -379,8 +381,10 @@ for ii = 1 : numel(namesObs)
                         output{indOut(kk),2} = {output{indOut(kk),2}; 'avg'};
                     elseif strcmpi(lonCurr,'all')
                         output{indOut(kk),2} = [output{indOut(kk),2}; {'all'}];
-                    elseif strcmpi(lonCurr,'writegrid')
-                        output{indOut(kk),2} = [output{indOut(kk),2}; {'writegrid'}];
+%                     elseif strcmpi(lonCurr,'writegrid')
+%                         output{indOut(kk),2} = [output{indOut(kk),2}; {'writegrid'}];
+%                     elseif strcmpi(lonCurr,'annualgrid')
+%                         output{indOut(kk),2} = [output{indOut(kk),2}; {'annualgrid'}];
                     end
                elseif iscell(output{indOut(kk),2})
                     if isnumeric(lonCurr) && isnumeric(latCurr)
@@ -389,8 +393,10 @@ for ii = 1 : numel(namesObs)
                         sameCrd = cellfun(@(x) any(strcmpi('avg', x)), output{indOut(kk),2});
                     elseif strcmpi(lonCurr,'all')
                         sameCrd = cellfun(@(x) any(strcmpi('all', x)), output{indOut(kk),2});
-                    elseif strcmpi(lonCurr,'writegrid')
-                        sameCrd = cellfun(@(x) any(strcmpi('writegrid', x)), output{indOut(kk),2});
+%                     elseif strcmpi(lonCurr,'writegrid')
+%                         sameCrd = cellfun(@(x) any(strcmpi('writegrid', x)), output{indOut(kk),2});
+%                     elseif strcmpi(lonCurr,'annualgrid')
+%                         sameCrd = cellfun(@(x) any(strcmpi('annualgrid', x)), output{indOut(kk),2});
                     end
 
                    %Check if point already exists in array:
@@ -401,8 +407,10 @@ for ii = 1 : numel(namesObs)
                             output{indOut(kk),2} = [output{indOut(kk),2}; 'avg'];
                         elseif strcmpi(lonCurr,'all')
                             output{indOut(kk),2} = [output{indOut(kk),2}; 'all'];
-                        elseif strcmpi(lonCurr,'writegrid')
-                            output{indOut(kk),2} = [output{indOut(kk),2}; 'writegrid'];
+%                         elseif strcmpi(lonCurr,'writegrid')
+%                             output{indOut(kk),2} = [output{indOut(kk),2}; 'writegrid'];
+%                         elseif strcmpi(lonCurr,'annualgrid')
+%                             output{indOut(kk),2} = [output{indOut(kk),2}; 'annualgrid'];
                         else
                             error('output_all_gage:unknownCrdMarker', ...
                                 ['The longitude marker ' lonCurr ' is not known.']);
@@ -441,6 +449,8 @@ for ii = 1 : numel(output(:,1))
                     output{ii,3}{jj} = 'all';
                 elseif strcmpi(output{ii,2}{jj},{'writegrid'})
                     output{ii,3}{jj} = 'writegrid';
+                elseif strcmpi(output{ii,2}{jj},{'annualgrid'})
+                    output{ii,3}{jj} = 'annualgrid';
                 end
             end
         end
@@ -465,6 +475,8 @@ for ii = 1 : numel(output(:,1))
             output{ii,3}{1} = 'all';
         elseif strcmpi(output{ii,2},{'writegrid'})
             output{ii,3}{1} = 'writegrid';
+        elseif strcmpi(output{ii,2},{'annualgrid'})
+            output{ii,3}{1} = 'annualgrid';
         end
     else
         error('output_all_gage:unknownOutputType','Unknown type');

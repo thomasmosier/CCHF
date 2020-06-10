@@ -177,7 +177,13 @@ for ii = numel(indFieldsPlot) : -1 : 1
                 dataPlot{ii} = dataPlot{ii}(:,jj+1:end);
             end
         else
-            dataPlot{ii}(:,jj) = sData.(char(fldsData(indFieldsPlot{ii}(jj)))).(fieldsPlot{ii});
+            temp = sData.(char(fldsData(indFieldsPlot{ii}(jj)))).(fieldsPlot{ii})(:);
+            if isequal(size(temp), [size(vecTsPts)])
+                dataPlot{ii}(:,jj) = temp;
+            else
+                warning('plotCCHF:diffArraySize','No output plot is being created because the outputs are different sizes.');
+                return
+            end
         end
     end
 end
