@@ -1346,7 +1346,7 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                     dateBndsOut = days_2_date_v2(daysBndsTemp, dateRef, calUse);
                 elseif regexpbl(wrtGridTyp, 'asc')
                     extWrt = 'asc';
-                else
+                elseif ~isempty(wrtGridTyp)
                     error('modVObs:unknownWrtTyp', ['The write type ' wrtGridTyp ' has not been programmed for.'])
                 end
 
