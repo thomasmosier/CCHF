@@ -18,7 +18,7 @@ if strcmpi(ptWrtCurr,'annualgrid')
 %         disp(['resetting on ' num2str(sMeta.dateCurr(1)) '/' num2str(sMeta.dateCurr(2))]);
         nDays = days_since(sModOut.(ptWrtCurr).([nmCurr '_dateStart'])(indDateCurr,:), ...
             sModOut.(ptWrtCurr).([nmCurr '_dateEnd'])(indDateCurr,:), 'gregorian') + 1;
-        sModOut.(ptWrtCurr).(nmCurr) = nan([nDays, numel(lat), numel(lon)]);
+        sModOut.(ptWrtCurr).(nmCurr) = nan([nDays, numel(lat), numel(lon)], 'single');
         
         %Reset cntr:
         sModOut.(ptWrtCurr).([nmCurr '_cntr']) = 0;
@@ -121,12 +121,12 @@ if isfield(sModOut.(ptWrtCurr), [char(nmCurr) '_path'])
 %             if strcmpi(nmCurr, 'icdwe')
 %                 keyboard
 %             end
-            grdSum = squeeze(sum(sModOut.(ptWrtCurr).(nmCurr), 1));
-            signTest = sign(grdSum);
+            grdSum = single(squeeze(sum(sModOut.(ptWrtCurr).(nmCurr), 1)));
+            signTest = single(sign(grdSum));
             if numel(signTest == 1) > numel(signTest == -1)
-                [grdMax, grdDOY] = max(sModOut.(ptWrtCurr).(nmCurr), [], 1);
+                [grdMax, grdDOY] = max(single(sModOut.(ptWrtCurr).(nmCurr)), [], 1);
             else
-                [grdMax, grdDOY] = min(sModOut.(ptWrtCurr).(nmCurr), [], 1);
+                [grdMax, grdDOY] = min(single(sModOut.(ptWrtCurr).(nmCurr)), [], 1);
             end
                 grdDOY = squeeze(grdDOY);
                 grdMax = squeeze(grdMax);
