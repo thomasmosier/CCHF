@@ -612,8 +612,8 @@ for mm = 1 : nSites
         
         %%SAVE MODEL STATE
         if sMeta.blSaveState == 1 && ~strcmpi(sMeta.mode, 'parameter') && ~regexpbl(sMeta.runType, 'calibrate')
-            if isequal(sMeta.dateCurr, sMeta.dateStart{mm} + [5, zeros(1,numel(sMeta.dateStart{mm})-1)]) || ii == nTS
-                fileSaveStateExt = [date_2_string(sMeta.dateEnd{mm}) '.mat'];
+            if (isequal(sMeta.dateCurr(2:end), sMeta.dateStart{mm}(2:end)) && mod(sMeta.dateCurr(1) - sMeta.dateStart{mm}(1), 5) == 0 && sMeta.dateCurr(1) > sMeta.dateStart{mm}(1)) || ii == nTS
+                fileSaveStateExt = [date_2_string(sMeta.dateCurr) '.mat'];
                 pathSaveState = fullfile(sPath{mm}.output, [fileSaveStateRt, fileSaveStateExt]);
 
                 if ~exist(sPath{mm}.output, 'dir')
@@ -631,7 +631,7 @@ for mm = 1 : nSites
                 save(pathSaveState, 'sAtm', 'sCryo', 'sLand', 'sObs', '-v7.3');
 
                 disp(['Model state for ' sMeta.region{mm} ' corresponding to ' ...
-                date_2_string(sMeta.dateEnd{mm}) ' has been saved to ' pathSaveState]);
+                date_2_string(sMeta.dateCurr) ' has been saved to ' pathSaveState]);
             end
         end
     end %End of time loop
