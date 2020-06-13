@@ -1251,6 +1251,10 @@ if flagPlot == 1 && numel(dataAll(:,1)) ~= 0
                         
                         cLim = max2d(abs(dataPlot));
                         cLim(cLim > 200) = 100;
+                        if isnan(cLim)
+                            warning('modVObs:noClrLmt', ['Mod v Obs plot for ' varCurr ' is being skipped because all data for the plot is nan.']);
+                           continue 
+                        end
                         
 %                         dataPlot(isnan(dataPlot)) = cLim + 0.1*cLim;
                         if all(~isnan(lon)) && all(~isnan(lat))
