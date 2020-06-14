@@ -334,7 +334,6 @@ for ii = 1 : nSites
 
     %Create unique 'main' output directory based upon inputs:
     if ii == 1   
-
         %Load folder of previous calibration run that was interrupted
         if regexpbl(sMeta.runType, {'calib','resume'}, 'and')
             if isempty(sMeta.pathresume)
@@ -352,7 +351,8 @@ for ii = 1 : nSites
                 sPath{ii}.resume = pathResume;
             end
         end
-
+        
+        %Load output directory from previous run
         if isfield(sPath{ii},'resume')
             foldOutputMain = sPath{ii}.resume;
             [~, sMeta.strModule] = CCHF_out_dir(sPath{ii}, sMeta);
@@ -360,10 +360,13 @@ for ii = 1 : nSites
             [foldOutputMain, sMeta.strModule] = CCHF_out_dir(sPath{ii}, sMeta);
         end
 
-        if~exist(foldOutputMain, 'dir')
+        %Make directory
+        if ~exist(foldOutputMain, 'dir')
            mkdir(foldOutputMain); 
         end
     end
+    
+    %Set output directory in sPath
     sPath{ii}.outputMain = foldOutputMain;
     sPath{ii}.output = fullfile(sPath{ii}.outputMain, sMeta.region{ii});
 
