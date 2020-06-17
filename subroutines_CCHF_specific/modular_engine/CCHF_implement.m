@@ -418,7 +418,8 @@ for ii = 1 : nSites
     elseif ~regexpbl(sMeta.runType,{'calibrat','validat','default'}) && blNewLoad == 0
         pathGage{ii} = cell(0,1);
     else
-        if isempty(pathGage{ii}(:))
+        pathGage{ii} = cell(0,1);
+        if isempty(pathGage{ii}(:)) && ~regexpbl(sMeta.runType, 'simulat')
             error('cchfImplement:runTypeObsData',['The CCHF run type is ' sMeta.runType ...
                 ', which expects observation data for model assessment, but no path to observation data was provided.']);
         end
