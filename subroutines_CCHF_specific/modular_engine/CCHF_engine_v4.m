@@ -296,15 +296,20 @@ for mm = 1 : nSites
                 disp('The global variables sAtm, sCryo, sLand, and sObs have been loaded from this location.');
                 
                 %Check for time consistency
-                dateLast = sAtm.datepr(end,:);
-                dateCurr = sMeta.dateStart{mm};
-                dayGap = days_since(dateLast, dateCurr, 'gregorian');
-                
-                if dayGap ~= 1
-                   warning('cchfEngine:runResumeDateGap', ['The ' char(39) 'simulate_resume'  ...
-                       char(39) ' run type is being used, but there is a ' ...
-                       'gap between the end of the previous run (' date_2_string(dateLast) ...
-                       ') and the start of the current run  (' date_2_string(dateCurr) ').']); 
+                if isfield(sAtm, 'datepr')
+                    dateLast = sAtm.datepr(end,:);
+                    dateCurr = sMeta.dateStart{mm};
+                    dayGap = days_since(dateLast, dateCurr, 'gregorian');
+
+                    if dayGap ~= 1
+                       warning('cchfEngine:runResumeDateGap', ['The ' char(39) 'simulate_resume'  ...
+                           char(39) ' run type is being used, but there is a ' ...
+                           'gap between the end of the previous run (' date_2_string(dateLast) ...
+                           ') and the start of the current run  (' date_2_string(dateCurr) ').']); 
+                    end
+                else
+                    disp(['Run resume: There is not previous sAtm structure, '...
+                        'so the gap between the previous and current runs is unknown.']);
                 end
                 
                 %Clear sAtm because there are no state variables that are
