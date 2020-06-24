@@ -319,13 +319,22 @@ if ~isempty(dateCurr) && ~all(isnan(dateCurr))
             [units, rowUnit] = NC_units(sDataCurr.attData);
             
             if isfield(sDataCurr,'var') && regexpbl(sDataCurr.var,{'pr'}) %Convert pre units to meters
-                if strcmpi(units,'mm') 
+                if strcmpi(units, 'mm') 
                     sDataCurr.attData{rowUnit,2} = 'm';
                     sDataCurr.data = sDataCurr.data / 1000;
-                elseif strcmpi(units,'mm/month') 
-                    if regexpbl(sMeta.dt,'month')
+                elseif strcmpi(units, 'mm/month') 
+                    if regexpbl(sMeta.dt, 'month')
                         sDataCurr.attData{rowUnit,2} = 'm';
                         sDataCurr.data = sDataCurr.data / 1000;
+                    else
+                        error('month_load:preUnitsMnth',['The precipitation units are ' units ' and the model time step is ' sMeta.dt '. This time mismatch has not been programmed for.']) 
+                    end
+                elseif strcmpi(units, 'mm/day')
+                    if regexpbl(sMeta.dt, {'day','daily'})
+                        sDataCurr.attData{rowUnit,2} = 'm';
+                        sDataCurr.data = sDataCurr.data / 1000;
+                    else
+                        error('month_load:preUnitsDay',['The precipitation units are ' units ' and the model time step is ' sMeta.dt '. This time mismatch has not been programmed for.']) 
                     end
                 elseif ~strcmpi(units,'m')
                    error('month_load:preUnits',['The precipitation units are ' units ', which have not been coded for.']) 
