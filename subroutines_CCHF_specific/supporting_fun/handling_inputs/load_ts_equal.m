@@ -340,7 +340,7 @@ if ~isempty(dateCurr) && ~all(isnan(dateCurr))
                    error('month_load:preUnits',['The precipitation units are ' units ', which have not been coded for.']) 
                 end    
             elseif isfield(sDataCurr,'var') && regexpbl(sDataCurr.var,{'tmp','temp','tmean','tas','tmn','tmin','tasmin','tmx','tmax','tasmax'}) 
-                if regexpbl(units,'kelvin')
+                if regexpbl(units,'kelvin') || strcmpi(units, 'K')
                     sDataCurr.data = sDataCurr.data - 273.15;
                     sDataCurr.attData{rowUnit, 2} = 'Celsius';
                 elseif ~regexpbl(units,'celsius')
