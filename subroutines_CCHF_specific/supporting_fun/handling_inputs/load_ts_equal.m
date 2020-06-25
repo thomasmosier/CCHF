@@ -193,6 +193,13 @@ if ~isempty(dateCurr) && ~all(isnan(dateCurr))
                     sDataCurr.attData = squeeze(struct2cell(sDataCurr.attData.Attributes))';
                 %Assign data field from NetyCDF file
                 sDataCurr.data = single(ncread(pathCurr,varRead));
+                
+                %Bug fix for specific case where leap day written
+                %incorrectly:
+                if numel(sDataCurr.time) == 29 && all(diff(sDataCurr.time(1:28)) == 1) && diff(sDataCurr.time(28:29)) > 10000
+                    %nYrs = nYrs (same as last value)
+                    sDataCurr.time(29) = sDataCurr.time(28)+1;
+                end
             elseif regexpbl(pathCurr, {'.txt','.asc'})
                 sDataCurr.(varLon) = sHydro.(varLon);
                 sDataCurr.(varLat) = sHydro.(varLat);
