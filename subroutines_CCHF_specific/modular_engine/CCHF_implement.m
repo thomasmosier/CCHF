@@ -122,17 +122,22 @@ end
 %Create time vector to loop over based on start date and time-step
 %If this field populated here, it wont be populated inside each model call,
 %which saves time
+if ~isfield(sMeta, 'cal')
+    sMeta.cal = 'Gregorian';
+end
+
 if regexpbl(sMeta.runType, {'simulate', 'resume'}, 'and') || regexpbl(sMeta.runType, {'valid', 'resume'}, 'and')
     %When simulate_resume is being used, start immediately from
     %previous model state
     sMeta.spinup = '0 months';
-    sMeta = dates_run(sMeta);
+    sMeta = dates_run(sMeta, sMeta.cal);
     disp(['The spinup period is being set to ' sMeta.spinup ' because simulation type is resume.']);
 else
     %In all other run types, add spinup period (as defined in main
     %script)
-    sMeta = dates_run(sMeta, 'spin');
+    sMeta = dates_run(sMeta, sMeta.cal, 'spin');
 end
+
 
 %Ensure format of sMeta.dateRun is consistent with sMeta.dateStart and
 %regions
@@ -621,6 +626,7 @@ for ii = 1 : nSites
     [sMeta.rtDir{ii}, ~, ~] = fileparts(sPath{ii}.dem);
 end
 clear ii
+
 
 %Save input paths in file for possible future use
 if blNewLoad == 1

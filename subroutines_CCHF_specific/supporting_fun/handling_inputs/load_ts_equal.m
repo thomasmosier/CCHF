@@ -248,13 +248,13 @@ if ~isempty(dateCurr) && ~all(isnan(dateCurr))
                 end
 
                 %Create NC style time att (necessary for calendar, etc.)
-                sDataCurr.attTime = {'calendar', 'Gregorian'; 'units', 'days_since 1000-01-01'};
-                sDataCurr.time = days_since([1000,1,1], dateCurr, 'Gregorian');
+                sDataCurr.attTime = {'calendar', sMeta.cal; 'units', 'days_since 1000-01-01'};
+                sDataCurr.time = days_since([1000,1,1], dateCurr, sMeta.cal);
 
                 sDataCurr.data = nan([1, numel(sHydro.(varLat)), numel(sHydro.(varLon))],'single');
                 [sDataCurr.data(1,:,:), ~, ~] = read_ESRI(sPath.([varCurr 'File']){sMeta.indCurr});
 
-                %If precipitation, assumes units are mm:
+                %If precipitation and units unknown, assume they are mm but print warning:
                 if regexpbl(varCurr, 'pr')
                     if isequal(dateCurr, datesUse(1,:))
                         warning('load_ts:preConvert',['Units of the '...
@@ -321,7 +321,8 @@ if ~isempty(dateCurr) && ~all(isnan(dateCurr))
             sDataCurr.(varLat) = sHydro.(varLat);
         end
 
-        %Change units and change to metric:
+        
+        %Change units to metric:
         if isfield(sDataCurr,'attData')
             [units, rowUnit] = NC_units(sDataCurr.attData);
             
@@ -361,9 +362,10 @@ if ~isempty(dateCurr) && ~all(isnan(dateCurr))
         [refDateNew, ~] = NC_time_units(sDataCurr.attTime);
         calNew =  NC_cal(sDataCurr.attTime);
         
-%         if isfield()
-%         dateOld = 
         
+%         if isequal(dateCurr(2:3), [2,1]) || isequal(dateCurr(2:3), [3,1])
+%             keyboard
+%         end
         %%Splice with previous data:
         if ~isfield(sAtm,'attTime')
             sAtm.attTime = sDataCurr.attTime;

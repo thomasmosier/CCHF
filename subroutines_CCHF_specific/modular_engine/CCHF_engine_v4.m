@@ -299,7 +299,7 @@ for mm = 1 : nSites
                 if isfield(sAtm, 'datepr')
                     dateLast = sAtm.datepr(end,:);
                     dateCurr = sMeta.dateStart{mm};
-                    dayGap = days_since(dateLast, dateCurr, 'gregorian');
+                    dayGap = days_since(dateLast, dateCurr, sMeta.cal);
 
                     if dayGap ~= 1
                        warning('cchfEngine:runResumeDateGap', ['The ' char(39) 'simulate_resume'  ...
@@ -465,7 +465,7 @@ for mm = 1 : nSites
         if isfield(sMeta, 'indUpdate')
             if any(ii == sMeta.indUpdate)
                 disp(['CCHF model is on time step '...
-                    num2str(ii) ' of ' num2str(nTS) ' (site ' ...
+                    num2str(ii) ' of ' num2str(nTS) ' (date: ' date_2_string(sMeta.dateCurr) '; site ' ...
                     num2str(mm) ' of ' num2str(nSites) ').']);
             end
         end
@@ -513,7 +513,7 @@ for mm = 1 : nSites
             %Set date (month/day) when glacier mass balance will be
             %processed.
             if all(~isnan(sMeta.dateStart{mm}))
-                dateTemp = days_2_date_v2(-1, sMeta.dateStart{mm}, 'gregorian');
+                dateTemp = days_2_date_v2(-1, sMeta.dateStart{mm}, sMeta.cal);
                 sMeta.dateGlac = dateTemp(2:end);
             else
                 sMeta.dateGlac = nan(size(sMeta.dateStart{mm}));

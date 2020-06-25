@@ -18,12 +18,12 @@
 % along with the Downscaling Package.  If not, see 
 % <http://www.gnu.org/licenses/>.
 
-function sMeta = dates_run(sMeta,varargin)
+function sMeta = dates_run(sMeta, cal, varargin)
 
 
 
 % dateRef = [0,1,1,1,1]; %year, month, day, hour, minute
-cal = 'Gregorian';
+
 
 blCellConvert = 0;
 if ~iscell(sMeta.dateStart) && ~iscell(sMeta.dateStart)
@@ -178,7 +178,7 @@ for ii = 1 : numel(dateRun(:))
     else
         dateSpinStart = dateLpStart{ii};
     end
-
+    
     dateRun{ii} = date_vec_fill(dateSpinStart,dateLpEnd{ii},cal);
 end
 

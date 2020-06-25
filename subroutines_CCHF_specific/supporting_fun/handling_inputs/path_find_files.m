@@ -34,6 +34,13 @@ if iscell(datesMod)
     end
 end
 
+if isfield(sMeta, 'cal')
+    cal = sMeta.cal;
+else
+    cal = 'gregorian';
+    warning('pathFindFiles:calNotSet','Calendar is being set to Gregorian because sMeta does not contain calendar definition.');
+end
+
 %Loop over each of the variables to load
 for ll = 1 : numel(sMeta.varLd)
     %Skip if path not present
@@ -100,14 +107,14 @@ for ll = 1 : numel(sMeta.varLd)
                     attTime = squeeze(struct2cell(attTime.Attributes))';
 
                 [gcmRef, gcmUnits] = NC_time_units(attTime);
-                cal =  NC_cal(attTime);
+                calGcm =  NC_cal(attTime);
 
                 if ll == 1 || ~isequal(gcmRef, gcmRefP)
-                    daysModRun = days_since(gcmRef, datesMod, cal);
+                    daysModRun = days_since(gcmRef, datesMod, calGcm);
                 end
                 if ll == 1 || ~isequal(dateDataStart, dateStartP) || ~isequal(dateDataEnd, dateEndP)
-                    daysStart = days_since(gcmRef, dateDataStart, cal);
-                    daysEnd   = days_since(gcmRef, dateDataEnd, cal);
+                    daysStart = days_since(gcmRef, dateDataStart, calGcm);
+                    daysEnd   = days_since(gcmRef, dateDataEnd, calGcm);
                     if regexpbl(gcmUnits,'hour')
                         daysStart = daysStart / 24;
                         daysEnd = daysEnd / 24;
@@ -121,7 +128,6 @@ for ll = 1 : numel(sMeta.varLd)
                 if ~isempty(indRem)
                     gcmRef(   :, indRem) = [];
                 end
-                cal = 'gregorian';
 
                 daysStart   = days_since(gcmRef, dateDataStart, cal);
                 daysEnd     = days_since(gcmRef,   dateDataEnd, cal);
@@ -152,9 +158,18 @@ for ll = 1 : numel(sMeta.varLd)
             %Initialize output:
             sPath.([sMeta.varLd{ll} 'File']) = cell(numel(datesMod(:,1)),1);
             
+            %Get calendar from file
+            if regexpbl(filesTemp{1}, '.nc')
+                attTime = ncinfo(fullfile(sPath.(sMeta.varLd{ll}), filesTemp{1}), 'time');
+                    attTime = squeeze(struct2cell(attTime.Attributes))';
+                calFile =  NC_cal(attTime);
+            else
+                calFile = cal;
+            end
+                
             %Loop over input files:
             for kk = 1 : numel(dateDataStart(:,1))
-                dateDataFilledCurr = date_vec_fill(dateDataStart(kk,:), dateDataEnd(kk,:), 'gregorian');
+                dateDataFilledCurr = date_vec_fill(dateDataStart(kk,:), dateDataEnd(kk,:), calFile);
                 
                 indUse = find(ismember(datesMod(:,2:3), dateDataFilledCurr(:,2:3), 'rows'));
                 %datesMod(indUse,2:3)
