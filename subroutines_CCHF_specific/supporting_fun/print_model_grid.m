@@ -17,7 +17,7 @@ if strcmpi(ptWrtCurr,'annualgrid')
     if any(indDateCurr)
 %         disp(['resetting on ' num2str(sMeta.dateCurr(1)) '/' num2str(sMeta.dateCurr(2))]);
         nDays = days_since(sModOut.(ptWrtCurr).([nmCurr '_dateStart'])(indDateCurr,:), ...
-            sModOut.(ptWrtCurr).([nmCurr '_dateEnd'])(indDateCurr,:), 'gregorian') + 1;
+            sModOut.(ptWrtCurr).([nmCurr '_dateEnd'])(indDateCurr,:), sMeta.cal) + 1;
         sModOut.(ptWrtCurr).(nmCurr) = nan([nDays, numel(lat), numel(lon)], 'single');
         
         %Reset cntr:
@@ -118,9 +118,7 @@ if isfield(sModOut.(ptWrtCurr), [char(nmCurr) '_path'])
                 'icdwe', 'm/day'; ...
                 'icwe', 'm'};
 
-%             if strcmpi(nmCurr, 'icdwe')
-%                 keyboard
-%             end
+
             grdSum = single(squeeze(sum(sModOut.(ptWrtCurr).(nmCurr), 1)));
             signTest = single(sign(grdSum));
             if numel(signTest == 1) > numel(signTest == -1)

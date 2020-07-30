@@ -81,7 +81,7 @@ else
             end
         end
         
-        outDate = date_vec_fill(dateStart, dateEnd, 'Gregorian');
+        outDate = date_vec_fill(dateStart, dateEnd, sMeta.cal);
         szInitPt = [numel(outDate(:,1)),1];
         szInit3d = [numel(outDate(:,1)),numel(sHydro.(varLat)),numel(sHydro.(varLon))];
         
